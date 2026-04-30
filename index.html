@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ruimakes | Organize the Excellence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        body { font-family: 'JetBrains+Mono', monospace; }
+        .bg-industrial { background-color: #09090b; }
+        .text-wera-green { color: #10b981; }
+        .border-wera-green { border-color: #10b981; }
+    </style>
+</head>
+<body class="bg-industrial text-zinc-100 min-h-screen flex flex-col items-center justify-center p-6">
+
+    <!-- 品牌 Logo 区域 -->
+    <header class="text-center mb-12">
+        <h1 class="text-5xl font-bold tracking-tighter mb-2">
+            rui<span class="text-wera-green">makes</span>
+        </h1>
+        <p class="text-zinc-500 uppercase tracking-[0.3em] text-sm italic">Organize the Excellence</p>
+    </header>
+
+    <!-- 状态占位卡片 -->
+    <main class="w-full max-w-2xl border border-zinc-800 bg-zinc-900/50 p-8 rounded-sm backdrop-blur-md">
+        <div class="flex items-center space-x-3 mb-6">
+            <div class="h-3 w-3 bg-wera-green rounded-full animate-pulse"></div>
+            <span class="text-xs uppercase font-bold tracking-widest text-zinc-400">System Initializing...</span>
+        </div>
+
+        <h2 class="text-2xl mb-4 font-bold">精密工具收纳 & 3D 打印工作站</h2>
+        
+        <p class="text-zinc-400 leading-relaxed mb-8">
+            我们正在为 <span class="text-zinc-100 font-bold">Wera / PB Swiss / Knipex</span> 等顶级工具构建数字时代的物理秩序。基于 <span class="text-zinc-100 font-bold">Bambu Lab</span> 的精密制造逻辑，Ruimakes 品牌站即将上线。
+        </p>
+
+        <!-- 产品线简述 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border border-zinc-800 p-4 hover:border-wera-green transition-colors cursor-default">
+                <div class="text-xs text-zinc-500 mb-1">01 / Tool-Org</div>
+                <div class="font-bold">精密收纳系列</div>
+            </div>
+            <div class="border border-zinc-800 p-4 hover:border-zinc-400 transition-colors cursor-default">
+                <div class="text-xs text-zinc-500 mb-1">02 / Workstation</div>
+                <div class="font-bold">拓竹避震工作台</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部信息 -->
+    <footer class="mt-16 text-zinc-600 text-[10px] uppercase tracking-widest">
+        &copy; 2026 RUIMAKES SECURITY LABS // DESIGNED ON MACBOOK PRO 15
+    </footer>
+
+</body>
+</html>
