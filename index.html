@@ -4,54 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ruimakes | Organize the Excellence</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-        body { font-family: 'JetBrains+Mono', monospace; }
-        .bg-industrial { background-color: #09090b; }
-        .text-wera-green { color: #10b981; }
-        .border-wera-green { border-color: #10b981; }
+        /* 核心视觉定义 - 零外部请求 */
+        :root {
+            --wera-green: #10b981;
+            --bg-dark: #09090b;
+            --card-bg: #18181b;
+            --text-main: #f4f4f5;
+            --text-dim: #71717a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", "Segoe UI Symbol", monospace;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* 品牌 Logo */
+        header { text-align: center; margin-bottom: 48px; }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin-bottom: 8px;
+        }
+
+        .green-span { color: var(--wera-green); }
+
+        .tagline {
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            font-size: 0.75rem;
+            font-style: italic;
+        }
+
+        /* 主容器 */
+        main {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border: 1px solid #27272a;
+            padding: 32px;
+            border-radius: 2px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 状态指示器 */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .pulse-dot {
+            height: 10px;
+            width: 10px;
+            background-color: var(--wera-green);
+            border-radius: 50%;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .3; }
+        }
+
+        .status-text {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        h2 { font-size: 1.5rem; margin-bottom: 16px; font-weight: 700; }
+
+        p { color: #a1a1aa; margin-bottom: 32px; font-size: 0.95rem; }
+
+        /* 网格布局 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .grid-item {
+            border: 1px solid #27272a;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .grid-item:hover { border-color: var(--wera-green); }
+
+        .item-num { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 4px; }
+        .item-title { font-weight: 700; font-size: 0.9rem; }
+
+        footer {
+            margin-top: 64px;
+            font-size: 0.6rem;
+            color: #3f3f46;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        /* 移动端适配优化 */
+        @media (max-width: 480px) {
+            h1 { font-size: 2.2rem; }
+            main { padding: 24px; }
+        }
     </style>
 </head>
-<body class="bg-industrial text-zinc-100 min-h-screen flex flex-col items-center justify-center p-6">
+<body>
 
-    <!-- 品牌 Logo 区域 -->
-    <header class="text-center mb-12">
-        <h1 class="text-5xl font-bold tracking-tighter mb-2">
-            rui<span class="text-wera-green">makes</span>
-        </h1>
-        <p class="text-zinc-500 uppercase tracking-[0.3em] text-sm italic">Organize the Excellence</p>
+    <header>
+        <h1>rui<span class="green-span">makes</span></h1>
+        <div class="tagline">Organize the Excellence</div>
     </header>
 
-    <!-- 状态占位卡片 -->
-    <main class="w-full max-w-2xl border border-zinc-800 bg-zinc-900/50 p-8 rounded-sm backdrop-blur-md">
-        <div class="flex items-center space-x-3 mb-6">
-            <div class="h-3 w-3 bg-wera-green rounded-full animate-pulse"></div>
-            <span class="text-xs uppercase font-bold tracking-widest text-zinc-400">System Initializing...</span>
+    <main>
+        <div class="status-bar">
+            <div class="pulse-dot"></div>
+            <div class="status-text">System Initializing...</div>
         </div>
 
-        <h2 class="text-2xl mb-4 font-bold">精密工具收纳 & 3D 打印工作站</h2>
+        <h2>精密工具收纳 & 3D 打印生态</h2>
         
-        <p class="text-zinc-400 leading-relaxed mb-8">
-            我们正在为 <span class="text-zinc-100 font-bold">Wera / PB Swiss / Knipex</span> 等顶级工具构建数字时代的物理秩序。基于 <span class="text-zinc-100 font-bold">Bambu Lab</span> 的精密制造逻辑，Ruimakes 品牌站即将上线。
+        <p>
+            我们正在为 <strong>Wera / PB Swiss / Knipex</strong> 等顶级工具构建数字时代的物理秩序。基于 <strong>Bambu Lab</strong> 的精密制造逻辑，Ruimakes 品牌站即将上线。
         </p>
 
-        <!-- 产品线简述 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="border border-zinc-800 p-4 hover:border-wera-green transition-colors cursor-default">
-                <div class="text-xs text-zinc-500 mb-1">01 / Tool-Org</div>
-                <div class="font-bold">精密收纳系列</div>
+        <div class="grid">
+            <div class="grid-item">
+                <div class="item-num">01 / Tool-Org</div>
+                <div class="item-title">精密收纳系列</div>
             </div>
-            <div class="border border-zinc-800 p-4 hover:border-zinc-400 transition-colors cursor-default">
-                <div class="text-xs text-zinc-500 mb-1">02 / Workstation</div>
-                <div class="font-bold">拓竹避震工作台</div>
+            <div class="grid-item">
+                <div class="item-num">02 / Workstation</div>
+                <div class="item-title">拓竹避震工作台</div>
             </div>
         </div>
     </main>
 
-    <!-- 底部信息 -->
-    <footer class="mt-16 text-zinc-600 text-[10px] uppercase tracking-widest">
-        &copy; 2026 RUIMAKES SECURITY LABS // DESIGNED ON MACBOOK PRO 15
+    <footer>
+        &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
     </footer>
 
 </body>
