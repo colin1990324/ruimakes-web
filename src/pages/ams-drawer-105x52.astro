@@ -1,0 +1,93 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProductSpecs from '../components/ProductSpecs.astro';
+
+const pageTitle = "105x52 AMSx2 抽板x1 | ruimakes";
+const pageDesc = "拓竹工作台终极方案：1050x520mm 双AMS抽板集成，支持50kg承重，TPU缓冲避震，专为X1/P1/A1系列设计。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img 
+            src="/images/workstation/105-52-主图-白底正视图.png" 
+            alt="105x52 AMSx2 抽板x1 - 主视图"
+            class="w-full rounded-sm shadow-2xl border border-border-zinc"
+          />
+        </div>
+        
+        <div>
+          <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            105x52 AMSx2 <span class="text-wera-green">抽板x1</span>
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            专为拓竹 X1/P1/A1 系列设计的终极工作台方案。1050×520mm 超大台面，集成双 AMS 抽板模块，50kg 承重能力，TPU 缓冲避震系统确保打印机全速运转时依然稳如磐石。
+          </p>
+          
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-wera-green">¥599</span>
+            <span class="text-zinc-500 text-sm">/ 含安装配件</span>
+          </div>
+
+          <a href="#" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">
+            咨询购买
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">双 AMS 集成</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          完美兼容 Bambu Lab AMS 多色打印系统，双槽位设计让线材管理变得井井有条。磁吸式换模结构，3 秒完成耗材切换。
+        </p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">TPU 缓冲避震</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          四个 TPU 减震脚垫，有效吸收打印机高速打印时的振动传递。保护打印质量，延长设备寿命。
+        </p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">50kg 承重</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          加厚 PETG-CF 材质，航空级结构设计。轻松承载双台拓竹打印机 + AMS + 工具的重量。
+        </p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">工具抽屉模块</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          底部集成工具抽屉，常用配件触手可及。硅胶衬垫保护工具，滑轨式开合手感顺滑。
+        </p>
+      </div>
+    </div>
+
+    <ProductSpecs
+      brand="BambuLab"
+      material="PETG-CF (碳纤维增强)"
+      compatibility="Bambu Lab X1 / P1 / A1 系列"
+      features={["双AMS抽板", "TPU缓冲避震", "50kg承重", "工具抽屉"]}
+    />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/workstation/105-52-正试图-2台.png" alt="双机工作台布局" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/105-52-侧视图.png" alt="侧视图" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/105-52-侧视图-空.png" alt="空载侧视图" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/105-52-侧视图-拉开.png" alt="抽屉拉开视图" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/105-52-侧视图-洞洞板.png" alt="洞洞板模块" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

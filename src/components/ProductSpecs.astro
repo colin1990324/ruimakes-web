@@ -1,0 +1,49 @@
+---
+interface Props {
+  brand: "Wera" | "PB Swiss" | "Knipex" | "BambuLab";
+  material: string;
+  compatibility: string;
+  features: string[];
+}
+
+const { brand, material, compatibility, features } = Astro.props;
+
+const brandColors = {
+  Wera: "border-wera-green text-wera-green",
+  PBSwiss: "border-red-600 text-red-500",
+  Knipex: "border-blue-500 text-blue-400",
+  BambuLab: "border-zinc-400 text-zinc-300"
+};
+
+const brandLabels = {
+  Wera: "Wera Tool System",
+  PBSwiss: "PB Swiss Tools",
+  Knipex: "Knipex Tools",
+  BambuLab: "Bambu Lab Ecosystem"
+};
+---
+
+<div class={`border-l-4 p-6 bg-card-bg my-8 ${brandColors[brand]}`}>
+  <h3 class="text-xl font-mono uppercase tracking-widest mb-4 text-zinc-100">Specifications</h3>
+  <ul class="space-y-3 font-mono text-sm">
+    <li class="flex gap-4">
+      <span class="text-zinc-500 w-28">Target</span>
+      <span class="text-zinc-200">{brandLabels[brand]}</span>
+    </li>
+    <li class="flex gap-4">
+      <span class="text-zinc-500 w-28">Material</span>
+      <span class="text-zinc-200">{material}</span>
+    </li>
+    <li class="flex gap-4">
+      <span class="text-zinc-500 w-28">Compatibility</span>
+      <span class="text-zinc-200">{compatibility}</span>
+    </li>
+  </ul>
+  <div class="mt-6 flex flex-wrap gap-2">
+    {features.map(f => (
+      <span class="text-xs px-3 py-1.5 bg-zinc-800 border border-border-zinc text-zinc-300 rounded-sm uppercase tracking-wider">
+        {f}
+      </span>
+    ))}
+  </div>
+</div>
