@@ -2,8 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import ProductSpecs from '../../components/ProductSpecs.astro';
 
-const pageTitle = "97x52 费斯托x4 | ruimakes";
-const pageDesc = "970×520×800mm 拓竹工作台，标配费斯托 M112×2+M237×2 四只工具箱，适配65L电子干燥箱，北美樱桃木实木桌面。";
+const pageTitle = "97x52 费斯托 | ruimakes";
+const pageDesc = "970×520×800mm 拓竹工作台，标配费斯托四只工具箱，适配65L电子干燥箱，北美樱桃木实木桌面。";
 ---
 
 <Layout title={pageTitle} description={pageDesc}>
@@ -11,63 +11,104 @@ const pageDesc = "970×520×800mm 拓竹工作台，标配费斯托 M112×2+M237
     <div class="max-w-5xl mx-auto px-6 py-16">
       <div class="grid md:grid-cols-2 gap-8 items-center">
         <div class="relative">
-          <img src="/images/workstation/97-52费斯托x4-效果图.webp" alt="费斯托x4 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+          <img id="hero-img" src="/images/workstation/97-52费斯托x4-效果图.webp" alt="费斯托x4 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
         </div>
         <div>
           <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
           <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
-            97x52x4 <span class="text-wera-green">费斯托x4</span>
+            97 <span id="hero-subtitle" class="text-wera-green">费斯托x4</span>
           </h1>
-          <p class="text-zinc-400 mb-8 leading-relaxed">970×520×800mm 拓竹工作台，标配费斯托 M112×2+M237×2 四只工具箱，适配65L电子干燥箱，北美樱桃木实木桌面。</p>
+          <p class="text-zinc-400 mb-4 leading-relaxed" id="hero-desc">970×520×800mm 拓竹工作台，标配费斯托四只工具箱，适配65L电子干燥箱，北美樱桃木实木桌面。</p>
+          <div id="dim-note" class="mb-4 text-sm text-zinc-500"><span class="text-wera-green font-bold">外尺寸：</span><span id="dim-text">长：970mm；宽：52cm；高：800mm</span></div>
           <div class="flex items-center gap-4 mb-8">
-            <span class="text-2xl font-bold text-wera-green">¥2,480</span>
-            <span class="text-zinc-500 text-sm">/ 含安装配件</span>
+            <span id="hero-price" class="text-2xl font-bold text-wera-green">¥2,480</span>
+            <span id="hero-price-suffix" class="text-zinc-500 text-sm">/ 含安装配件</span>
           </div>
-          <a href="#" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+          <a href="#" id="hero-cta" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Variant Selector -->
+  <div class="max-w-5xl mx-auto px-6 mb-8">
+    <div class="flex gap-3 flex-wrap">
+        <button
+          class="variant-btn flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-wera-green rounded-sm text-left transition-all"
+          data-subtitle="费斯托x4"
+          data-price="¥2,480"
+          data-price-suffix="/ 含安装配件"
+          data-cta="咨询购买"
+          data-main-image="/images/workstation/97-52费斯托x4-效果图.webp"
+          data-dim="970×52cm×800mm"
+        >
+          <div class="text-wera-green font-bold text-sm">费斯托x4</div>
+          <div class="text-zinc-400 text-xs mt-1">¥2,480</div>
+        </button>
+        <button
+          class="variant-btn flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-wera-green rounded-sm text-left transition-all"
+          data-subtitle="费斯托x4 双AMS"
+          data-price="¥2,650"
+          data-price-suffix="/ 含安装配件"
+          data-cta="咨询购买"
+          data-main-image="/images/workstation/97-52-2ams-效果图1.webp"
+          data-dim="970×52cm×800mm"
+        >
+          <div class="text-wera-green font-bold text-sm">费斯托x4 双AMS</div>
+          <div class="text-zinc-400 text-xs mt-1">¥2,650</div>
+        </button>
+        <button
+          class="variant-btn flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-wera-green rounded-sm text-left transition-all"
+          data-subtitle="费斯托x2 四AMS"
+          data-price="¥2,280"
+          data-price-suffix="/ 含安装配件"
+          data-cta="咨询购买"
+          data-main-image="/images/workstation/97-52-4ams-效果图1.webp"
+          data-dim="970×52cm×800mm"
+        >
+          <div class="text-wera-green font-bold text-sm">费斯托x2 四AMS</div>
+          <div class="text-zinc-400 text-xs mt-1">¥2,280</div>
+        </button>
+    </div>
+  </div>
+
   <main class="max-w-5xl mx-auto px-6 py-16">
-
-    <div class="mb-8 text-sm text-zinc-500"><span class="text-wera-green font-bold">外尺寸：</span>外尺寸：长：970mm；宽：40cm（P系列）/ 52cm（H系列）；高：800mm</div>
-
     <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
     <div class="grid md:grid-cols-2 gap-6 mb-16">
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">费斯托四工具箱</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">标配费斯托 M112×2+M237×2 四只工具箱，分类收纳，取用方便。</p>
-      </div>
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">适配65L干燥箱</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">预留65L电子干燥箱位置（38×39×52cm），可放12卷开封耗材。</p>
-      </div>
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">40S福马轮</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">默认40S福马轮，单个50KG，4只载重200KG，带可调节支腿，稳固不晃。</p>
-      </div>
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">北美樱桃木桌面</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">北美进口樱桃原木多拼，2cm厚台面，天然纹理色差属于正常现象。</p>
-      </div>
 
     </div>
 
     <ProductSpecs
       brand="BambuLab"
       material="欧标3030Q铝型材 + 北美樱桃实木桌面"
-      compatibility="Bambu Lab X1 / P1 / A1 系列"
+      compatibility="Bambu Lab H / X / P / A 系列"
       features={["费斯托四工具箱(M112×2+M237×2)", "适配65L干燥箱", "40S福马轮", "北美樱桃木桌面"]}
     />
 
     <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2><div class="grid grid-cols-2 md:grid-cols-3 gap-4">
       <img src="/images/workstation/97-52费斯托x4-效果图.webp" alt="97x52 费斯托x4 效果图" class="rounded-sm border border-border-zinc" />
       <img src="/images/workstation/97-52费斯托x4-买家秀1.webp" alt="97x52 费斯托x4 买家秀1" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/97-52-2ams-效果图1.webp" alt="97x52 双AMS 效果图" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/97-52-4ams-效果图1.webp" alt="97x52 四AMS 效果图" class="rounded-sm border border-border-zinc" />
     </div>
 
     <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
       &copy; 2026 RUIMAKES ®️ DESIGN LABS // Driven by Openclaw
     </footer>
   </main>
+
+  <script>
+    const buttons = document.querySelectorAll('.variant-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('hero-subtitle').textContent = btn.dataset.subtitle;
+        document.getElementById('hero-price').textContent = btn.dataset.price;
+        document.getElementById('hero-price-suffix').textContent = btn.dataset.priceSuffix;
+        document.getElementById('hero-cta').textContent = btn.dataset.cta;
+        document.getElementById('hero-img').src = btn.dataset.mainImage;
+        document.getElementById('hero-img').alt = btn.dataset.subtitle + ' 主图';
+        document.getElementById('dim-text').textContent = btn.dataset.dim;
+      });
+    });
+  </script>
 </Layout>

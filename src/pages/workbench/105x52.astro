@@ -2,8 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import ProductSpecs from '../../components/ProductSpecs.astro';
 
-const pageTitle = "105x52 AMSx2 | ruimakes";
-const pageDesc = "1050×520×770mm 拓竹工作台，双AMS抽屉完全抽出式设计，桌面可并排容纳2台X/P系列打印机，右下兼容H系列，北美樱桃木实木桌面。";
+const pageTitle = "105x52 | ruimakes";
+const pageDesc = "1050×520×770mm 拓竹工作台，三区打印机布局，200kg承重，北美樱桃木实木桌面。";
 ---
 
 <Layout title={pageTitle} description={pageDesc}>
@@ -11,46 +11,58 @@ const pageDesc = "1050×520×770mm 拓竹工作台，双AMS抽屉完全抽出式
     <div class="max-w-5xl mx-auto px-6 py-16">
       <div class="grid md:grid-cols-2 gap-8 items-center">
         <div class="relative">
-          <img src="/images/workstation/105-52-amsx2-效果图.webp" alt="AMSx2 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+          <img id="hero-img" src="/images/workstation/105-52-amsx2-效果图.webp" alt="AMSx2 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
         </div>
         <div>
           <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
           <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
-            105x52x2 <span class="text-wera-green">AMSx2</span>
+            105x52 <span id="hero-subtitle" class="text-wera-green">AMSx2</span>
           </h1>
-          <p class="text-zinc-400 mb-8 leading-relaxed">1050×520×770mm 拓竹工作台，双AMS抽屉完全抽出式设计，桌面可并排容纳2台X/P系列打印机，右下兼容H系列，北美樱桃木实木桌面。</p>
+          <p class="text-zinc-400 mb-4 leading-relaxed" id="hero-desc">1050×520×770mm 拓竹工作台，三区打印机布局，200kg承重，北美樱桃木实木桌面。</p>
+          <div id="dim-note" class="mb-4 text-sm text-zinc-500"><span class="text-wera-green font-bold">外尺寸：</span><span id="dim-text">长：1050mm；宽：52cm</span></div>
           <div class="flex items-center gap-4 mb-8">
-            <span class="text-2xl font-bold text-wera-green">¥1,880</span>
-            <span class="text-zinc-500 text-sm">/ 含安装配件</span>
+            <span id="hero-price" class="text-2xl font-bold text-wera-green">¥1,880</span>
+            <span id="hero-price-suffix" class="text-zinc-500 text-sm">/ 含安装配件</span>
           </div>
-          <a href="#" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+          <a href="#" id="hero-cta" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Variant Selector -->
+  <div class="max-w-5xl mx-auto px-6 mb-8">
+    <div class="flex gap-3 flex-wrap">
+        <button
+          class="variant-btn flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-wera-green rounded-sm text-left transition-all"
+          data-subtitle="AMSx2"
+          data-price="¥1,880"
+          data-price-suffix="/ 含安装配件"
+          data-cta="咨询购买"
+          data-main-image="/images/workstation/105-52-amsx2-效果图.webp"
+          data-dim="1050×52cm×mm"
+        >
+          <div class="text-wera-green font-bold text-sm">AMSx2</div>
+          <div class="text-zinc-400 text-xs mt-1">¥1,880</div>
+        </button>
+        <button
+          class="variant-btn flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-wera-green rounded-sm text-left transition-all"
+          data-subtitle="洞洞板"
+          data-price="¥1,980"
+          data-price-suffix="/ 含安装配件"
+          data-cta="咨询购买"
+          data-main-image="/images/workstation/105-52-洞洞板-效果图.webp"
+          data-dim="1050×52cm×770mm"
+        >
+          <div class="text-wera-green font-bold text-sm">洞洞板</div>
+          <div class="text-zinc-400 text-xs mt-1">¥1,980</div>
+        </button>
+    </div>
+  </div>
+
   <main class="max-w-5xl mx-auto px-6 py-16">
-
-    <div class="mb-8 text-sm text-zinc-500"><span class="text-wera-green font-bold">外尺寸：</span>外尺寸：长：1050mm；宽：52cm（H系列）；高：770mm</div>
-
     <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
     <div class="grid md:grid-cols-2 gap-6 mb-16">
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">双AMS完全抽出</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">左下双AMS抽屉配合三节轨，可完全抽出更换耗材，磁吸定位，换料只需3秒。</p>
-      </div>
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">三区布局</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">桌面左中区域可并排容纳2台X/P系列打印机，右下兼容H系列打印机，空间利用更高效。</p>
-      </div>
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">200kg承重</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">欧标3030Q铝型材框架，200kg稳固支撑，多台设备满载运行依然稳如磐石。</p>
-      </div>
-      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
-        <h3 class="text-lg font-bold text-wera-green mb-3">北美樱桃木桌面</h3>
-        <p class="text-zinc-400 text-sm leading-relaxed">北美进口樱桃原木多拼，2cm厚台面，天然纹理温润有质感。</p>
-      </div>
 
     </div>
 
@@ -58,16 +70,33 @@ const pageDesc = "1050×520×770mm 拓竹工作台，双AMS抽屉完全抽出式
       brand="BambuLab"
       material="欧标3030Q铝型材 + 北美樱桃实木桌面"
       compatibility="Bambu Lab H / X / P / A 系列"
-      features={["双AMS抽屉(完全抽出)", "三区打印机布局", "200kg承重", "北美樱桃木桌面"]}
+      features={["双AMS抽屉/洞洞板", "三区打印机布局", "200kg承重", "北美樱桃木桌面"]}
     />
 
     <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2><div class="grid grid-cols-2 md:grid-cols-3 gap-4">
       <img src="/images/workstation/105-52-amsx2-效果图.webp" alt="105x52 AMSx2 效果图" class="rounded-sm border border-border-zinc" />
       <img src="/images/workstation/105-52-amsx2-买家秀1.webp" alt="105x52 AMSx2 买家秀" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/105-52-洞洞板-效果图.webp" alt="105x52 洞洞板 效果图" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/105-52-洞洞板-买家秀1.webp" alt="105x52 洞洞板 买家秀" class="rounded-sm border border-border-zinc" />
     </div>
 
     <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
       &copy; 2026 RUIMAKES ®️ DESIGN LABS // Driven by Openclaw
     </footer>
   </main>
+
+  <script>
+    const buttons = document.querySelectorAll('.variant-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('hero-subtitle').textContent = btn.dataset.subtitle;
+        document.getElementById('hero-price').textContent = btn.dataset.price;
+        document.getElementById('hero-price-suffix').textContent = btn.dataset.priceSuffix;
+        document.getElementById('hero-cta').textContent = btn.dataset.cta;
+        document.getElementById('hero-img').src = btn.dataset.mainImage;
+        document.getElementById('hero-img').alt = btn.dataset.subtitle + ' 主图';
+        document.getElementById('dim-text').textContent = btn.dataset.dim;
+      });
+    });
+  </script>
 </Layout>
