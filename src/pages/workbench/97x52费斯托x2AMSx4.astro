@@ -1,0 +1,68 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "97x52 费斯托x2 AMSx4 | ruimakes";
+const pageDesc = "970×520mm 费斯托双轴四 AMS 工作台，四 AMS 抽板集成，适合高端多色打印用户。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img src="/images/workstation/97x52-4ams-效果图1.webp" alt="97x52 费斯托x2 AMSx4 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            97x52 <span class="text-wera-green">费斯托x2 AMSx4</span>
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            970×520mm 费斯托双轴四 AMS 工作台，四 AMS 抽板集成，费斯托工具兼容，50kg 承重，适合高端多色打印用户。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-wera-green">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 含安装配件</span>
+          </div>
+          <a href="#" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">四 AMS 集成</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">四 AMS 抽板集成，最多支持 16 色同时打印。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">费斯托双轴</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">费斯托双轴定位，兼容工具车系统。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">50kg 承重</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">加厚 PETG-CF 材质，稳固支撑多设备。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">高端多色</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">为高端多色打印用户打造，极致色彩管理。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="BambuLab" material="PETG-CF (碳纤维增强)" compatibility="Bambu Lab X1 / P1 / A1 系列" features={["四AMS集成", "费斯托双轴", "50kg承重", "高端多色"]} />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/workstation/97x52-4ams-效果图1.webp" alt="97x52 费斯托x2 AMSx4 效果图1" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/97x52-4ams-效果图2.webp" alt="97x52 费斯托x2 AMSx4 效果图2" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/97x52-2ams-买家秀1.webp" alt="97x52 费斯托x2 AMSx4 买家秀" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

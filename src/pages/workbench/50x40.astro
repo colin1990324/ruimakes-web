@@ -1,0 +1,66 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "50x40 费斯托工具车 | ruimakes";
+const pageDesc = "500×400mm 紧凑型费斯托工具车工作台，完美适配工具车系统，适合空间有限的用户。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img src="/images/workstation/50-40-买家秀.webp" alt="50x40 费斯托工具车 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            50x40 <span class="text-wera-green">费斯托工具车</span>
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            500×400mm 紧凑型费斯托工具车工作台，完美适配费斯托工具车系统，30kg 承重，适合空间有限的用户。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-wera-green">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 含安装配件</span>
+          </div>
+          <a href="#" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">紧凑设计</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">500×400mm 紧凑台面，适配空间有限的工作环境。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">费斯托兼容</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">完美适配费斯托工具车，快速拆装，移动便捷。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">30kg 承重</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">加厚材质，稳固支撑单台打印机和工具。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">工具集成</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">工具车与工作台无缝结合，取用工具更方便。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="BambuLab" material="PETG-CF (碳纤维增强)" compatibility="Bambu Lab X1 / P1 / A1 系列" features={["紧凑设计", "费斯托兼容", "30kg承重", "工具集成"]} />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/workstation/50-40-买家秀.webp" alt="50x40 费斯托工具车 买家秀" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

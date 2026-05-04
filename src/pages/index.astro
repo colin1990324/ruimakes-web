@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout title="ruimakes | Organize the Excellence">
   <header class="text-center py-12 md:py-20">
+    <img src="/images/logo/logRuiMakes.webp" alt="Ruimakes Logo" class="h-16 mx-auto mb-6" />
     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
       <span class="text-zinc-100">rui</span><span class="text-wera-green">makes</span>
     </h1>
@@ -12,40 +13,341 @@ import Layout from '../layouts/Layout.astro';
     </p>
   </header>
 
-  <main class="flex-1 w-full max-w-5xl mx-auto px-6 pb-16">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-      
-      <a href="/ams-drawer-105x52" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300 shadow-xl">
-        <div class="aspect-video bg-zinc-900 relative overflow-hidden">
-          <img 
-            src="/images/workstation/105-52-正试图-2台.png" 
-            alt="105x52 AMSx2 抽板x1 - 拓竹工作台"
-            class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300"
-          />
-          <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-20"></div>
-        </div>
-        <div class="p-6">
-          <div class="text-xs text-wera-green mb-2 uppercase tracking-wider font-bold">01 / Workstation</div>
-          <h2 class="text-xl font-bold text-zinc-100 mb-2 group-hover:text-wera-green transition-colors">拓竹工作台系列</h2>
-          <p class="text-zinc-400 text-sm">105x52 AMSx2 抽板x1 · 防震增强 · 磁吸定位</p>
-        </div>
-      </a>
+  <main class="flex-1 w-full max-w-6xl mx-auto px-6 pb-16">
 
-      <a href="/toolcheckplus-storage" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300 shadow-xl">
-        <div class="aspect-video bg-zinc-900 relative overflow-hidden">
-          <img 
-            src="/images/storage/IMG_7869.JPG" 
-            alt="ToolCheckPlus 收纳盒"
-            class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300"
-          />
-          <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-20"></div>
-        </div>
-        <div class="p-6">
-          <div class="text-xs text-wera-green mb-2 uppercase tracking-wider font-bold">02 / Tool-Org</div>
-          <h2 class="text-xl font-bold text-zinc-100 mb-2 group-hover:text-wera-green transition-colors">精密工具收纳</h2>
-          <p class="text-zinc-400 text-sm">ToolCheckPlus 收纳盒 · 专位专用 · 原厂色匹配</p>
-        </div>
-      </a>
+    <!-- Workstation Section -->
+    <div class="mb-12">
+      <h2 class="text-lg font-bold text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-3">
+        <span class="text-wera-green">01</span> Workstation Series
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="/workbench/105x52" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/105-52-正试图-2台.webp" alt="105x52 AMSx2 抽板x1" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">105x52</h3>
+            <p class="text-zinc-500 text-xs truncate">AMSx2 抽板x1</p>
+          </div>
+        </a>
+
+        <a href="/workbench/110x52" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden flex items-center justify-center">
+            <span class="text-zinc-600 text-xs uppercase">No Image</span>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">110x52</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x3</p>
+          </div>
+        </a>
+
+        <a href="/workbench/120x52" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/120-52-效果图.webp" alt="120x52 费斯托x4" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">120x52</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x4</p>
+          </div>
+        </a>
+
+        <a href="/workbench/144x52" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/144-52-效果图.webp" alt="144x52 费斯托x5" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">144x52</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x5</p>
+          </div>
+        </a>
+
+        <a href="/workbench/50x40" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/50-40-买家秀.webp" alt="50x40 费斯托工具车" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">50x40</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托工具车</p>
+          </div>
+        </a>
+
+        <a href="/workbench/85x40收纳盒" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/85x40-收纳盒-买家秀.webp" alt="85x40 收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">85x40</h3>
+            <p class="text-zinc-500 text-xs truncate">收纳盒</p>
+          </div>
+        </a>
+
+        <a href="/workbench/85x40费斯托x3" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/85x40x3-效果图.webp" alt="85x40 费斯托x3" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">85x40</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x3</p>
+          </div>
+        </a>
+
+        <a href="/workbench/85x52" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden flex items-center justify-center">
+            <span class="text-zinc-600 text-xs uppercase">No Image</span>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">85x52</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x40费斯托x4" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/97x40-x4-效果图.webp" alt="97x40 费斯托x4" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x40</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x4</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x40费斯托x6" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden flex items-center justify-center">
+            <span class="text-zinc-600 text-xs uppercase">No Image</span>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x40</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x6</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x45" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden flex items-center justify-center">
+            <span class="text-zinc-600 text-xs uppercase">No Image</span>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x45</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x4</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x52双AMS抽屉" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden flex items-center justify-center">
+            <span class="text-zinc-600 text-xs uppercase">No Image</span>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x52</h3>
+            <p class="text-zinc-500 text-xs truncate">双AMS抽屉</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x52费斯托x2AMSx4" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/97x52-4ams-效果图1.webp" alt="97x52 费斯托x2 AMSx4" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x52</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x2 AMSx4</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x52费斯托x4" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/97x52-x4-买家秀1.webp" alt="97x52 费斯托x4" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x52</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x4</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x52费斯托x4抽板x2" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/workstation/97x52-2ams-效果图1.webp" alt="97x52 费斯托x4 抽板x2" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x52</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x4 抽板x2</p>
+          </div>
+        </a>
+
+        <a href="/workbench/97x60" class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden flex items-center justify-center">
+            <span class="text-zinc-600 text-xs uppercase">No Image</span>
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">97x60</h3>
+            <p class="text-zinc-500 text-xs truncate">费斯托x4</p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Tool Storage Section -->
+    <div class="mb-12">
+      <h2 class="text-lg font-bold text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-3">
+        <span class="text-wera-green">02</span> Tool Storage Series
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="/toolstorage/joker" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/joker/IMG_6331.webp" alt="Joker钳子-洞洞板" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">Joker</h3>
+            <p class="text-zinc-500 text-xs truncate">钳子-洞洞板</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/pb-hex" class="group block bg-card-bg border border-red-600 rounded-sm overflow-hidden hover:border-red-500 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/pb-hex/IMG_5948.webp" alt="PB内六角-收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-red-500 transition-colors">PB</h3>
+            <p class="text-zinc-500 text-xs truncate">内六角-收纳盒</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/toolcheckplus" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/IMG_7869.webp" alt="ToolCheckPlus 收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">ToolCheckPlus</h3>
+            <p class="text-zinc-500 text-xs truncate">收纳盒</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/zyklop" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/zyklop/小飞-8100SA6-28件套/IMG_7166.webp" alt="Zyklop棘轮扳手-收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">Zyklop</h3>
+            <p class="text-zinc-500 text-xs truncate">棘轮扳手-收纳盒</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/other" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/other/IMG_6301.webp" alt="其他-洞洞板" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">其他</h3>
+            <p class="text-zinc-500 text-xs truncate">洞洞板</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/hex" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/hex/IMG_4582.webp" alt="内六角-收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">内六角</h3>
+            <p class="text-zinc-500 text-xs truncate">收纳盒</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/hex-spade" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/hex-spade/实拍图/IMG_6186.webp" alt="内六角-梅花-插座" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">内六角-梅花</h3>
+            <p class="text-zinc-500 text-xs truncate">插座</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/hex-spade-board" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/hex-spade-board/IMG_6300.webp" alt="内六角-梅花-洞洞板" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">内六角-梅花</h3>
+            <p class="text-zinc-500 text-xs truncate">洞洞板</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/knipex" class="group block bg-card-bg border border-blue-500 rounded-sm overflow-hidden hover:border-blue-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/knipex/IMG_6269.webp" alt="凯尼派克钳子-洞洞板" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-blue-400 transition-colors">凯尼派克</h3>
+            <p class="text-zinc-500 text-xs truncate">钳子-洞洞板</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/bit" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/bit/IMG_5524.webp" alt="批头-插座" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">批头</h3>
+            <p class="text-zinc-500 text-xs truncate">插座</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/torx" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/torx/IMG_4635.webp" alt="梅花-收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">梅花</h3>
+            <p class="text-zinc-500 text-xs truncate">收纳盒</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/rachet" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/rachet/816RA/IMG_6682.webp" alt="棘轮螺丝刀-收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">棘轮螺丝刀</h3>
+            <p class="text-zinc-500 text-xs truncate">收纳盒</p>
+          </div>
+        </a>
+
+        <a href="/toolstorage/precision" class="group block bg-card-bg border border-green-500 rounded-sm overflow-hidden hover:border-green-400 transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src="/images/storage/precision/IMG_4850.webp" alt="精密螺丝刀-收纳盒" class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900 to-transparent h-12"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-green-400 transition-colors">精密螺丝刀</h3>
+            <p class="text-zinc-500 text-xs truncate">收纳盒</p>
+          </div>
+        </a>
+      </div>
     </div>
 
     <div class="bg-card-bg border border-border-zinc rounded-sm p-8 text-center">

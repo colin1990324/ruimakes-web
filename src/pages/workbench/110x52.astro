@@ -1,0 +1,60 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "110x52 费斯托x3 | ruimakes";
+const pageDesc = "1100×520mm 费斯托工具车工作台，三轴定位系统，集成线材管理，专为追求精准的玩家设计。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="bg-zinc-800 border border-border-zinc rounded-sm aspect-video flex items-center justify-center">
+          <span class="text-zinc-600 text-sm uppercase tracking-widest">产品图片待上传</span>
+        </div>
+        <div>
+          <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            110x52 <span class="text-wera-green">费斯托x3</span>
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            1100×520mm 费斯托工具车工作台，三轴定位系统，集成线材管理，50kg 承重，专为追求精准的玩家设计。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-wera-green">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 含安装配件</span>
+          </div>
+          <a href="#" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">费斯托兼容</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">完美适配费斯托工具车系统，三轴定位精准，快速切换工具。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">线材管理</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">集成线槽设计，AMS 线材有序收纳，避免缠绕打结。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">50kg 承重</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">加厚 PETG-CF 材质，航空级结构设计，轻松承载多台设备。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">快拆设计</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">模块化快拆结构，便于清洁维护，工具车随时移动。</p>
+      </div>
+    </div>
+    <ProductSpecs brand="BambuLab" material="PETG-CF (碳纤维增强)" compatibility="Bambu Lab X1 / P1 / A1 系列" features={["费斯托兼容", "线材管理", "50kg承重", "快拆设计"]} />
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

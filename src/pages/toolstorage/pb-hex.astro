@@ -1,0 +1,68 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "PB内六角-收纳盒 | ruimakes";
+const pageDesc = "为 PB Swiss Tools 内六角扳手设计的收纳盒，精准凹槽，磁吸定位，瑞士红品牌色致敬。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img src="/images/storage/pb-hex/IMG_5948.webp" alt="PB内六角-收纳盒 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-red-500 mb-3 uppercase tracking-widest font-bold">Tool Organization</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            <span class="text-red-500">PB</span> 内六角-收纳盒
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            为 PB Swiss Tools 内六角扳手设计的收纳盒。每一个凹槽都基于实物精准测量，确保扳手"咔哒"一声完美就位。瑞士红品牌色致敬，专业级收纳体验。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-red-500">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 定制尺寸</span>
+          </div>
+          <a href="#" class="inline-block bg-red-600 text-white px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-red-500 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-red-600 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-red-500 mb-3">专位专用</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">基于 PB 内六角扳手实物 1:1 建模，每一把都有专属凹槽。</p>
+      </div>
+      <div class="bg-card-bg border border-red-600 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-red-500 mb-3">磁吸定位</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">磁吸式嵌入设计，工具放入自动对齐，稳固不晃动。</p>
+      </div>
+      <div class="bg-card-bg border border-red-600 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-red-500 mb-3">瑞士红配色</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">精准还原 PB Swiss 标志性红色，品牌致敬与功能统一。</p>
+      </div>
+      <div class="bg-card-bg border border-red-600 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-red-500 mb-3">便携设计</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">盒体轻巧便携，工作台和现场都能轻松使用。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="PB Swiss" material="PETG（环保无毒）" compatibility="PB Swiss 内六角扳手系列" features={["专位专用", "磁吸定位", "瑞士红配色", "便携设计"]} />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/storage/pb-hex/IMG_5948.webp" alt="PB内六角 收纳盒 1" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/pb-hex/IMG_5947.webp" alt="PB内六角 收纳盒 2" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/pb-hex/IMG_5946.webp" alt="PB内六角 收纳盒 3" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

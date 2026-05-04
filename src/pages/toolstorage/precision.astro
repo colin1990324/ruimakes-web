@@ -1,0 +1,69 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "精密螺丝刀-收纳盒 | ruimakes";
+const pageDesc = "为精密螺丝刀套装设计的收纳盒，精准凹槽，ESD 安全设计，磁吸定位，适合电子维修用户。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img src="/images/storage/precision/IMG_4850.webp" alt="精密螺丝刀-收纳盒 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-green-400 mb-3 uppercase tracking-widest font-bold">Tool Organization</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            <span class="text-green-400">精密螺丝刀</span> 收纳盒
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            为精密螺丝刀套装设计的收纳盒。精准凹槽，ESD 安全设计，磁吸定位，适合电子维修、精密仪器维护等场景。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-green-400">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 定制尺寸</span>
+          </div>
+          <a href="#" class="inline-block bg-green-500 text-zinc-900 px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">精准凹槽</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">基于精密螺丝刀实物精准测量，每一把都有专属位置。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">ESD 安全</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">ESD 防静电设计，保护精密电子元件免受静电损伤。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">磁吸定位</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">磁吸式嵌入设计，工具放入自动对齐，稳固不晃动。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">便携设计</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">盒体轻巧便携，适合现场维修和实验室使用。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="Wera" material="PETG（环保无毒）" compatibility="精密螺丝刀套装（Y型/十字/六角等）" features={["精准凹槽", "ESD安全", "磁吸定位", "便携设计"]} />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/storage/precision/IMG_4850.webp" alt="精密螺丝刀 收纳盒 1" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/precision/IMG_4851.webp" alt="精密螺丝刀 收纳盒 2" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/precision/IMG_4880.webp" alt="精密螺丝刀 收纳盒 3" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/precision/IMG_4881.webp" alt="精密螺丝刀 收纳盒 4" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

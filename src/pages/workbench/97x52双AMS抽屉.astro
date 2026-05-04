@@ -1,0 +1,61 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "97x52 双AMS抽屉 | ruimakes";
+const pageDesc = "970×520mm 双 AMS 抽屉工作台，集成双抽板模块，工具抽屉设计，适合进阶用户。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="bg-zinc-800 border border-border-zinc rounded-sm aspect-video flex items-center justify-center">
+          <span class="text-zinc-600 text-sm uppercase tracking-widest">产品图片待上传</span>
+        </div>
+        <div>
+          <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            97x52 <span class="text-wera-green">双AMS抽屉</span>
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            970×520mm 双 AMS 抽屉工作台，集成双 AMS 抽板模块，底部工具抽屉设计，50kg 承重，适合进阶用户。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-wera-green">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 含安装配件</span>
+          </div>
+          <a href="#" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">双 AMS 抽板</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">集成双 AMS 抽板模块，多色打印线材管理更高效。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">工具抽屉</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">底部工具抽屉，常用配件触手可及，硅胶衬垫保护。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">50kg 承重</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">加厚 PETG-CF 材质，航空级结构设计。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">进阶之选</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">功能全面，扩展性强，满足进阶用户需求。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="BambuLab" material="PETG-CF (碳纤维增强)" compatibility="Bambu Lab X1 / P1 / A1 系列" features={["双AMS抽板", "工具抽屉", "50kg承重", "进阶之选"]} />
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

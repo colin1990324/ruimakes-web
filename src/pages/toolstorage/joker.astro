@@ -1,0 +1,70 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "Joker钳子-洞洞板 | ruimakes";
+const pageDesc = "为 Wera Joker 钳子设计的洞洞板收纳系统，磁吸定位，专位专用，让钳子墙成为视觉焦点。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img src="/images/storage/joker/IMG_6331.webp" alt="Joker钳子-洞洞板 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-green-400 mb-3 uppercase tracking-widest font-bold">Tool Organization</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            <span class="text-green-400">Joker</span> 钳子-洞洞板
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            为 Wera Joker 钳子设计的洞洞板收纳系统。磁吸定位，专位专用，每一个凹槽都经过精密测量，确保钳子"咔哒"一声完美就位。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-green-400">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 定制尺寸</span>
+          </div>
+          <a href="#" class="inline-block bg-green-500 text-zinc-900 px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">专位专用</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">基于 Joker 钳子实物 1:1 建模，完美贴合钳身曲线。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">磁吸定位</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">磁吸式嵌入设计，放入时自动对齐，稳固不晃动。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">洞洞板展示</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">挂在墙上既是收纳也是展示，工作坊的视觉焦点。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">Wera 绿配色</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">精准还原 Wera 标志性绿色，不仅是收纳更是品牌致敬。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="Wera" material="PETG（环保无毒）" compatibility="Wera Joker 钳子系列" features={["专位专用", "磁吸定位", "洞洞板展示", "Wera绿配色"]} />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/storage/joker/IMG_6331.webp" alt="Joker钳子 洞洞板 1" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/joker/IMG_6332.webp" alt="Joker钳子 洞洞板 2" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/joker/IMG_6272.webp" alt="Joker钳子 洞洞板 3" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/joker/IMG_6273.webp" alt="Joker钳子 洞洞板 4" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/joker/IMG_6274.webp" alt="Joker钳子 洞洞板 5" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

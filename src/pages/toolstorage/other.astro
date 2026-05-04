@@ -1,0 +1,69 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "其他-洞洞板 | ruimakes";
+const pageDesc = "通用工具洞洞板收纳系统，模块化设计，兼容多种工具品牌，打造个性化工具墙。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img src="/images/storage/other/IMG_6301.webp" alt="其他-洞洞板 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-green-400 mb-3 uppercase tracking-widest font-bold">Tool Organization</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            <span class="text-green-400">其他</span> 洞洞板
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            通用工具洞洞板收纳系统，模块化设计理念，兼容多种工具品牌和型号。自由组合凹槽，打造专属于你的个性化工具墙。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-green-400">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 定制尺寸</span>
+          </div>
+          <a href="#" class="inline-block bg-green-500 text-zinc-900 px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">模块化设计</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">标准模块化单元，可根据工具种类自由组合凹槽。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">多品牌兼容</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">兼容 Wera / PB Swiss / Knipex 等多种品牌工具。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">洞洞板展示</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">挂在墙上既是收纳也是展示，工作坊的视觉焦点。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">个性化定制</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">根据你的工具清单定制凹槽，确保每一把工具都有专属位置。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="Wera" material="PETG（环保无毒）" compatibility="多品牌工具兼容" features={["模块化设计", "多品牌兼容", "洞洞板展示", "个性化定制"]} />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/storage/other/IMG_6301.webp" alt="其他-洞洞板 1" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/other/IMG_6302.webp" alt="其他-洞洞板 2" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/other/IMG_6303.webp" alt="其他-洞洞板 3" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/other/IMG_6305.webp" alt="其他-洞洞板 4" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>

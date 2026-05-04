@@ -1,0 +1,67 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "内六角-梅花-洞洞板 | ruimakes";
+const pageDesc = "内六角与梅花扳手洞洞板壁挂收纳，墙面展示与功能统一，磁吸定位。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img src="/images/storage/hex-spade-board/IMG_6300.webp" alt="内六角-梅花-洞洞板 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-green-400 mb-3 uppercase tracking-widest font-bold">Tool Organization</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            <span class="text-green-400">内六角-梅花</span> 洞洞板
+          </h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            内六角与梅花扳手洞洞板壁挂收纳系统。挂在墙上既是收纳也是展示，墙面空间高效利用，工具取用一目了然。
+          </p>
+          <div class="flex items-center gap-4 mb-8">
+            <span class="text-2xl font-bold text-green-400">¥1 咨询</span>
+            <span class="text-zinc-500 text-sm">/ 定制尺寸</span>
+          </div>
+          <a href="#" class="inline-block bg-green-500 text-zinc-900 px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">洞洞板壁挂</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">壁挂式安装，墙面空间高效利用，工作坊更整洁。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">两用收纳</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">内六角与梅花扳手两用设计，一块板子收纳多种工具。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">磁吸定位</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">磁吸式嵌入设计，工具放入自动对齐，稳固不晃动。</p>
+      </div>
+      <div class="bg-card-bg border border-green-500 rounded-sm p-6">
+        <h3 class="text-lg font-bold text-green-400 mb-3">展示功能</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">挂在墙上既是收纳也是展示，工具墙成为视觉焦点。</p>
+      </div>
+    </div>
+
+    <ProductSpecs brand="Wera" material="PETG（环保无毒）" compatibility="内六角/梅花扳手套装" features={["洞洞板壁挂", "两用收纳", "磁吸定位", "展示功能"]} />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/storage/hex-spade-board/IMG_6300.webp" alt="内六角-梅花-洞洞板 1" class="rounded-sm border border-border-zinc" />
+      <img src="/images/storage/hex-spade-board/IMG_6309.webp" alt="内六角-梅花-洞洞板 2" class="rounded-sm border border-border-zinc" />
+    </div>
+  </main>
+
+  <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+    &copy; 2026 RUIMAKES SECURITY LABS // RUIS-MBP-15
+  </footer>
+</Layout>
