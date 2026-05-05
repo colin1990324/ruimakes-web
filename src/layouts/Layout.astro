@@ -1,4 +1,6 @@
 ---
+import Navbar from '../components/Navbar.astro';
+
 interface Props {
   title: string;
   description?: string;
@@ -22,6 +24,7 @@ const { title, description = '精密工具的数字伴侣 - 3D打印收纳与拓
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="bg-bg-dark text-zinc-100 font-mono min-h-screen flex flex-col">
+  <Navbar />
   <slot />
 </body>
 </html>

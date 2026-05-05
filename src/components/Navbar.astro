@@ -1,0 +1,144 @@
+---
+// Navigation Component
+const navItems = [
+  {
+    label: 'Workstation',
+    href: '/workbench',
+    children: [
+      { label: '85x40', href: '/workbench/85x40费斯托x3' },
+      { label: '97x52', href: '/workbench/97x52费斯托x4' },
+      { label: '105x52', href: '/workbench/105x52' },
+      { label: '120x52', href: '/workbench/120x52' },
+      { label: '144x52', href: '/workbench/144x52' },
+    ]
+  },
+  {
+    label: 'Tool Storage',
+    href: '/toolstorage',
+    children: [
+      { label: 'Joker', href: '/toolstorage/joker' },
+    ]
+  },
+  {
+    label: 'Ruimakes',
+    href: '#',
+    children: [
+      { label: '品牌介绍', href: '/about' },
+      { label: '淘宝', href: 'https://shop.taobao.com', external: true },
+      { label: '小红书', href: 'https://xiaohongshu.com', external: true },
+      { label: '拼多多', href: 'https://pinduoduo.com', external: true },
+      { label: '咸鱼', href: 'https://2.taobao.com', external: true },
+    ]
+  },
+  {
+    label: 'Help',
+    href: '#',
+    children: [
+      { label: '购买流程', href: '/help#流程' },
+      { label: '配送说明', href: '/help#配送' },
+      { label: '售后服务', href: '/help#售后' },
+      { label: '联系客服', href: '/help#联系' },
+    ]
+  },
+];
+
+const { pathname } = Astro.url;
+---
+
+<header class="fixed top-0 left-0 right-0 h-16 bg-zinc-900 border-b border-border-zinc z-50">
+  <nav class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+    <!-- Left: Logo + Nav Items -->
+    <div class="flex items-center gap-8">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/images/logo/logRuiMakes.webp" alt="Ruimakes" class="h-10" />
+      </a>
+
+      <div class="hidden md:flex items-center gap-6">
+        {navItems.slice(0, 2).map(item => (
+          <div class="relative group">
+            {item.children ? (
+              <>
+                <button class="flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+                  {item.label}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div class="absolute top-full left-0 mt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block">
+                  {item.children.map(child => (
+                    <a
+                      href={child.href}
+                      class:list={[
+                        "block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700",
+                        { "text-wera-green": pathname === child.href }
+                      ]}
+                      {...(child.external ? { target: "_blank", rel: "noopener" } : {})}
+                    >
+                      {child.label}
+                    </a>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <a
+                href={item.href}
+                class:list={[
+                  "text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors",
+                  { "text-wera-green": pathname === item.href }
+                ]}
+              >
+                {item.label}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Right: Ruimakes + Help + Lang Switch -->
+    <div class="flex items-center gap-6">
+      <div class="hidden md:flex items-center gap-6">
+        {navItems.slice(2).map(item => (
+          <div class="relative group">
+            {item.children ? (
+              <>
+                <button class="flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+                  {item.label}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div class="absolute top-full right-0 mt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block">
+                  {item.children.map(child => (
+                    <a
+                      href={child.href}
+                      class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700"
+                      {...(child.external ? { target: "_blank", rel: "noopener" } : {})}
+                    >
+                      {child.label}
+                    </a>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <a
+                href={item.href}
+                class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors"
+              >
+                {item.label}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <!-- Language Switch -->
+      <button class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+        <span class="text-wera-green">中</span>/<span class="text-zinc-500">EN</span>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<!-- Spacer for fixed header -->
+<div class="h-16"></div>
