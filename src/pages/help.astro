@@ -1,0 +1,139 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const pageTitle = "帮助中心 | ruimakes";
+const pageDesc = "Ruimakes 购买流程、配送说明、售后服务、联系客服";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-extrabold text-zinc-100 mb-12">帮助中心</h1>
+    
+    <!-- 目录 -->
+    <div class="flex flex-wrap gap-4 mb-12">
+      <a href="#流程" class="px-4 py-2 bg-zinc-800 border border-border-zinc rounded-sm text-zinc-300 hover:text-wera-green hover:border-wera-green transition-colors">
+        购买流程
+      </a>
+      <a href="#配送" class="px-4 py-2 bg-zinc-800 border border-border-zinc rounded-sm text-zinc-300 hover:text-wera-green hover:border-wera-green transition-colors">
+        配送说明
+      </a>
+      <a href="#售后" class="px-4 py-2 bg-zinc-800 border border-border-zinc rounded-sm text-zinc-300 hover:text-wera-green hover:border-wera-green transition-colors">
+        售后服务
+      </a>
+      <a href="#联系" class="px-4 py-2 bg-zinc-800 border border-border-zinc rounded-sm text-zinc-300 hover:text-wera-green hover:border-wera-green transition-colors">
+        联系客服
+      </a>
+    </div>
+    
+    <!-- 购买流程 -->
+    <section id="流程" class="mb-16 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-zinc-100 mb-6 flex items-center gap-3">
+        <span class="text-wera-green">01</span> 购买流程
+      </h2>
+      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-6">
+        <ol class="space-y-6 text-zinc-300">
+          <li class="flex gap-4">
+            <span class="text-wera-green font-bold">1.</span>
+            <div>
+              <div class="font-bold text-zinc-100 mb-1">选择产品</div>
+              <p class="text-zinc-400 text-sm">在店铺中选择您需要的工具收纳产品，或联系客服定制。</p>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="text-wera-green font-bold">2.</span>
+            <div>
+              <div class="font-bold text-zinc-100 mb-1">确认订单</div>
+              <p class="text-zinc-400 text-sm">客服确认产品配置、价格和交货时间。</p>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="text-wera-green font-bold">3.</span>
+            <div>
+              <div class="font-bold text-zinc-100 mb-1">支付</div>
+              <p class="text-zinc-400 text-sm">通过淘宝/小红书/闲鱼/拼多多支付定金或全款。</p>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="text-wera-green font-bold">4.</span>
+            <div>
+              <div class="font-bold text-zinc-100 mb-1">生产发货</div>
+              <p class="text-zinc-400 text-sm">定制产品5-7天发货，现货1-2天发货。散件发货，需DIY组装。</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+    
+    <!-- 配送说明 -->
+    <section id="配送" class="mb-16 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-zinc-100 mb-6 flex items-center gap-3">
+        <span class="text-wera-green">02</span> 配送说明
+      </h2>
+      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-6 space-y-4">
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">发货方式</div>
+          <p class="text-zinc-400 text-sm">散件发货，DIY组装（类似拼乐高），���含详细安装视频和图纸。</p>
+        </div>
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">配件</div>
+          <p class="text-zinc-400 text-sm">所有产品含安装配件，部分产品需自备内角扳手和手电钻（随产品附送3mm钻头）。</p>
+        </div>
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">发货时效</div>
+          <p class="text-zinc-400 text-sm">定制产品5-7天发货，部分产品有现货（需与客服确认）。</p>
+        </div>
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">运费</div>
+          <p class="text-zinc-400 text-sm">全国大部分地区包邮（偏远地区除外）。</p>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 售后服务 -->
+    <section id="售后" class="mb-16 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-zinc-100 mb-6 flex items-center gap-3">
+        <span class="text-wera-green">03</span> 售后服务
+      </h2>
+      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-6 space-y-4">
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">质保期限</div>
+          <p class="text-zinc-400 text-sm">铝型材框架结构终身质保，实木桌面/配件因人为损坏不在质保范围内。</p>
+        </div>
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">免费维修</div>
+          <p class="text-zinc-400 text-sm">非人为损坏的框架结构问题，提供免费维修或更换。</p>
+        </div>
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">配件更换</div>
+          <p class="text-zinc-400 text-sm">配件（如福马轮、地脚等）损坏可单独购买更换。</p>
+        </div>
+        <div>
+          <div class="font-bold text-zinc-100 mb-2">颜色差异</div>
+          <p class="text-zinc-400 text-sm">实木桌面存在天然色差，属于正常现象。</p>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 联系客服 -->
+    <section id="联系" class="mb-16 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-zinc-100 mb-6 flex items-center gap-3">
+        <span class="text-wera-green">04</span> 联系客服
+      </h2>
+      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-6">
+        <p class="text-zinc-400 mb-6">
+          如有任何问题，欢迎通过以下渠道联系我们：
+        </p>
+        <div class="grid md:grid-cols-2 gap-4">
+          <a href="/contact" class="p-4 bg-zinc-900 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+            <div class="font-bold text-zinc-100">在线客服</div>
+            <p class="text-zinc-500 text-sm">淘宝/小红书/闲鱼/拼多多店铺</p>
+          </a>
+          <a href="tel:" class="p-4 bg-zinc-900 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+            <div class="font-bold text-zinc-100">电话</div>
+            <p class="text-zinc-500 text-sm">点击拨打</p>
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
