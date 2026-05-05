@@ -13,84 +13,118 @@ const pageDesc = "联系Ruimakes - 淘宝、小红书、闲鱼、拼多多购买
       您可以通过以下渠道联系我们或购买产品：
     </p>
     
-    <!-- 淘宝 -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold text-zinc-100 mb-4 flex items-center gap-2">
-        <img src="https://img.icons8.com/color/24/taobao.png" alt="淘宝" class="w-6 h-6" />
-        淘宝
-      </h2>
-      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-4">
-        <p class="text-zinc-400 text-sm mb-2">店铺：ruimakes</p>
-        <a href="https://shop576260935.taobao.com" target="_blank" rel="noopener" class="text-wera-green hover:underline">
-          https://shop576260935.taobao.com
-        </a>
-      </div>
-    </div>
-    
-    <!-- 小红书 -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold text-zinc-100 mb-4 flex items-center gap-2">
-        <img src="https://img.icons8.com/color/24/xiaohongshu.png" alt="小红书" class="w-6 h-6" />
-        小红书
-      </h2>
-      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-4">
-        <p class="text-zinc-400 text-sm mb-2">推荐好店 Ruimakes</p>
-        <a href="https://www.xiaohongshu.com/shop/67d62c9a5287a700159fb828" target="_blank" rel="noopener" class="text-wera-green hover:underline">
-          https://www.xiaohongshu.com/shop/67d62c9a5287a700159fb828
-        </a>
-      </div>
-    </div>
-    
-    <!-- 闲鱼 -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold text-zinc-100 mb-4 flex items-center gap-2">
-        <span>闲鱼</span>
-      </h2>
-      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-4">
-        <a href="https://www.goofish.com/personal?userId=21951193" target="_blank" rel="noopener" class="text-wera-green hover:underline">
-          https://www.goofish.com/personal?userId=21951193
-        </a>
-      </div>
-    </div>
-    
-    <!-- 拼多多 -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold text-zinc-100 mb-4 flex items-center gap-2">
-        <span>拼多多</span>
-      </h2>
-      <div class="bg-zinc-800 border border-border-zinc rounded-sm p-4">
-        <a href="https://mobile.yangkeduo.com/mall_page.html?_x_org=2&_x_query=ruimakes" target="_blank" rel="noopener" class="text-wera-green hover:underline">
-          https://mobile.yangkeduo.com/mall_page.html?_x_query=ruimakes
-        </a>
-      </div>
-    </div>
-    
-    <!-- 移动端快捷方式 -->
-    <div class="mt-12 p-6 bg-zinc-800 border border-border-zinc rounded-sm">
-      <h2 class="text-xl font-bold text-zinc-100 mb-4">移动端购买</h2>
+    <!-- PC端链接 -->
+    <div class="hidden md:grid grid-cols-2 gap-4 mb-8">
+      <a href="https://shop576260935.taobao.com" target="_blank" rel="noopener" 
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.5 16.5c-1.5 0-3-1.5-3-3s1.5-3 3-3 3 1.5 3 3-1.5 3-3 3zm-3-6c-1.5 0-3-1.5-3-3s1.5-3 3-3 3 1.5 3 3-1.5 3-3 3zm-3-6c-1.5 0-3-1.5-3-3s1.5-3 3-3 3 1.5 3 3-1.5 3-3 3z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">淘宝</div>
+          <div class="text-sm text-zinc-500">shop576260935.taobao.com</div>
+        </div>
+      </a>
       
-      <div class="space-y-4">
-        <div class="text-zinc-400 text-sm">
-          <p class="mb-2">【淘宝】复制以下内容打开淘宝：</p>
-          <code class="block bg-zinc-900 p-2 rounded text-wera-green text-xs break-all">
-            39🔐9zVU5Ns32zU🔐 https://m.tb.cn/h.iycYpTitezOkBuW CZ005 ruimakes
-          </code>
+      <a href="https://www.xiaohongshu.com/shop/67d62c9a5287a700159fb828" target="_blank" rel="noopener"
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.5 14.5c-.5 1-1.5 1.5-2.5 1.5s-2-.5-2.5-1.5c-.5-1 .5-2 1.5-2.5.5-.5 1.5-.5 2-.5s1.5 0 2 .5c1 .5 2 1.5 1.5 2.5z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">小红书</div>
+          <div class="text-sm text-zinc-500">Ruimakes 官方店铺</div>
         </div>
-        
-        <div class="text-zinc-400 text-sm">
-          <p class="mb-2">【小红书】复制以下内容打开小红书：</p>
-          <code class="block bg-zinc-900 p-2 rounded text-wera-green text-xs break-all">
-            21件商品热卖中 😆 AHExuDGSnTY 😆 https://xhslink.com/m/A5vJFcVU9HR
-          </code>
+      </a>
+      
+      <a href="https://www.goofish.com/personal?userId=21951193" target="_blank" rel="noopener"
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-yellow-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">闲鱼</div>
+          <div class="text-sm text-zinc-500">ruimakes</div>
         </div>
-        
-        <div class="text-zinc-400 text-sm">
-          <p class="mb-2">【闲鱼】打开链接查看：</p>
-          <a href="https://m.tb.cn/h.iDPRu2z?tk=AiB85NsP2ZB" class="text-wera-green hover:underline text-xs">
-            https://m.tb.cn/h.iDPRu2z?tk=AiB85NsP2ZB
-          </a>
+      </a>
+      
+      <a href="https://mobile.yangkeduo.com/mall_page.html?_x_org=2&_x_query=ruimakes" target="_blank" rel="noopener"
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm2 16l-4-4 1.414-1.414L12 12.172l6.586-6.586L20 7l-8 8z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">拼多多</div>
+          <div class="text-sm text-zinc-500">Ruimakes 官方商城</div>
         </div>
-      </div>
+      </a>
+    </div>
+    
+    <!-- 移动端 Deep Link -->
+    <div class="md:hidden space-y-4">
+      <a href="taobao://shop576260935" 
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">淘宝</div>
+          <button class="text-xs text-zinc-500 mt-1" data-copy="39🔐9zVU5Ns32zU🔐 https://m.tb.cn/h.iycYpTitezOkBuW CZ005 ruimakes">点击复制</button>
+        </div>
+      </a>
+      
+      <a href="xhslink://"
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">小红书</div>
+          <button class="text-xs text-zinc-500 mt-1" data-copy="Ruimakes，21件商品热卖中 https://xhslink.com/m/A5vJFcVU9HR">点击复制</button>
+        </div>
+      </a>
+      
+      <a href="suning://"
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-yellow-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">闲鱼</div>
+          <button class="text-xs text-zinc-500 mt-1" data-copy="https://m.tb.cn/h.iDPRu2z?tk=AiB85NsP2ZB">点击复制</button>
+        </div>
+      </a>
+      
+      <a href="pinduoduo://"
+         class="flex items-center gap-4 p-4 bg-zinc-800 border border-border-zinc rounded-sm hover:border-wera-green transition-colors">
+        <svg class="w-8 h-8 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/>
+        </svg>
+        <div>
+          <div class="font-bold text-zinc-100">拼多多</div>
+          <button class="text-xs text-zinc-500 mt-1" data-copy="https://mobile.yangkeduo.com/mall_page.html?_x_query=ruimakes">点击复制</button>
+        </div>
+      </a>
+    </div>
+    
+    <div class="mt-12 p-6 bg-zinc-800 border border-border-zinc rounded-sm">
+      <h2 class="text-xl font-bold text-zinc-100 mb-4">复制说明</h2>
+      <p class="text-zinc-400 text-sm">
+        点击「点击复制」按钮后，打开对应APP即可自动粘贴内容。
+      </p>
     </div>
   </div>
+  
+  <script>
+    document.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const text = btn.dataset.copy;
+        await navigator.clipboard.writeText(text);
+        btn.textContent = '已复制!';
+        setTimeout(() => {
+          btn.textContent = '点击复制';
+        }, 2000);
+      });
+    });
+  </script>
 </Layout>
