@@ -1,0 +1,36 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const pageTitle = "工作台系列 | ruimakes";
+const pageDesc = "拓竹 Bambu Lab 工作台系列 - 85x40 / 97x52 / 105x52 / 120x52 / 144x52";
+
+const workstationProducts = [
+  { title: '85x40', subtitle: '费斯托x3', href: '/workbench/85x40费斯托x3', img: '/images/workstation/85x40x3-效果图.webp' },
+  { title: '97x52', subtitle: '费斯托x4', href: '/workbench/97x52费斯托x4', img: '/images/workstation/97长度 x.webp' },
+  { title: '105x52', subtitle: 'AMSx2', href: '/workbench/105x52', img: '/images/workstation/105-52-主图-白底正视图.webp' },
+  { title: '120x52', subtitle: '费斯托x4', href: '/workbench/120x52', img: '/images/workstation/120-52-效果图.webp' },
+  { title: '144x52', subtitle: '费斯托x5', href: '/workbench/144x52', img: '/images/workstation/144-52-效果图.webp' },
+];
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="max-w-5xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-extrabold text-zinc-100 mb-8">
+      Workstation <span class="text-wera-green">Series</span>
+    </h1>
+    
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {workstationProducts.map(product => (
+        <a href={product.href} class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src={product.img} alt={product.title} class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">{product.title}</h3>
+            <p class="text-zinc-500 text-xs truncate">{product.subtitle}</p>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</Layout>

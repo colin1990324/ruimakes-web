@@ -1,0 +1,42 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const pageTitle = "工具收纳系列 | ruimakes";
+const pageDesc = "工具收纳系列 - ToolCheckPlus、内六角、梅花、Zyklop、棘轮螺丝刀等";
+
+const storageProducts = [
+  { title: 'ToolCheckPlus', href: '/toolstorage/toolcheckplus', img: '/images/storage/IMG_7869.webp' },
+  { title: '内六角收纳盒', href: '/toolstorage/hex', img: '/images/storage/hex/IMG_4582.webp' },
+  { title: '梅花收纳盒', href: '/toolstorage/torx', img: '/images/storage/torx/IMG_4635.webp' },
+  { title: 'Zyklop收纳盒', href: '/toolstorage/zyklop', img: '/images/storage/zyklop/小飞-8100SA6-28件套/IMG_7166.webp' },
+  { title: '棘轮螺丝刀收纳盒', href: '/toolstorage/rachet', img: '/images/storage/rachet/816RA/IMG_6682.webp' },
+  { title: '精密螺丝刀收纳盒', href: '/toolstorage/precision', img: '/images/storage/precision/IMG_4850.webp' },
+  { title: '批头插座', href: '/toolstorage/bit', img: '/images/storage/bit/IMG_5524.webp' },
+  { title: '内六角-梅花插座', href: '/toolstorage/hex-spade', img: '/images/storage/hex-spade/实拍图/IMG_6186.webp' },
+  { title: 'PB收纳盒', href: '/toolstorage/pb-hex', img: '/images/storage/pb-hex/IMG_5948.webp' },
+  { title: 'joker-洞洞板', href: '/toolstorage/joker', img: '/images/storage/joker/IMG_6331.webp' },
+  { title: '钳子-洞洞板', href: '/toolstorage/knipex', img: '/images/storage/knipex/IMG_6269.webp' },
+  { title: '其他-洞洞板', href: '/toolstorage/other', img: '/images/storage/other/IMG_6301.webp' },
+];
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="max-w-5xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-extrabold text-zinc-100 mb-8">
+      Tool Storage <span class="text-wera-green">Series</span>
+    </h1>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {storageProducts.map(product => (
+        <a href={product.href} class="group block bg-card-bg border border-border-zinc rounded-sm overflow-hidden hover:border-wera-green transition-all duration-300">
+          <div class="aspect-video bg-zinc-900 relative overflow-hidden">
+            <img src={product.img} alt={product.title} class="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-bold text-zinc-100 group-hover:text-wera-green transition-colors">{product.title}</h3>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</Layout>
