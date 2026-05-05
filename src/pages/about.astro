@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const pageTitle = "品牌介绍 | ruimakes";
+const pageDesc = "Ruimakes - 精密工具的数字伴侣，基于Bambu Lab精密制造逻辑，为Wera/PB Swiss/Knipex等顶级工具构建数字时代的物理秩序。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <h1 class="text-4xl font-extrabold text-zinc-100 mb-8">
+      <span class="text-wera-green">Rui</span>makes
+    </h1>
+    
+    <div class="prose prose-invert max-w-none">
+      <p class="text-xl text-zinc-300 mb-8">
+        精密工具的数字伴侣
+      </p>
+      
+      <p class="text-zinc-400 mb-6">
+        基于 <strong class="text-zinc-200">Bambu Lab</strong> 的精密制造逻辑，为 <strong class="text-zinc-200">Wera / PB Swiss / Knipex</strong> 等顶级工具构建数字时代的物理秩序。
+      </p>
+      
+      <p class="text-zinc-400 mb-6">
+        我们相信：每一个工具都值得被精心对待。Ruimakes 致力于为专业工具提供专业收纳解决方案，让您的工具始终保持最佳状态。
+      </p>
+      
+      <h2 class="text-2xl font-bold text-zinc-100 mt-12 mb-4">我们的理念</h2>
+      <ul class="space-y-4 text-zinc-400">
+        <li class="flex items-start gap-3">
+          <span class="text-wera-green">▸</span>
+          <span><strong class="text-zinc-200">Precision</strong> — 精确设计，每一处细节都经过精密计算</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-wera-green">▸</span>
+          <span><strong class="text-zinc-200">Quality</strong> — 甄选材料，只为最优质的打印件</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-wera-green">▸</span>
+          <span><strong class="text-zinc-200">Design</strong> — 工业美学，让收纳成为艺术</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-wera-green">▸</span>
+          <span><strong class="text-zinc-200">Function</strong> — 功能至上，美貌与实用并存</span>
+        </li>
+      </ul>
+      
+      <h2 class="text-2xl font-bold text-zinc-100 mt-12 mb-4">支持的品牌</h2>
+      <div class="flex flex-wrap gap-4">
+        <span class="px-4 py-2 bg-zinc-800 border border-green-500 text-green-400 rounded-sm">Wera</span>
+        <span class="px-4 py-2 bg-zinc-800 border border-red-600 text-red-500 rounded-sm">PB Swiss</span>
+        <span class="px-4 py-2 bg-zinc-800 border border-blue-500 text-blue-400 rounded-sm">Knipex</span>
+        <span class="px-4 py-2 bg-zinc-800 border border-zinc-500 text-zinc-300 rounded-sm">Bambu Lab</span>
+      </div>
+    </div>
+  </div>
+</Layout>
