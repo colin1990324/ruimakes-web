@@ -55,76 +55,84 @@ const { pathname } = Astro.url;
 
 <header class="fixed top-0 left-0 right-0 h-16 bg-zinc-900 border-b border-border-zinc z-50">
   <nav class="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
-    <!-- Left: Logo -->
-    <a href="/" class="flex items-center gap-2">
-      <img src="/images/logo/logRuiMakes-s.webp" alt="Ruimakes" class="h-8 md:h-10" />
-    </a>
+    <!-- Left: Logo + Nav Items -->
+    <div class="flex items-center gap-2 md:gap-6">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/images/logo/logRuiMakes-s.webp" alt="Ruimakes" class="h-8 md:h-10" />
+      </a>
 
-    <!-- Center/Nav Items -->
-    <div class="hidden md:flex items-center gap-6">
-      {navItems.slice(0, 2).map(item => (
-        <div class="relative group">
-          {item.children ? (
-            <>
-              <button class="flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
-                {item.label}
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <div class="absolute top-full left-0 mt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block z-50">
-                {item.children.map(child => (
-                  <a href={child.href} class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700">
-                    {child.label}
-                  </a>
-                ))}
-              </div>
-            </>
-          ) : (
-            <a href={item.href} class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+      <!-- Nav Items - PC端显示在logo旁边 -->
+      <div class="hidden md:flex items-center gap-4">
+        {navItems.slice(0, 2).map(item => (
+          <div class="relative group">
+            <button class="nav-trigger flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
               {item.label}
-            </a>
-          )}
-        </div>
-      ))}
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <!-- 下拉菜单 - 增加足够的间距让鼠标可以移动到菜单 -->
+            <div class="nav-menu absolute top-full left-0 mt-1 pt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block z-50">
+              {item.children?.map(child => (
+                <a href={child.href} class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700">
+                  {child.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
 
     <!-- Right Section -->
-    <div class="flex items-center gap-4">
-      <!-- Mobile: Show first level items directly if no children -->
+    <div class="flex items-center gap-2 md:gap-4">
+      <!-- Mobile: Show Workstation/Tool Storage links -->
       <div class="flex md:hidden items-center gap-2">
-        {navItems.slice(0, 2).map((item, idx) => (
-          <a href={item.href || item.children?.[0]?.href} class="text-xs font-bold text-zinc-300 hover:text-wera-green whitespace-nowrap">
-            {item.label}
-          </a>
-        ))}
+        <a href="/workbench" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Workstation</a>
+        <a href="/toolstorage" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Tool Storage</a>
       </div>
       
-      {navItems.slice(2).map((item, idx) => (
-        <div class="hidden md:block relative group">
-          <button class="flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
-            {item.label}
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div class="absolute top-full right-0 mt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block z-50">
-            {item.children?.map(child => (
-              <a href={child.href} class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700">
-                {child.label}
-              </a>
-            ))}
+      <!-- PC Right: Ruimakes + Help -->
+      <div class="hidden md:flex items-center gap-4">
+        {navItems.slice(2).map(item => (
+          <div class="relative group">
+            <button class="nav-trigger flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+              {item.label}
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="nav-menu absolute top-full right-0 mt-1 pt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block z-50">
+              {item.children?.map(child => (
+                <a href={child.href} class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700">
+                  {child.label}
+                </a>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      <!-- Language Switch -->
-      <button class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
-        <span class="text-wera-green">中</span>/<span class="text-zinc-500">EN</span>
-      </button>
+        <!-- Language Switch -->
+        <button class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+          <span class="text-wera-green">中</span>/<span class="text-zinc-500">EN</span>
+        </button>
+      </div>
     </div>
   </nav>
 </header>
 
 <!-- Spacer -->
 <div class="h-16"></div>
+
+<style>
+  /* 确保下拉菜单和触发按钮之间有足够的空间 */
+  .nav-trigger {
+    padding-bottom: 8px;
+  }
+  .nav-menu {
+    /* 增加上邊距，填補鼠標準和菜單之間的間隙 */
+    padding-top: 8px;
+    /* 確保鼠標可以穿過這個區域 */
+    pointer-events: auto;
+  }
+</style>
