@@ -32,7 +32,7 @@ const navItems = [
   },
   {
     label: 'Ruimakes',
-    href: '#',
+    href: '/about',
     children: [
       { label: '品牌介绍', href: '/about' },
       { label: '联系我们', href: '/contact' },
@@ -40,7 +40,7 @@ const navItems = [
   },
   {
     label: 'Help',
-    href: '#',
+    href: '/help',
     children: [
       { label: '购买流程', href: '/help#流程' },
       { label: '配送说明', href: '/help#配送' },
@@ -56,105 +56,75 @@ const { pathname } = Astro.url;
 <header class="fixed top-0 left-0 right-0 h-16 bg-zinc-900 border-b border-border-zinc z-50">
   <nav class="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
     <!-- Left: Logo -->
-    <div class="flex items-center gap-2 md:gap-4">
-      <a href="/" class="flex items-center gap-2">
-        <img src="/images/logo/logRuiMakes-s.webp" alt="Ruimakes" class="h-8 md:h-10" />
-      </a>
+    <a href="/" class="flex items-center gap-2">
+      <img src="/images/logo/logRuiMakes-s.webp" alt="Ruimakes" class="h-8 md:h-10" />
+    </a>
 
-      <!-- Nav Items - 移动端显示为可滚动横向菜单 -->
-      <div class="flex items-center gap-2 md:gap-4 overflow-x-auto max-w-[50vw] md:max-w-none">
-        {navItems.map((item, idx) => (
-          <div class="relative group">
-            {item.children ? (
-              <>
-                <button 
-                  class="nav-btn flex items-center gap-1 text-xs md:text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors whitespace-nowrap px-2 md:px-0"
-                  data-dropdown={idx}
-                >
-                  <span class="nav-label">{item.label}</span>
-                  <svg class="w-3 h-3 md:w-4 md:h-4 hidden md:inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div class="nav-dropdown absolute md:fixed top-full left-0 md:left-auto mt-1 md:mt-2 w-36 md:w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden" data-menu={idx}>
-                  {item.children.map(child => (
-                    <a
-                      href={child.href}
-                      class="block px-4 py-2 text-xs md:text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700 whitespace-nowrap"
-                      {...(child.external ? { target: "_blank", rel: "noopener" } : {})}
-                    >
-                      {child.label}
-                    </a>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <a
-                href={item.href}
-                class="text-xs md:text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors whitespace-nowrap px-2 md:px-0"
-              >
+    <!-- Center/Nav Items -->
+    <div class="hidden md:flex items-center gap-6">
+      {navItems.slice(0, 2).map(item => (
+        <div class="relative group">
+          {item.children ? (
+            <>
+              <button class="flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
                 {item.label}
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div class="absolute top-full left-0 mt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block z-50">
+                {item.children.map(child => (
+                  <a href={child.href} class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700">
+                    {child.label}
+                  </a>
+                ))}
+              </div>
+            </>
+          ) : (
+            <a href={item.href} class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+              {item.label}
+            </a>
+          )}
+        </div>
+      ))}
     </div>
 
-    <!-- Right: Language Switch -->
-    <button class="text-xs md:text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
-      <span class="text-wera-green">中</span>/<span class="text-zinc-500">EN</span>
-    </button>
+    <!-- Right Section -->
+    <div class="flex items-center gap-4">
+      <!-- Mobile: Show first level items directly if no children -->
+      <div class="flex md:hidden items-center gap-2">
+        {navItems.slice(0, 2).map((item, idx) => (
+          <a href={item.href || item.children?.[0]?.href} class="text-xs font-bold text-zinc-300 hover:text-wera-green whitespace-nowrap">
+            {item.label}
+          </a>
+        ))}
+      </div>
+      
+      {navItems.slice(2).map((item, idx) => (
+        <div class="hidden md:block relative group">
+          <button class="flex items-center gap-1 text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+            {item.label}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="absolute top-full right-0 mt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block z-50">
+            {item.children?.map(child => (
+              <a href={child.href} class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700">
+                {child.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <!-- Language Switch -->
+      <button class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
+        <span class="text-wera-green">中</span>/<span class="text-zinc-500">EN</span>
+      </button>
+    </div>
   </nav>
 </header>
 
-<!-- Spacer for fixed header -->
+<!-- Spacer -->
 <div class="h-16"></div>
-
-<script>
-  // 点击展开/关闭下拉菜单
-  const navBtns = document.querySelectorAll('.nav-btn');
-  const navDropdowns = document.querySelectorAll('.nav-dropdown');
-  
-  // 点击按钮切换菜单
-  navBtns.forEach((btn, idx) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      navDropdowns.forEach((menu, menuIdx) => {
-        if (menuIdx === idx) {
-          menu.classList.toggle('hidden');
-        } else {
-          menu.classList.add('hidden');
-        }
-      });
-    });
-  });
-  
-  // 点击其他地方关闭菜单
-  document.addEventListener('click', (e) => {
-    navDropdowns.forEach(menu => {
-      if (!menu.contains(e.target) && !e.target.closest('.nav-btn')) {
-        menu.classList.add('hidden');
-      }
-    });
-  });
-  
-  // 移动端的菜单点击后保持展开，方便点击子菜单
-  if (window.innerWidth < 768) {
-    navBtns.forEach((btn, idx) => {
-      btn.addEventListener('click', () => {
-        const menu = navDropdowns[idx];
-        if (menu.classList.contains('hidden')) {
-          menu.classList.remove('hidden');
-          // 确保菜单位置合适，能看到
-          menu.style.position = 'fixed';
-          menu.style.left = '0';
-          menu.style.top = '64px';
-          menu.style.width = '100%';
-          menu.style.maxHeight = 'calc(100vh - 64px)';
-          menu.style.overflowY = 'auto';
-        }
-      });
-    });
-  }
-</script>
