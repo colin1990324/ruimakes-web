@@ -67,4 +67,28 @@ const pageDesc = "1200×520×800mm 拓竹工作台，标配费斯托四只工具
       &copy; 2026 RUIMAKES ®️ DESIGN LABS // Driven by Openclaw
     </footer>
   </main>
+
+  <script>
+    setTimeout(function() {
+      const translations = {
+        "zh": {},
+        "en": {
+          "CTA": "Contact to Buy",
+          "Design": "Design Concept",
+          "Gallery": "Product Gallery"
+        }
+      };
+      const lang = new URLSearchParams(location.search).get("lang") || "zh";
+      if (lang === "en") {
+        document.querySelectorAll("#hero-cta").forEach(el => el.textContent = translations.en.CTA);
+        document.querySelectorAll("h2").forEach(el => {
+          if (el.textContent.includes("设计理念")) el.textContent = translations.en.Design;
+        });
+      }
+    }, 100);
+  </script>
+
+
+
+
 </Layout>

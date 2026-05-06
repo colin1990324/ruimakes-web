@@ -1,5 +1,10 @@
 ---
 // Navigation Component
+import LangSwitcher from './LangSwitcher.astro';
+
+const { searchParams } = Astro.url;
+const currentLang = searchParams.get('lang') || 'zh';
+
 const navItems = [
   {
     label: 'Workstation',
@@ -92,12 +97,9 @@ const { pathname } = Astro.url;
         <a href="/toolstorage" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Tool Storage</a>
         <a href="/about" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Ruimakes</a>
         <a href="/help" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Help</a>
-        <button class="text-xs font-bold text-zinc-300 hover:text-wera-green">
-          <span class="text-wera-green">中</span>/<span class="text-zinc-500">EN</span>
-        </button>
       </div>
       
-      <!-- PC Right: Ruimakes + Help -->
+      <!-- PC Right: Ruimakes + Help + Language -->
       <div class="hidden md:flex items-center gap-4">
         {navItems.slice(2).map(item => (
           <div class="relative group">
@@ -117,10 +119,8 @@ const { pathname } = Astro.url;
           </div>
         ))}
 
-        <!-- Language Switch -->
-        <button class="text-sm font-bold text-zinc-300 hover:text-wera-green transition-colors">
-          <span class="text-wera-green">中</span>/<span class="text-zinc-500">EN</span>
-        </button>
+        <!-- Language Switcher -->
+        <LangSwitcher currentLang={currentLang} />
       </div>
     </div>
   </nav>

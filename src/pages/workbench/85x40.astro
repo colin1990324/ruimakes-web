@@ -113,4 +113,28 @@ const pageDesc = "850×400×650mm / 850×520×650mm 拓竹工作台，标配费�
       });
     });
   </script>
+
+  <script>
+    setTimeout(function() {
+      const translations = {
+        "zh": {},
+        "en": {
+          "CTA": "Contact to Buy",
+          "Design": "Design Concept",
+          "Gallery": "Product Gallery"
+        }
+      };
+      const lang = new URLSearchParams(location.search).get("lang") || "zh";
+      if (lang === "en") {
+        document.querySelectorAll("#hero-cta").forEach(el => el.textContent = translations.en.CTA);
+        document.querySelectorAll("h2").forEach(el => {
+          if (el.textContent.includes("设计理念")) el.textContent = translations.en.Design;
+        });
+      }
+    }, 100);
+  </script>
+
+
+
+
 </Layout>

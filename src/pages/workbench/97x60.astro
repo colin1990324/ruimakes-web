@@ -58,4 +58,28 @@ const pageDesc = "970×600mm 超宽费斯托工作台，600mm 加深台面，四
   <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
     &copy; 2026 RUIMAKES ®️ DESIGN LABS // Driven by Openclaw
   </footer>
+
+  <script>
+    setTimeout(function() {
+      const translations = {
+        "zh": {},
+        "en": {
+          "CTA": "Contact to Buy",
+          "Design": "Design Concept",
+          "Gallery": "Product Gallery"
+        }
+      };
+      const lang = new URLSearchParams(location.search).get("lang") || "zh";
+      if (lang === "en") {
+        document.querySelectorAll("#hero-cta").forEach(el => el.textContent = translations.en.CTA);
+        document.querySelectorAll("h2").forEach(el => {
+          if (el.textContent.includes("设计理念")) el.textContent = translations.en.Design;
+        });
+      }
+    }, 100);
+  </script>
+
+
+
+
 </Layout>

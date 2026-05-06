@@ -1,0 +1,38 @@
+---
+// Language Switcher Component
+// URL: ?lang=zh or ?lang=en
+// Default: Chinese
+
+interface Props {
+  currentLang?: string;
+}
+
+const { currentLang = "zh" } = Astro.props;
+
+const languages = [
+  { code: "zh", name: "中文" },
+  { code: "en", name: "EN" },
+];
+
+function getSwitchUrl(code: string) {
+  const url = new URL(Astro.url.pathname, Astro.url.origin);
+  url.searchParams.set("lang", code);
+  return url.toString();
+}
+---
+
+<div class="lang-switcher flex items-center gap-2">
+  {languages.map((l) => (
+    <a
+      href={getSwitchUrl(l.code)}
+      class:list={[
+        "text-xs uppercase tracking-wider px-2 py-1 rounded transition-colors",
+        currentLang === l.code
+          ? "bg-wera-green text-bg-dark font-bold"
+          : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+      ]}
+    >
+      {l.name}
+    </a>
+  ))}
+</div>
