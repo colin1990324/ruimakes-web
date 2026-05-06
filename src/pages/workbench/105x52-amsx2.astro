@@ -73,37 +73,69 @@ const pageDesc = "1050×520×770mm 拓竹工作台，双AMS抽屉完全抽出式
 
   <script>
     setTimeout(function() {
-      const translations = {
+      // 完整翻译表
+      const t = {
         "zh": {},
         "en": {
           "CTA": "Contact to Buy",
-          "Design": "Design Concept",
+          "Design": "Design Concept", 
           "Gallery": "Product Gallery",
           "Specifications": "Specifications",
           "Dimensions": "Dimensions:",
           "Subtitle": "Festool x3 (P Series)",
-          "PriceSuffix": "/ Including Installation"
+          "PriceSuffix": "/ Including Installation",
+          // 设计理念卡片
+          "费斯托三工具箱": "Festool Tool Boxes",
+          "标配费斯托 M112+M137+M187 三只工具箱，取用工具更方便。": "Includes Festool M112+M137+M187 three tool boxes for easy access.",
+          "30L干燥箱适配": "30L Dry Box Fit",
+          "预留30L电子干燥箱位置（29×32×41.5cm），干燥耗材即取即用。": "Reserved 30L electronic dry box position (29×32×41.5cm), dry consumables ready to use.",
+          "200kg承重": "200kg Load Bearing",
+          "欧标3030Q铝型材框架，200kg稳固支撑，单台设备轻松承载。": "Euro 3030Q aluminum frame, 200kg stable support, single equipment easy load.",
+          "北美樱桃木桌面": "North American Cherry Wood Desktop",
+          "北美进口樱桃原木多拼，2cm厚台面，天然纹理温润有质感。": "North American imported cherry multi拼接, 2cm thick desktop, natural texture warm and textured.",
+          // Specifications
+          "Target": "Target:",
+          "Material": "Material:",
+          "Compatibility": "Compatibility:",
+          "Bambu Lab Ecosystem": "Bambu Lab Ecosystem",
+          "欧标3030Q铝型材 + 北美樱桃实木桌面": "Euro 3030Q Aluminum + North American Cherry Wood",
+          "P系列: X/P/A 系列, H系列: H/X/P/A 系列": "P Series: X/P/A Series, H Series: H/X/P/A Series"
         }
       };
       const lang = new URLSearchParams(location.search).get("lang") || "zh";
       if (lang === "en") {
-        // CTA 按钮
-        document.querySelectorAll("#hero-cta").forEach(el => el.textContent = translations.en.CTA);
+        // 翻译函数 - 替换匹配的中文
+        function translateElement(el, key) {
+          if (t.en[key]) el.textContent = t.en[key];
+        }
+        // CTA 
+        document.querySelectorAll("#hero-cta").forEach(el => el.textContent = t.en.CTA);
         // 副标题
         const subtitle = document.querySelector("#hero-subtitle");
-        if (subtitle) subtitle.textContent = translations.en.Subtitle;
+        if (subtitle && t.en[subtitle.textContent]) subtitle.textContent = t.en[subtitle.textContent];
         // 价格后缀
         const priceSuffix = document.querySelector("#hero-price-suffix");
-        if (priceSuffix) priceSuffix.textContent = translations.en.PriceSuffix;
-        // 标题 h2
+        if (priceSuffix) priceSuffix.textContent = t.en.PriceSuffix;
+        // 所有 h2 标题
         document.querySelectorAll("h2").forEach(el => {
-          if (el.textContent.includes("设计理念")) el.textContent = translations.en.Design;
-          if (el.textContent.includes("产品图赏")) el.textContent = translations.en.Gallery;
-          if (el.textContent.includes("Specifications")) el.textContent = translations.en.Specifications;
+          if (el.textContent.includes("设计理念")) el.textContent = t.en.Design;
+          if (el.textContent.includes("产品图赏")) el.textContent = t.en.Gallery;
+          if (el.textContent.includes("Specifications")) el.textContent = t.en.Specifications;
         });
-        // 外尺寸标签
-        document.querySelectorAll("span.font-bold").forEach(el => {
-          if (el.textContent.includes("外尺寸")) el.textContent = translations.en.Dimensions;
+        // h3 设计卡片标题
+        document.querySelectorAll("#design-cards h3").forEach(el => {
+          if (t.en[el.textContent]) el.textContent = t.en[el.textContent];
+        });
+        // p 设计卡片描述
+        document.querySelectorAll("#design-cards p").forEach(el => {
+          if (t.en[el.textContent]) el.textContent = t.en[el.textContent];
+        });
+        // Specifications 标签
+        document.querySelectorAll(".font-mono.text-sm .flex.gap-4").forEach(el => {
+          const spans = el.querySelectorAll("span");
+          spans.forEach(span => {
+            if (t.en[span.textContent]) span.textContent = t.en[span.textContent];
+          });
         });
       }
     }, 100);
