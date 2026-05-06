@@ -5,9 +5,25 @@ import LangSwitcher from './LangSwitcher.astro';
 const { searchParams } = Astro.url;
 const currentLang = searchParams.get('lang') || 'zh';
 
+// 导航翻译
+const navTranslations = {
+  zh: {
+    "Workstation": "Workstation",
+    "Tool Storage": "Tool Storage", 
+    "Ruimakes": "Ruimakes",
+    "Help": "Help",
+  },
+  en: {
+    "Workstation": "Workstation",
+    "Tool Storage": "Tool Storage",
+    "Ruimakes": "Ruimakes", 
+    "Help": "Help",
+  }
+};
+
 const navItems = [
   {
-    label: 'Workstation',
+    label: currentLang === 'en' ? navTranslations.en["Workstation"] : navTranslations.zh["Workstation"],
     href: '/workbench',
     children: [
       { label: '85x40', href: '/workbench/85x40费斯托x3' },
@@ -18,7 +34,7 @@ const navItems = [
     ]
   },
   {
-    label: 'Tool Storage',
+    label: currentLang === 'en' ? navTranslations.en["Tool Storage"] : navTranslations.zh["Tool Storage"],
     href: '/toolstorage',
     children: [
       { label: 'ToolCheckPlus', href: '/toolstorage/toolcheckplus' },
@@ -36,7 +52,7 @@ const navItems = [
     ]
   },
   {
-    label: 'Ruimakes',
+    label: currentLang === 'en' ? navTranslations.en["Ruimakes"] : navTranslations.zh["Ruimakes"],
     href: '/about',
     children: [
       { label: '品牌介绍', href: '/about' },
@@ -44,7 +60,7 @@ const navItems = [
     ]
   },
   {
-    label: 'Help',
+    label: currentLang === 'en' ? navTranslations.en["Help"] : navTranslations.zh["Help"],
     href: '/help',
     children: [
       { label: '购买流程', href: '/help#流程' },
@@ -60,13 +76,10 @@ const { pathname } = Astro.url;
 
 <header class="fixed top-0 left-0 right-0 h-16 bg-zinc-900 border-b border-border-zinc z-50">
   <nav class="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
-    <!-- Left: Logo + Nav Items -->
     <div class="flex items-center gap-2 md:gap-6">
       <a href="/" class="flex items-center gap-2">
         <img src="/images/logo/logRuiMakes-s.webp" alt="Ruimakes" class="h-8 md:h-10" />
       </a>
-
-      <!-- Nav Items - PC端显示在logo旁边 -->
       <div class="hidden md:flex items-center gap-4">
         {navItems.slice(0, 2).map(item => (
           <div class="relative group">
@@ -76,7 +89,6 @@ const { pathname } = Astro.url;
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            <!-- 下拉菜单 - 增加足够的间距让鼠标可以移动到菜单 -->
             <div class="nav-menu absolute top-full left-0 mt-1 pt-2 w-40 bg-zinc-800 border border-border-zinc rounded-sm py-2 hidden group-hover:block z-50">
               {item.children?.map(child => (
                 <a href={child.href} class="block px-4 py-2 text-sm text-zinc-300 hover:text-wera-green hover:bg-zinc-700">
@@ -88,18 +100,13 @@ const { pathname } = Astro.url;
         ))}
       </div>
     </div>
-
-    <!-- Right Section -->
     <div class="flex items-center gap-2 md:gap-4">
-      <!-- Mobile: Show Workstation/Tool Storage links -->
       <div class="flex md:hidden items-center gap-2">
         <a href="/workbench" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Workstation</a>
         <a href="/toolstorage" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Tool Storage</a>
         <a href="/about" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Ruimakes</a>
         <a href="/help" class="text-xs font-bold text-zinc-300 hover:text-wera-green">Help</a>
       </div>
-      
-      <!-- PC Right: Ruimakes + Help + Language -->
       <div class="hidden md:flex items-center gap-4">
         {navItems.slice(2).map(item => (
           <div class="relative group">
@@ -118,26 +125,44 @@ const { pathname } = Astro.url;
             </div>
           </div>
         ))}
-
-        <!-- Language Switcher -->
         <LangSwitcher currentLang={currentLang} />
       </div>
     </div>
   </nav>
 </header>
-
-<!-- Spacer -->
 <div class="h-16"></div>
 
 <style>
-  /* 确保下拉菜单和触发按钮之间有足够的空间 */
-  .nav-trigger {
-    padding-bottom: 8px;
-  }
-  .nav-menu {
-    /* 增加上邊距，填補鼠標準和菜單之間的間隙 */
-    padding-top: 8px;
-    /* 確保鼠標可以穿過這個區域 */
-    pointer-events: auto;
-  }
+  .nav-trigger { padding-bottom: 8px; }
+  .nav-menu { padding-top: 8px; pointer-events: auto; }
 </style>
+
+<script>
+  const translations = {
+    "zh": {},
+    "en": {
+      "Workstation": "Workstation",
+      "Tool Storage": "Tool Storage",
+      "Ruimakes": "Ruimakes",
+      "Help": "Help",
+      "品牌介绍": "Brand Introduction",
+      "联系我们": "Contact Us",
+      "购买流程": "Purchase Process",
+      "配送说明": "Shipping Info",
+      "售后服务": "After-Sales Service",
+      "联系客服": "Contact Customer Service",
+    }
+  };
+  
+  const lang = new URLSearchParams(location.search).get('lang') || 'zh';
+  
+  if (lang === 'en') {
+    // 翻译 Navbar 文本
+    document.querySelectorAll('.nav-trigger').forEach((btn, i) => {
+      const text = btn.textContent.trim();
+      if (translations.en[text]) {
+        btn.childNodes[0].textContent = translations.en[text];
+      }
+    });
+  }
+</script>
