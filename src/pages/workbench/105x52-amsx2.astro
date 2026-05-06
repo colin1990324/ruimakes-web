@@ -78,14 +78,32 @@ const pageDesc = "1050×520×770mm 拓竹工作台，双AMS抽屉完全抽出式
         "en": {
           "CTA": "Contact to Buy",
           "Design": "Design Concept",
-          "Gallery": "Product Gallery"
+          "Gallery": "Product Gallery",
+          "Specifications": "Specifications",
+          "Dimensions": "Dimensions:",
+          "Subtitle": "Festool x3 (P Series)",
+          "PriceSuffix": "/ Including Installation"
         }
       };
       const lang = new URLSearchParams(location.search).get("lang") || "zh";
       if (lang === "en") {
+        // CTA 按钮
         document.querySelectorAll("#hero-cta").forEach(el => el.textContent = translations.en.CTA);
+        // 副标题
+        const subtitle = document.querySelector("#hero-subtitle");
+        if (subtitle) subtitle.textContent = translations.en.Subtitle;
+        // 价格后缀
+        const priceSuffix = document.querySelector("#hero-price-suffix");
+        if (priceSuffix) priceSuffix.textContent = translations.en.PriceSuffix;
+        // 标题 h2
         document.querySelectorAll("h2").forEach(el => {
           if (el.textContent.includes("设计理念")) el.textContent = translations.en.Design;
+          if (el.textContent.includes("产品图赏")) el.textContent = translations.en.Gallery;
+          if (el.textContent.includes("Specifications")) el.textContent = translations.en.Specifications;
+        });
+        // 外尺寸标签
+        document.querySelectorAll("span.font-bold").forEach(el => {
+          if (el.textContent.includes("外尺寸")) el.textContent = translations.en.Dimensions;
         });
       }
     }, 100);
