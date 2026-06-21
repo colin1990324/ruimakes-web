@@ -23,7 +23,7 @@ from PIL import Image
 # 告警阈值
 LARGE_FILE_THRESHOLD_MB = 1.0    # WebP > 1MB → 告警
 FORBIDDEN_EXTENSIONS = {".bmp", ".tiff", ".tif", ".gif", ".tga"}
-BASE_DIR = Path("/Users/myclaw/Documents/workspace/ruimakes-web")
+BASE_DIR = Path("/Users/hermes/Documents/workspace/ruimakes-web")
 PUBLIC_IMAGES = BASE_DIR / "public" / "images"
 SRC_PAGES = BASE_DIR / "src" / "pages"
 
