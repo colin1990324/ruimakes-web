@@ -1,0 +1,152 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductSpecs from '../../components/ProductSpecs.astro';
+
+const pageTitle = "117x55 | ruimakes";
+const pageDesc = "1170×550×770mm 拓竹工作台，双H系列打印机并排布局，200kg承重，北美樱桃木实木桌面。";
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <div class="w-full bg-zinc-900 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div class="relative">
+          <img id="hero-img" src="/images/workstation/117-55-主图.webp" alt="117x55 主图" class="w-full rounded-sm shadow-2xl border border-border-zinc" />
+        </div>
+        <div>
+          <div class="text-xs text-wera-green mb-3 uppercase tracking-widest font-bold">Bambu Lab Workstation</div>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-zinc-100 mb-4">
+            117x55 <span id="hero-subtitle" class="text-wera-green">H系列x2</span>
+          </h1>
+          <p class="text-zinc-400 mb-4 leading-relaxed" id="hero-desc">1170×550×770mm 拓竹工作台，双H系列打印机并排布局，200kg承重，北美樱桃木实木桌面。</p>
+          <div id="dim-note" class="mb-4 text-sm text-zinc-500"><span class="text-wera-green font-bold">外尺寸：</span><span id="dim-text">长：1150mm；宽：55cm</span></div>
+          <div class="flex items-center gap-4 mb-4">
+            <span id="hero-price" class="text-2xl font-bold text-wera-green">¥1,780</span>
+            <span id="hero-price-suffix" class="text-zinc-500 text-sm">/ 含安装配件</span>
+          </div>
+          <div class="flex gap-3 flex-wrap mb-4">
+            <button
+              class="variant-btn px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-wera-green rounded-sm text-left transition-all"
+              data-subtitle="H系列x2"
+              data-price="¥1,780"
+              data-price-suffix="/ 含安装配件"
+              data-cta="咨询购买"
+              data-main-image="/images/workstation/117-55-主图.webp"
+              data-dim="1170×55cm×770mm"
+            >
+              <span class="text-wera-green font-bold text-sm">H系列x2</span>
+            </button>
+            <button
+              class="variant-btn px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-wera-green rounded-sm text-left transition-all"
+              data-subtitle="洞洞板"
+              data-price="¥1,880"
+              data-price-suffix="/ 含安装配件"
+              data-cta="咨询购买"
+              data-main-image="/images/workstation/117-55-洞洞板.webp"
+              data-dim="1170×55cm×770mm"
+            >
+              <span class="text-wera-green font-bold text-sm">洞洞板</span>
+            </button>
+          </div>
+          <a href="/contact" id="hero-cta" class="inline-block bg-wera-green text-bg-dark px-8 py-3 font-bold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-colors">咨询购买</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider">设计理念</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-16">
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">双H系列并排布局</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">桌面可并排摆放2台H系列打印机及3套AMS，大幅提升多色打印产能，工业级集群效率。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">200kg承重</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">欧标3030Q铝型材框架，200kg稳固支撑，多台设备满载运行依然稳如磐石。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">北美樱桃木桌面</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">北美进口樱桃原木多拼，2cm厚台面，天然纹理温润有质感。</p>
+      </div>
+      <div class="bg-card-bg border border-border-zinc rounded-sm p-6">
+        <h3 class="text-lg font-bold text-wera-green mb-3">双H专用设计</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">117cm超宽台面专为双H系列优化，右左独立仓位，维护互不干扰。</p>
+      </div>
+    </div>
+
+    <ProductSpecs
+      brand="BambuLab"
+      material="欧标3030Q铝型材 + 北美樱桃实木桌面"
+      compatibility="Bambu Lab H / X / P / A 系列"
+      features={["双H系列打印机布局", "桌面可并排3套AMS", "200kg承重", "北美樱桃木桌面"]}
+    />
+
+    <h2 class="text-2xl font-bold text-zinc-100 mb-8 uppercase tracking-wider mt-16">产品图赏</h2><div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <img src="/images/workstation/117-55-主图.webp" alt="117x55 主图" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/117-55-侧视图.webp" alt="117x55 侧视图" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/117-55-双H布局.webp" alt="117x55 双H布局" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/117-55-洞洞板.webp" alt="117x55 洞洞板" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/117-55-桌面细节.webp" alt="117x55 桌面细节" class="rounded-sm border border-border-zinc" />
+      <img src="/images/workstation/117-55-AMS布局.webp" alt="117x55 AMS布局" class="rounded-sm border border-border-zinc" />
+    </div>
+
+    <footer class="text-center py-12 text-zinc-700 text-xs uppercase tracking-widest">
+      &copy; 2026 RUIMAKES ®️ DESIGN LABS // Driven by Openclaw
+    </footer>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll('.variant-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('hero-subtitle').textContent = btn.dataset.subtitle;
+        document.getElementById('hero-price').textContent = btn.dataset.price;
+        document.getElementById('hero-price-suffix').textContent = btn.dataset.priceSuffix;
+        document.getElementById('hero-cta').textContent = btn.dataset.cta;
+        document.getElementById('hero-img').src = btn.dataset.mainImage;
+        document.getElementById('hero-img').alt = btn.dataset.subtitle + ' 主图';
+        document.getElementById('dim-text').textContent = btn.dataset.dim;
+      });
+    });
+  </script>
+
+  <script>
+    setTimeout(function() {
+      const t = {"咨询购买": "Contact to Buy", "/ 含安装配件": "/ Including Installation", "Workstation": "Workstation", "Tool Storage": "Tool Storage", "Ruimakes": "Ruimakes", "Help": "Help", "ToolCheckPlus": "ToolCheckPlus", "内六角收纳盒": "Hex Storage Box", "梅花收纳盒": "Torx Storage Box", "Zyklop收纳盒": "Zyklop Storage Box", "棘轮螺丝刀收纳盒": "Ratchet Screwdriver Box", "精密螺丝刀收纳盒": "Precision Screwdriver Box", "批头插座": "Bit Socket", "内六角-梅花插座": "Hex-Torx Socket", "PB收纳盒": "PB Hex Box", "joker-洞洞板": "Joker Pegboard", "钳子-洞洞板": "Pliers Pegboard", "其他-洞洞板": "Other Pegboard", "品牌介绍": "Brand Introduction", "联系我们": "Contact Us", "购买流程": "Purchase Process", "配送说明": "Shipping Info", "售后服务": "After-Sales Service", "联系客服": "Contact Customer Service", "Bambu Lab Workstation": "Bambu Lab Workstation", "Design Concept": "Design Concept", "Specifications": "Specifications", "Product Gallery": "Product Gallery", "Dimensions:": "Dimensions:", "外尺寸：": "Dimensions:", "Target": "Target", "Material": "Material", "Compatibility": "Compatibility", "Contact to Buy": "Contact to Buy", "/ Including Installation": "/ Including Installation", "设计理念": "Design Concept", "产品图赏": "Product Gallery", "117x55 | ruimakes": "117x55 | ruimakes", "H系列x2": "H Series x2", "洞洞板": "Pegboard", "双H系列并排布局": "Dual H-Series Side-by-Side", "117cm超宽台面专为双H系列优化，右左独立仓位，维护互不干扰。": "117cm ultra-wide desktop optimized for dual H-Series, independent left and right compartments.", "200kg承重": "200kg Load Bearing", "北美樱桃木桌面": "North American Cherry Wood Desktop", "双H系列打印机布局": "Dual H-Series Printer Layout", "桌面可并排3套AMS": "Fits 3 AMS Side-by-Side", "双H专用设计": "Dual H-Series Design", "双H系列打印机并排布局": "Dual H-Series Printers Side-by-Side", "桌面可并排摆放2台H系列打印机及3套AMS，大幅提升多色打印产能，工业级集群效率。": "Desk fits 2 H-Series printers and 3 AMS units side-by-side, significantly boosting multi-color print production capacity.", "欧标3030Q铝型材框架，200kg稳固支撑，多台设备满载运行依然稳如磐石。": "European Standard 3030Q aluminum profile frame, 200kg stable support, rock-solid even under full load.", "北美进口樱桃原木多拼，2cm厚台面，天然纹理温润有质感。": "North American imported cherry wood, 2cm thick desktop, natural grain with warm texture.", "欧标3030Q铝型材 + 北美樱桃实木桌面": "European 3030Q Aluminum Profile + North American Cherry Wood"};
+      const lang = new URLSearchParams(location.search).get("lang") || "zh";
+      if (lang === "en") {
+        function translateEl(el) {
+          const text = el.textContent.trim();
+          if (t[text]) {
+            el.textContent = t[text];
+            return true;
+          }
+          return false;
+        }
+        ["h1", "h2", "h3", "h4", "p", "span", "li", "a", "button", "div", "label", "td", "th"].forEach(tag => {
+          document.querySelectorAll(tag).forEach(el => {
+            if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
+              translateEl(el);
+            }
+          });
+        });
+        document.querySelectorAll("img[alt]").forEach(el => {
+          const alt = el.alt.trim();
+          if (t[alt]) el.alt = t[alt];
+        });
+        document.querySelectorAll(".variant-btn").forEach(btn => {
+          const d = btn.dataset;
+          if (d.subtitle && t[d.subtitle]) d.subtitle = t[d.subtitle];
+          if (d.dim && t[d.dim]) d.dim = t[d.dim];
+          if (d.priceSuffix && t[d.priceSuffix]) d.priceSuffix = t[d.priceSuffix];
+          if (d.cta && t[d.cta]) d.cta = t[d.cta];
+        });
+        document.querySelectorAll(".nav-menu a").forEach(el => {
+          translateEl(el);
+        });
+      }
+    }, 100);
+  </script>
+
+</Layout>
