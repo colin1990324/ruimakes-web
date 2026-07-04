@@ -19,6 +19,10 @@ canvas{display:block;background:#09090b;border:1px solid #27272a;max-width:100vw
 #ol p{color:#a1a1aa;font-size:14px;text-align:center;line-height:1.7}
 #ol .b{background:#10b981;color:#09090b;border:none;padding:10px 32px;font-size:14px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:2px;transition:background .2s;font-family:inherit}
 #ol .b:hover{background:#34d399}
+#ls{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:320px;margin-top:8px}
+#ls button{width:36px;height:36px;background:#18181b;border:1px solid #27272a;color:#a1a1aa;font-size:13px;cursor:pointer;border-radius:4px;font-family:inherit;transition:all .15s;-webkit-tap-highlight-color:transparent}
+#ls button:hover{background:#27272a;color:#10b981;border-color:#10b981}
+#ls button.cur{background:#10b981;color:#09090b;border-color:#10b981;font-weight:700}
 #mc{display:none;gap:4px;padding:10px 0 0;width:100%;justify-content:center}
 #mc .r{display:flex;gap:4px;justify-content:center}
 #mc button{width:56px;height:56px;background:#18181b;border:1px solid #27272a;color:#a1a1aa;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:4px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -38,7 +42,8 @@ canvas{display:block;background:#09090b;border:1px solid #27272a;max-width:100vw
 <div id="ol" class="s">
 <h2>🟡 吃豆人</h2>
 <p>← ↑ → ↓ 控制吃豆人吃掉所有豆子<br/>躲避幽灵，吃绿色能量豆可以反击！</p>
-<button class="b" id="st">开始游戏</button>
+  <button class="b" id="st">开始游戏</button>
+  <div id="ls"></div>
 </div>
 </div>
 <script>
@@ -400,21 +405,27 @@ function ul(){li.textContent='♥'.repeat(Math.max(0,g.li));}
 // ═══════════════════════ SCREENS ═══════════════════════
 function ss(type){
   g.st=type;ol.classList.add('s');
-  const h2=ol.querySelector('h2'),p=ol.querySelector('p'),b=ol.querySelector('.b');
+  const h2=ol.querySelector('h2'),p=ol.querySelector('p'),b=ol.querySelector('.b'),ls=document.getElementById('ls');
+  // Build level buttons once
+  if(!ls.children.length)for(let i=0;i<10;i++){const btn=document.createElement('button');
+    btn.textContent=i+1;btn.dataset.l=i;
+    btn.onclick=()=>sg(i);
+    ls.appendChild(btn);}
+  ls.querySelectorAll('button').forEach(b=>b.classList.toggle('cur',parseInt(b.dataset.l)===g.l));
   b.style.display='block';
   if(type==='menu'){h2.textContent='🟡 吃豆人';h2.style.color='#10b981';
     p.innerHTML='← ↑ → ↓ 控制吃豆人吃掉所有豆子<br/>躲避幽灵，吃绿色能量豆可以反击！';
-    b.textContent='开始游戏';b.onclick=sg;}
+    b.textContent='开始游戏';b.onclick=()=>sg(0);}
   else if(type==='go'){h2.textContent='GAME OVER';h2.style.color='#ef4444';
     p.innerHTML='最终得分: '+g.sc;b.textContent='重新开始';
-    b.onclick=()=>{g.l=0;g.sc=0;g.li=3;sg();};}
+    b.onclick=()=>{g.l=0;g.sc=0;g.li=3;sg(0);};}
   else if(type==='win'){h2.textContent='🎉 恭喜通关！';h2.style.color='#10b981';
     p.innerHTML='最终得分: '+g.sc;b.textContent='再来一次';
-    b.onclick=()=>{g.l=0;g.sc=0;g.li=3;sg();};}
+    b.onclick=()=>{g.l=0;g.sc=0;g.li=3;sg(0);};}
 }
 function ho(){ol.classList.remove('s');}
-function sg(){
-  ho();g.l=0;g.sc=0;g.li=3;g.st='p';g.stp=0;
+function sg(lv){
+  lv=lv||0;ho();g.l=lv;g.sc=0;g.li=3;g.st='p';g.stp=0;
   il(g.l);us();ul();
 }
 // ═══════════════════════ DRAW ═══════════════════════
