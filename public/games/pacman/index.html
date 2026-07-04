@@ -261,30 +261,35 @@ function rp(){
 function wk(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS&&g.mz[y]&&g.mz[y][x]!==1;}
 const SPEED=0.075;
 // ═══════════════════════ PLAYER ═══════════════════════
+function tp(x,y){return y>=0&&y<ROWS&&x>=0&&x<COLS&&g.mz[y]&&g.mz[y][x]!==1;}
+function mv(dx,dy){
+  const nx=Math.floor(g.px+dx),ny=Math.floor(g.py+dy);
+  if(tp(nx,ny)){g.pdx=dx;g.pdy=dy;g.pd=gd(dx,dy);}
+}
 function mp(){
   const p=g;
+  // Snap-to-center when close
   const cx=Math.floor(p.px)+0.5,cy=Math.floor(p.py)+0.5;
   const dx=p.px-cx,dy=p.py-cy;
-  const atCenter=Math.abs(dx)<SPEED&&Math.abs(dy)<SPEED;
-  if(atCenter){
-    p.px=cx;p.py=cy;
-    // Try queued direction
-    let nx=Math.floor(cx+p.ndx),ny=Math.floor(cy+p.ndy);
-    if(wk(nx,ny)){p.pdx=p.ndx;p.pdy=p.ndy;p.pd=gd(p.ndx,p.ndy);}
-    // Try current direction
-    nx=Math.floor(cx+p.pdx);ny=Math.floor(cy+p.pdy);
-    if(!wk(nx,ny)){p.pdx=0;p.pdy=0;}
-  }
-  if(p.pdx||p.pdy){
+  if(Math.abs(dx)<SPEED&&Math.abs(dy)<SPEED){p.px=cx;p.py=cy;}
+  // Process queued direction first (instant response)
+  if(p.ndx||p.ndy)mv(p.ndx,p.ndy);
+  // Move in current direction if possible
+  const nx=Math.floor(p.px+p.pdx),ny=Math.floor(p.py+p.pdy);
+  if(tp(nx,ny)){
     p.px+=p.pdx*SPEED;p.py+=p.pdy*SPEED;
-    // Eat
-    const cx2=Math.floor(p.px),cy2=Math.floor(p.py);
-    const cell=g.mz[cy2]&&g.mz[cy2][cx2];
-    if(cell===2){g.mz[cy2][cx2]=0;g.de++;g.sc+=10;}
-    else if(cell===3){g.mz[cy2][cx2]=0;g.de++;g.sc+=50;g.pt=300;
-      g.gh.forEach(h=>{if(h.md!=='e'){h.md='f';h.tm=300;}});}
-    us();
+  }else{
+    // Snap to tile center when hitting a wall
+    p.px=cx;p.py=cy;
+    p.pdx=0;p.pdy=0;
   }
+  // Eat
+  const ex=Math.floor(p.px),ey=Math.floor(p.py);
+  const cell=g.mz[ey]&&g.mz[ey][ex];
+  if(cell===2){g.mz[ey][ex]=0;g.de++;g.sc+=10;}
+  else if(cell===3){g.mz[ey][ex]=0;g.de++;g.sc+=50;g.pt=300;
+    g.gh.forEach(h=>{if(h.md!=='e'){h.md='f';h.tm=300;}});}
+  us();
 }
 function gd(dx,dy){
   if(dx>0)return R;if(dx<0)return L;
