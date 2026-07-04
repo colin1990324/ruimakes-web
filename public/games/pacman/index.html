@@ -327,9 +327,7 @@ function gd(dx,dy){
 }
 // ═══════════════════════ GHOSTS ═══════════════════════
 function mh(){
-  const l=LV[g.l];
-  const cb=0.04*l.length?Math.min(1,0.3+LV[g.l].length*0.05):0.3;
-  const spd=Math.min(0.06,cb);
+  const spd=Math.min(0.075,0.035+g.l*0.004); // ghost speed scales with level
   g.gh.forEach((h,i)=>{
     if(h.md==='e'){
       const dx=h.sx-h.x,dy=h.sy-h.y;
