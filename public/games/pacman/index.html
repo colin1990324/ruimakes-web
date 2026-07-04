@@ -263,27 +263,30 @@ const SPEED=0.075;
 // ═══════════════════════ PLAYER ═══════════════════════
 function tp(x,y){return y>=0&&y<ROWS&&x>=0&&x<COLS&&g.mz[y]&&g.mz[y][x]!==1;}
 function mv(dx,dy){
+  // ALWAYS face the pressed direction (instant visual feedback)
+  if(dx||dy)g.pd=gd(dx,dy);
+  // Only change movement if target tile is walkable
   const nx=Math.floor(g.px+dx),ny=Math.floor(g.py+dy);
-  if(tp(nx,ny)){g.pdx=dx;g.pdy=dy;g.pd=gd(dx,dy);}
+  if(tp(nx,ny)){g.pdx=dx;g.pdy=dy;}
 }
 function mp(){
   const p=g;
-  // Snap-to-center when close
+  // Snap to tile center when close enough
   const cx=Math.floor(p.px)+0.5,cy=Math.floor(p.py)+0.5;
   const dx=p.px-cx,dy=p.py-cy;
   if(Math.abs(dx)<SPEED&&Math.abs(dy)<SPEED){p.px=cx;p.py=cy;}
-  // Process queued direction first (instant response)
+  // Process queued direction (updates pd visually even if blocked)
   if(p.ndx||p.ndy)mv(p.ndx,p.ndy);
-  // Move in current direction if possible
+  // Try to move in current direction
   const nx=Math.floor(p.px+p.pdx),ny=Math.floor(p.py+p.pdy);
   if(tp(nx,ny)){
     p.px+=p.pdx*SPEED;p.py+=p.pdy*SPEED;
   }else if(p.pdx||p.pdy){
-    // Hit wall — snap position on blocked axis but keep direction
+    // Wall hit — snap to center on blocked axis, keep direction
     if(p.pdx)p.px=cx;
     if(p.pdy)p.py=cy;
   }
-  // Eat
+  // Eat dots on current tile
   const ex=Math.floor(p.px),ey=Math.floor(p.py);
   const cell=g.mz[ey]&&g.mz[ey][ex];
   if(cell===2){g.mz[ey][ex]=0;g.de++;g.sc+=10;}
