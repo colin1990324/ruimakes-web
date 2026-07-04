@@ -215,7 +215,7 @@ const LV=[
 let g={l:0,sc:0,li:3,st:'menu',mz:[],dt:0,de:0,pt:0,
   px:0,py:0,pdx:0,pdy:0,ndx:0,ndy:0,pd:0,
   gh:[],at:0,mo:true};
-const R=0,U=1,L=2,D=3;
+const R=0,U=1,L=2,DN=3;
 // ═══════════════════════ MAZE BUILDER ═══════════════════════
 function bm(idx){
   const rows=LV[idx],mz=[],gs=[];
@@ -288,7 +288,7 @@ function mp(){
 }
 function gd(dx,dy){
   if(dx>0)return R;if(dx<0)return L;
-  if(dy>0)return D;if(dy<0)return U;
+  if(dy>0)return DN;if(dy<0)return U;
   return g.pd;
 }
 // ═══════════════════════ GHOSTS ═══════════════════════
@@ -443,7 +443,7 @@ function dw(){
     switch(g.pd){case R:sa=mo*Math.PI;ea=Math.PI*(2-mo);break;
       case L:sa=Math.PI*(1+mo);ea=Math.PI*(1-mo);break;
       case U:sa=Math.PI*(1.5+mo);ea=Math.PI*(1.5-mo);break;
-      case D:sa=Math.PI*(0.5+mo);ea=Math.PI*(0.5-mo);break;}
+      case DN:sa=Math.PI*(0.5+mo);ea=Math.PI*(0.5-mo);break;}
     CX.save();CX.translate(x,y);
     CX.beginPath();CX.moveTo(0,0);CX.arc(0,0,r,sa,ea);CX.closePath();
     CX.fillStyle='#facc15';CX.fill();
