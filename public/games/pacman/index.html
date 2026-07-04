@@ -228,7 +228,7 @@ function bm(idx){
       else if(ch===D){row.push(2);dt++;}
       else if(ch===O){row.push(3);dt++;}
       else if(ch===E)row.push(0);
-      else if(ch===S){row.push(4);px=c;py=r;}
+      else if(ch===S){row.push(4);px=c+0.5;py=r+0.5;}
       else if(ch===G){row.push(5);gs.push({x:c,y:r});}
       else row.push(0);
     }
@@ -238,16 +238,14 @@ function bm(idx){
 }
 function il(idx){
   const {mz,dt,px,py,gs}=bm(idx);
-  const lv=LV[idx];
   Object.assign(g,{mz,dt,de:0,pt:0,px,py,pdx:0,pdy:0,ndx:0,ndy:0,pd:L});
   g.gh=[];
-  // Count actual ghosts from maze G markers
   let gc=gs.length;
   for(let i=0;i<gc;i++){
     const sp=gs[i];
     g.gh.push({x:sp.x,y:sp.y,sx:sp.x,sy:sp.y,dx:0,dy:-1,md:'s',tm:60+i*30,cl:i});
   }
-  lv.textContent='LV.'+(idx+1);
+  $('lv').textContent='LV.'+(idx+1);
 }
 function rp(){
   const idx=g.l;
