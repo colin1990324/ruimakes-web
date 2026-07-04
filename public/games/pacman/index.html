@@ -311,14 +311,28 @@ function mh(){
     else if(h.md==='s'){const cs=[[COLS-2,1],[1,1],[COLS-2,ROWS-2],[1,ROWS-2]];tx=cs[i%4][0];ty=cs[i%4][1];}
     else{tx=g.px;ty=g.py;}
     const ds=[[0,-1],[0,1],[-1,0],[1,0]];
-    let bi=Infinity,bd=null;
+    // Collect all walkable directions
+    const walkable=[];
     for(const d of ds){
       const nx=cx+d[0],ny=cy+d[1];
       if(!wkGhost(nx,ny))continue;
       if(h.md!=='f'&&h.dx&&d[0]===-h.dx&&d[1]===-h.dy)continue;
       if(h.md!=='f'&&h.dy&&d[0]===-h.dx&&d[1]===-h.dy)continue;
-      const dist=Math.hypot(nx+(h.x-cx)-tx,ny+(h.y-cy)-ty);
-      if(dist<bi){bi=dist;bd=d;}
+      walkable.push(d);
+    }
+    // Pick best or first available
+    let bd=null;
+    if(walkable.length){
+      let bi=Infinity;
+      for(const d of walkable){
+        const dist=Math.hypot(cx+d[0]-tx,cy+d[1]-ty);
+        if(dist<bi){bi=dist;bd=d;}
+      }
+    }else{
+      // Stuck: try any direction (emergency)
+      for(const d of ds){
+        if(wkGhost(cx+d[0],cy+d[1])){bd=d;break;}
+      }
     }
     if(bd){h.dx=bd[0];h.dy=bd[1];}
     let s=spd;if(h.md==='f')s*=0.4;
@@ -458,14 +472,19 @@ function dw(){
 }
 // ═══════════════════════ LOOP ═══════════════════════
 function up(){
-  if(g.st!=='p')return;
-  mp();mh();
-  if(!cc())cw();
+  try{
+    if(g.st!=='p')return;
+    mp();mh();
+    if(!cc())cw();
+  }catch(e){console.error(e);}
 }
 let lt=0;
 function gl(t){
-  if(t-lt>16){up();lt=t;}
-  dw();requestAnimationFrame(gl);
+  try{
+    if(t-lt>16){up();lt=t;}
+    dw();
+  }catch(e){console.error(e);}
+  requestAnimationFrame(gl);
 }
 // ═══════════════════════ CONTROLS ═══════════════════════
 document.addEventListener('keydown',e=>{
