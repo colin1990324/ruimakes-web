@@ -219,7 +219,7 @@ const R=0,U=1,L=2,DN=3;
 // ═══════════════════════ MAZE BUILDER ═══════════════════════
 function bm(idx){
   const rows=LV[idx],mz=[],gs=[];
-  let dt=0,px=0,py=0;
+  let dt=0,tx=0,ty=0;
   for(let r=0;r<rows.length;r++){
     const row=[];
     for(let c=0;c<rows[r].length;c++){
@@ -228,17 +228,17 @@ function bm(idx){
       else if(ch===D){row.push(2);dt++;}
       else if(ch===O){row.push(3);dt++;}
       else if(ch===E)row.push(0);
-      else if(ch===S){row.push(4);px=c+0.5;py=r+0.5;}
+      else if(ch===S){row.push(4);tx=c;ty=r;}
       else if(ch===G){row.push(5);gs.push({x:c,y:r});}
       else row.push(0);
     }
     mz.push(row);
   }
-  return{mz,dt,px,py,gs};
+  return{mz,dt,tx,ty,gs};
 }
 function il(idx){
-  const {mz,dt,px,py,gs}=bm(idx);
-  Object.assign(g,{mz,dt,de:0,pt:0,px,py,pdx:0,pdy:0,ndx:0,ndy:0,pd:L});
+  const {mz,dt,tx,ty,gs}=bm(idx);
+  Object.assign(g,{mz,dt,de:0,pt:0,tx,ty,stp:0,pdx:0,pdy:0,ndx:0,ndy:0,pd:0});
   g.gh=[];
   let gc=gs.length;
   for(let i=0;i<gc;i++){
@@ -249,8 +249,8 @@ function il(idx){
 }
 function rp(){
   const idx=g.l;
-  const {mz,dt,px,py}=bm(idx);
-  Object.assign(g,{mz,dt,de:0,pt:0,px,py,pdx:0,pdy:0,ndx:0,ndy:0,pd:L});
+  const {mz,dt,tx,ty}=bm(idx);
+  Object.assign(g,{mz,dt,de:0,pt:0,tx,ty,stp:0,pdx:0,pdy:0,ndx:0,ndy:0,pd:0});
   const {gs}=bm(idx);
   g.gh=[];
   for(let i=0;i<gs.length;i++){
@@ -261,37 +261,43 @@ function rp(){
 function wk(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS&&g.mz[y]&&g.mz[y][x]!==1;}
 const SPEED=0.075;
 // ═══════════════════════ PLAYER ═══════════════════════
-function tp(x,y){return y>=0&&y<ROWS&&x>=0&&x<COLS&&g.mz[y]&&g.mz[y][x]!==1;}
-function mv(dx,dy){
-  // ALWAYS face the pressed direction (instant visual feedback)
-  if(dx||dy)g.pd=gd(dx,dy);
-  // Only change movement if target tile is walkable
-  const nx=Math.floor(g.px+dx),ny=Math.floor(g.py+dy);
-  if(tp(nx,ny)){g.pdx=dx;g.pdy=dy;}
+const SC_MAX = 10; // frames per tile (6 tiles/sec at 60fps)
+function tp(x, y) {
+  return y >= 0 && y < ROWS && x >= 0 && x < COLS && g.mz[y] && g.mz[y][x] !== 1;
 }
-function mp(){
-  const p=g;
-  // Snap to tile center when close enough
-  const cx=Math.floor(p.px)+0.5,cy=Math.floor(p.py)+0.5;
-  const dx=p.px-cx,dy=p.py-cy;
-  if(Math.abs(dx)<SPEED&&Math.abs(dy)<SPEED){p.px=cx;p.py=cy;}
-  // Process queued direction (updates pd visually even if blocked)
-  if(p.ndx||p.ndy)mv(p.ndx,p.ndy);
-  // Try to move in current direction
-  const nx=Math.floor(p.px+p.pdx),ny=Math.floor(p.py+p.pdy);
-  if(tp(nx,ny)){
-    p.px+=p.pdx*SPEED;p.py+=p.pdy*SPEED;
-  }else if(p.pdx||p.pdy){
-    // Wall hit — snap to center on blocked axis, keep direction
-    if(p.pdx)p.px=cx;
-    if(p.pdy)p.py=cy;
+function mv(dx, dy) {
+  // Always face the pressed direction
+  if (dx || dy) g.pd = gd(dx, dy);
+  // Only change direction if the target tile is open
+  const nx = g.tx + dx, ny = g.ty + dy;
+  if (tp(nx, ny)) { g.pdx = dx; g.pdy = dy; }
+}
+function mp() {
+  // Try queued direction (instant turn, takes effect on next step)
+  if (g.ndx || g.ndy) mv(g.ndx, g.ndy);
+
+  if (g.pdx || g.pdy) {
+    g.stp++;
+    if (g.stp >= SC_MAX) {
+      // Advance one tile
+      g.tx += g.pdx;
+      g.ty += g.pdy;
+      g.stp = 0;
+      // Check if next tile in same direction is blocked
+      if (!tp(g.tx + g.pdx, g.ty + g.pdy)) { g.pdx = 0; g.pdy = 0; }
+    }
   }
+
+  // Interpolated draw position (smooth visual)
+  const t = SC_MAX > 0 ? g.stp / SC_MAX : 0;
+  g.px = g.tx + g.pdx * t + 0.5;
+  g.py = g.ty + g.pdy * t + 0.5;
+
   // Eat dots on current tile
-  const ex=Math.floor(p.px),ey=Math.floor(p.py);
-  const cell=g.mz[ey]&&g.mz[ey][ex];
-  if(cell===2){g.mz[ey][ex]=0;g.de++;g.sc+=10;}
-  else if(cell===3){g.mz[ey][ex]=0;g.de++;g.sc+=50;g.pt=300;
-    g.gh.forEach(h=>{if(h.md!=='e'){h.md='f';h.tm=300;}});}
+  const cell = g.mz[g.ty] && g.mz[g.ty][g.tx];
+  if (cell === 2) { g.mz[g.ty][g.tx] = 0; g.de++; g.sc += 10; }
+  else if (cell === 3) { g.mz[g.ty][g.tx] = 0; g.de++; g.sc += 50; g.pt = 300;
+    g.gh.forEach(h => { if (h.md !== 'e') { h.md = 'f'; h.tm = 300; } }); }
   us();
 }
 function gd(dx,dy){
@@ -352,7 +358,7 @@ function mh(){
 function wkGhost(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS&&g.mz[y]&&g.mz[y][x]!==1;}
 // ═══════════════════════ COLLISION ═══════════════════════
 function cc(){
-  const pcx=Math.floor(g.px),pcy=Math.floor(g.py);
+  const pcx=g.tx,pcy=g.ty;
   for(const h of g.gh){
     if(h.md==='e')continue;
     if(Math.floor(h.x)===pcx&&Math.floor(h.y)===pcy){
@@ -390,7 +396,7 @@ function ss(type){
 }
 function ho(){ol.classList.remove('s');}
 function sg(){
-  ho();g.l=0;g.sc=0;g.li=3;g.st='p';
+  ho();g.l=0;g.sc=0;g.li=3;g.st='p';g.stp=0;
   il(g.l);us();ul();
 }
 // ═══════════════════════ DRAW ═══════════════════════
