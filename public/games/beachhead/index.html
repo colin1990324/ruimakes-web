@@ -904,14 +904,13 @@ const UPGS=[
  ['⚡ 强化枪管','射速 +15%'],
  ['💥 高爆弹药','伤害 +20%'],
  ['🛡 修复掩体','阵地血量 +30'],
- ['🎖 弹药补给','炮+6 导弹+3'],
+ ['🎖 弹药补给','炮+10 导弹+5'],
  ['🎯 加长枪管','机枪射程 +5m'],
  ['⛨ 阵地护盾','10秒基地无敌'],
 ];
 function showUpgrade(){
  G.st='upg';
- G.ammo.cannon=12+Math.floor(G.wave/2);
- G.ammo.missile=6+Math.floor(G.wave/3);
+ /* 弹药不再自动补充——只能通过下面的奖励选择获得 */
  document.getElementById('upWave').textContent=G.wave+1;
  /* 从奖励池随机抽 3 个,1/2/3 直接选择 */
  const pool=UPGS.map((_,i)=>i);
@@ -936,7 +935,7 @@ function applyUpg(i){
  if(i===0)G.upg.rate=Math.min(2.5,G.upg.rate*1.15);
  if(i===1)G.upg.dmg=Math.min(3,G.upg.dmg*1.2);
  if(i===2)G.baseHP=Math.min(G.baseMax,G.baseHP+30);
- if(i===3){G.ammo.cannon+=6;G.ammo.missile+=3;}
+ if(i===3){G.ammo.cannon+=10;G.ammo.missile+=5;}
  if(i===4){G.mgRange=(G.mgRange||35)+5;}
  if(i===5){G.shield=10;}
  G.wave++;
