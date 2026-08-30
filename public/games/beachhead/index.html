@@ -24,8 +24,10 @@ body{font-family:'Courier New',monospace;color:#e4e4e7;touch-action:none;user-se
 .panel .v.g{color:#10b981}
 .panel .v.r{color:#f87171}
 #hudW{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:8px;pointer-events:none}
-.wslot{background:rgba(9,9,11,.72);border:1px solid #27272a;border-radius:4px;padding:6px 10px;text-align:center;min-width:86px;pointer-events:auto;cursor:pointer}
-.wslot.cur{border-color:#10b981;box-shadow:0 0 8px rgba(16,185,129,.25)}
+.wslot{background:rgba(9,9,11,.72);border:1px solid #27272a;border-radius:4px;padding:6px 10px;text-align:center;min-width:86px;pointer-events:auto;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+.wslot.cur{border-color:#10b981;background:rgba(16,185,129,.22);box-shadow:0 0 14px rgba(16,185,129,.45);transform:translateY(-5px)}
+.wslot.cur .wn{color:#34d399;font-weight:bold}
+.wslot.cur .wa{color:#facc15}
 .wslot .wn{font-size:11px;color:#a1a1aa}
 .wslot .wa{font-size:13px;font-weight:bold;color:#facc15}
 .wslot .wb{font-size:9px;color:#71717a}
@@ -394,12 +396,15 @@ function explode(pos,big){
  const p=pos;
  burst(p.x,p.y,p.z,big?26:10,big?13:7,0xff8c2a,0.7);
  burst(p.x,p.y,p.z,big?10:4,big?6:3,0x3f3f46,1.4);
- const f=new THREE.Mesh(GEO_FLASH,new THREE.MeshBasicMaterial({color:0xffd400,transparent:true}));
- f.position.copy(p);scene.add(f);
- G.fx.push({m:f,t:0,life:0.35,type:'flash'});
- const r=new THREE.Mesh(GEO_RING,new THREE.MeshBasicMaterial({color:0xffb84d,transparent:true,side:THREE.DoubleSide}));
- r.rotation.x=-Math.PI/2;r.position.set(p.x,0.1,p.z);scene.add(r);
- G.fx.push({m:r,t:0,life:0.5,type:'ring'});
+ /* 爆炸特效 mesh 限流(防直升机波次卡顿):fx 满 14 时只留粒子 */
+ if(G.fx.length<14){
+  const f=new THREE.Mesh(GEO_FLASH,new THREE.MeshBasicMaterial({color:0xffd400,transparent:true}));
+  f.position.copy(p);scene.add(f);
+  G.fx.push({m:f,t:0,life:0.35,type:'flash'});
+  const r=new THREE.Mesh(GEO_RING,new THREE.MeshBasicMaterial({color:0xffb84d,transparent:true,side:THREE.DoubleSide}));
+  r.rotation.x=-Math.PI/2;r.position.set(p.x,0.1,p.z);scene.add(r);
+  G.fx.push({m:r,t:0,life:0.5,type:'ring'});
+ }
 }
 function splash(pos){
  burst(pos.x,0,pos.z,10,6,0xbfe0ff,0.6);
@@ -472,7 +477,7 @@ function updateBullets(dt){
    b.v.y-=b.grav*dt; /* 机枪轻下坠(微弧曳光) */
    b.p.addScaledVector(b.v,dt);
    if(b.origin&&b.p.distanceTo(b.origin)>(G.mgRange||35)){b.dead=true;continue;} /* 有效射程(可升级),超出消失 */
-   spawnPart(b.p.x+rnd(-0.05,0.05),b.p.y+rnd(-0.05,0.05),b.p.z+rnd(-0.05,0.05),-b.v.x*0.4+rnd(-0.2,0.2),-b.v.y*0.4+rnd(-0.2,0.2),-b.v.z*0.4+rnd(-0.2,0.2),0.22,0xffd400,1.6);
+   if(Math.random()<0.5)spawnPart(b.p.x+rnd(-0.05,0.05),b.p.y+rnd(-0.05,0.05),b.p.z+rnd(-0.05,0.05),-b.v.x*0.4+rnd(-0.2,0.2),-b.v.y*0.4+rnd(-0.2,0.2),-b.v.z*0.4+rnd(-0.2,0.2),0.22,0xffd400,1.6);
   }
   b.m.position.copy(b.p);
   if(b.kind==='missile')b.m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.v.clone().normalize());
@@ -781,7 +786,7 @@ function updateEnemies(dt){
    if(p.x>20)p.dir=-1;if(p.x<-20)p.dir=1;
    p.z+=0.4*dt;p.y=6.5+Math.sin(g.frame*0.05)*0.6;
    if(e.mesh.rotor)e.mesh.rotor.rotation.y+=dt*30;
-   if(e.t<=0&&p.z<-2){e.t=1.6;baseHit(2,new THREE.Vector3(p.x,1,BASE_TARGET.z));tracerFrom(p);}
+   if(e.t<=0&&p.z<-2){e.t=2.0;baseHit(2,new THREE.Vector3(p.x,1,BASE_TARGET.z));tracerFrom(p);}
    if(p.z>9){baseHit(20,p.clone());killEnemy(e);}
   }else if(e.type==='jet'){
    p.x+=e.spd*dt;
@@ -831,7 +836,7 @@ function dropBomb(from){
  G.bullets.push({kind:'bomb',m,p:m.position.clone(),v:new THREE.Vector3(30,-1,0),grav:20,life:6,dead:false});
 }
 function tracerFrom(from){
- for(let i=0;i<3;i++){
+ for(let i=0;i<2;i++){
   spawnPart(from.x+rnd(-0.3,0.3),from.y-0.5,from.z+rnd(-0.3,0.3),rnd(-1,1),rnd(0.2,0.8),rnd(-1,1),0.3,0xfff3b0,1.5);
  }
 }
