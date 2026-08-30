@@ -201,7 +201,7 @@ const MON_DEFS=[
   {key:'b',  name:'布鲁',     hp:75,  spd:0.95, gold:10, dmg:2, color:0x38bdf8, r:0.5,  desc:'精英,皮糙肉厚'},
   {key:'a',  name:'装甲兽',   hp:95,  spd:0.7,  gold:14, dmg:2, color:0x94a3b8, r:0.52, armor:0.3, desc:'30% 减伤,导弹激光无视'},
   {key:'s',  name:'分裂怪',   hp:42,  spd:1.05, gold:10, dmg:1, color:0xf472b6, r:0.4,  split:true, desc:'死亡分裂为 2 只小怪'},
-  {key:'boss',name:'哥斯拉',  hp:3000,spd:0.42, gold:150,dmg:5, color:0xdc2626, r:0.9,  boss:true, desc:'每 5 波降临,血越少越狂暴'},
+  {key:'boss',name:'哥斯拉',  hp:4000,spd:0.42, gold:150,dmg:5, color:0xdc2626, r:0.9,  boss:true, desc:'每 5 波降临,血越少越狂暴'},
 ];
 const MON_BY={}; MON_DEFS.forEach((d,i)=>MON_BY[d.key]=d);
 
@@ -246,10 +246,10 @@ function waveSeq(n){
   const sub=(k-1)%5;
   if(sub===4){
     // Boss 波:杂兵随档位递增
-    const g=10+m*3, s=6+m*3, a=6+m*3, b=7+m*3, bat=8+m*3;
+    const g=12+m*4, s=8+m*4, a=8+m*4, b=9+m*4, bat=10+m*4;
     return 'g'+g+' s'+s+' a'+a+' b'+b+' bat'+bat+' boss1';
   } else {
-    const g=12+m*4+sub*2, s=5+m*3+sub*2, a=5+m*3+sub, b=6+m*3+sub, bat=7+m*3+sub;
+    const g=15+m*5+sub*3, s=7+m*4+sub*2, a=7+m*4+sub, b=8+m*4+sub, bat=9+m*4+sub;
     return 'g'+g+' s'+s+' a'+a+' b'+b+' bat'+bat;
   }
 }
@@ -539,7 +539,8 @@ function moveMonsters(dt){
     if(m.hitCd>0) m.hitCd-=dt;
     if(m.sprint>0) m.sprint-=dt;
     if(m.slowT>0){ m.slowT-=dt; if(m.slowT<=0) m.slowF=1; }
-    const spd=m.spd*m.slowF*(m.sprint>0?3.5:1);
+    let spd=m.spd*m.slowF*(m.sprint>0?4:1);
+    if(!m.def.boss&&m.hp<m.maxHp*0.3) spd*=1.4; // 濒死狂暴冲锋(普通怪残血加速冲塔)
     let remain=spd*dt;
     while(remain>0&&m.seg<PATH.length-1){
       const a=PATH[m.seg], b=PATH[m.seg+1];
@@ -576,9 +577,9 @@ function hitMonster(m,dmg,opt){
   if(m.def.armor&&!opt.ignoreArmor) d*=1-m.def.armor;
   m.hp-=d;
   m.flash=0.1;
-  // 哥斯拉狂暴冲刺:每损 30% 血触发(3.5 倍速 2.5 秒)
-  if(m.def.boss&&m.sprintCd<=0&&m.hp<m.maxHp*0.7&&m.hp>0){
-    m.sprint=2.5; m.sprintCd=5;
+  // 哥斯拉狂暴冲刺:每损 20% 血触发(80% 阈值,4 倍速 2.5 秒,cd 4)
+  if(m.def.boss&&m.sprintCd<=0&&m.hp<m.maxHp*0.8&&m.hp>0){
+    m.sprint=2.5; m.sprintCd=4;
     dust(m.pos[0],m.pos[2],8);
     toast('哥斯拉狂暴冲刺!',0xef4444);
   }
@@ -602,7 +603,7 @@ function killMonster(m,opt){
     else toast('哥斯拉被击败!',0xdc2626);
   }
   if(m.def.split&&!m.mini&&!opt.noSplit){
-    for(let i=0;i<2;i++){ spawnMonster('s',1,true); }
+    for(let i=0;i<3;i++){ spawnMonster('s',1,true); }
   }
 }
 
@@ -629,7 +630,7 @@ function updateSpawning(dt){
   G.spawnT-=dt;
   if(G.spawnT<=0){
     const key=G.spawnQ.shift();
-    const hpMul=1+0.2*(G.wave-1)+(key==='boss'?(G.wave-1)*0.05:0);
+    const hpMul=1+0.25*(G.wave-1)+(key==='boss'?(G.wave-1)*0.05:0);
     spawnMonster(key,hpMul);
     G.spawnT=Math.max(0.12,0.8-Math.min(0.4,(G.wave-1)*0.025));
   }
@@ -1298,7 +1299,7 @@ function loop(now){
       if(m.done&&!m.dead){
         m.dead=true;
         scene.remove(m.grp);
-        G.lives-=m.def.dmg;
+        G.lives-=m.def.dmg+Math.floor((G.wave-1)/8); // 攻击力随波次成长(每8波+1)
         sfx('hit');
         toast('基地受到攻击 -'+m.def.dmg,0xef4444);
         if(G.lives<=0){ G.lives=0; gameOver(); break; }
@@ -1331,7 +1332,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.7'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.8'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
