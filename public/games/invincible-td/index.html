@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>无敌塔防 Invincible TD</title>
+<style>
+  :root{ --bg:#09090b; --fg:#e4e4e7; --dim:#71717a; --acc:#10b981; --red:#ef4444; --gold:#f59e0b; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--fg);
+    font-family:"Courier New", monospace; -webkit-user-select:none; user-select:none; touch-action:none; }
+  #wrap{ position:fixed; inset:0; }
+  canvas{ display:block; width:100%; height:100%; }
+  /* ===== HUD ===== */
+  #hud{ position:absolute; top:10px; left:10px; right:10px; display:flex; gap:14px; align-items:center;
+    font-size:15px; letter-spacing:1px; text-shadow:0 1px 3px #000; pointer-events:none; z-index:5; }
+  #hud .stat{ background:rgba(0,0,0,.55); border:1px solid #27272a; border-radius:6px; padding:4px 10px; }
+  #hud .stat b{ color:var(--acc); }
+  #hud .stat.red b{ color:var(--red); }
+  #hud .stat.gold b{ color:var(--gold); }
+  #hud .sp{ margin-left:auto; font-size:13px; color:var(--dim); }
+  #waveBar{ position:absolute; bottom:10px; left:10px; right:10px; height:6px; background:rgba(0,0,0,.5);
+    border:1px solid #27272a; border-radius:3px; overflow:hidden; z-index:5; }
+  #waveBar i{ display:block; height:100%; width:0%; background:var(--acc); transition:width .2s; }
+  /* ===== overlays ===== */
+  .ov{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(9,9,11,.86); z-index:10; text-align:center; padding:20px; }
+  .ov.hide{ display:none; }
+  .ov h1{ font-size:44px; letter-spacing:6px; color:var(--acc); margin-bottom:8px; text-shadow:0 0 18px rgba(16,185,129,.5); }
+  .ov h2{ font-size:26px; letter-spacing:4px; margin-bottom:18px; }
+  .ov p{ font-size:14px; color:var(--dim); line-height:1.8; max-width:560px; margin-bottom:8px; }
+  .ov .btn{ margin-top:14px; font-family:inherit; font-size:18px; letter-spacing:3px; padding:12px 40px;
+    background:var(--acc); color:#04231a; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+  .ov .btn:hover{ filter:brightness(1.15); }
+  .ov .btn.ghost{ background:transparent; color:var(--fg); border:1px solid #3f3f46; }
+  .ov .key{ display:inline-block; border:1px solid #52525b; border-radius:4px; padding:0 6px; background:#18181b; color:var(--fg); font-size:12px; }
+  #monsterKey{ display:flex; flex-wrap:wrap; gap:8px 20px; justify-content:center; margin-top:12px; font-size:13px; color:var(--dim); }
+  #monsterKey .mk{ display:flex; align-items:center; gap:6px; }
+  #monsterKey .dot{ width:12px; height:12px; border-radius:50%; display:inline-block; }
+  /* ===== 波间奖励 ===== */
+  #upgOv .upgs{ display:flex; gap:16px; margin-top:20px; flex-wrap:wrap; justify-content:center; }
+  #upgOv .upg{ width:190px; padding:18px 14px; background:#18181b; border:2px solid #3f3f46; border-radius:12px;
+    cursor:pointer; transition:all .15s; }
+  #upgOv .upg:hover{ border-color:var(--acc); transform:translateY(-3px); box-shadow:0 6px 20px rgba(16,185,129,.2); }
+  #upgOv .upg .num{ font-size:22px; color:var(--gold); font-weight:bold; }
+  #upgOv .upg .tt{ font-size:15px; color:var(--fg); margin:6px 0 4px; }
+  #upgOv .upg .ds{ font-size:12px; color:var(--dim); line-height:1.5; }
+  /* ===== 选中塔信息 ===== */
+  #towerInfo{ position:absolute; left:10px; bottom:24px; z-index:6; background:rgba(0,0,0,.7); border:1px solid #3f3f46;
+    border-radius:8px; padding:8px 12px; font-size:13px; display:none; min-width:200px; }
+  #towerInfo .row{ display:flex; justify-content:space-between; gap:18px; margin:2px 0; }
+  #towerInfo .row b{ color:var(--acc); }
+  #towerInfo .btnRow{ display:flex; gap:8px; margin-top:6px; }
+  #towerInfo button{ font-family:inherit; font-size:12px; letter-spacing:1px; padding:4px 12px; border-radius:6px;
+    background:#27272a; color:var(--fg); border:1px solid #3f3f46; cursor:pointer; }
+  #towerInfo button.up{ background:var(--acc); color:#04231a; border:none; font-weight:bold; }
+  #towerInfo button.sell{ background:transparent; color:var(--red); border-color:var(--red); }
+  #towerInfo .tip{ font-size:11px; color:var(--dim); margin-top:4px; }
+  #toast{ position:absolute; top:60px; left:50%; transform:translateX(-50%); z-index:8; font-size:14px; letter-spacing:2px;
+    color:var(--fg); background:rgba(0,0,0,.75); border:1px solid #3f3f46; padding:6px 18px; border-radius:6px; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #toast.show{ opacity:1; }
+  #speedTag{ position:absolute; top:10px; right:10px; z-index:5; font-size:13px; color:var(--gold); background:rgba(0,0,0,.5);
+    border:1px solid #52525b; border-radius:6px; padding:3px 10px; display:none; }
+  @media (max-width:700px){ .ov h1{ font-size:30px; } .ov p{ font-size:12px; } #hud{ font-size:12px; } }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="cv"></canvas></div>
+
+<div id="hud">
+  <div class="stat red">♥ <b id="hLives">20</b></div>
+  <div class="stat gold">¤ <b id="hGold">150</b></div>
+  <div class="stat">WAVE <b id="hWave">0</b>/20</div>
+  <div class="stat">👾 <b id="hCount">0</b></div>
+  <div class="sp">[1]建塔 [2]升级 [3]出售 [ESC]取消 [空格]2× [M]静音</div>
+</div>
+<div id="waveBar"><i id="waveFill"></i></div>
+<div id="speedTag">2×</div>
+<div id="towerInfo"></div>
+<div id="toast"></div>
+
+<!-- 主菜单 -->
+<div class="ov" id="menuOv">
+  <h1>无敌塔防</h1>
+  <p>INVINCIBLE TOWER DEFENSE</p>
+  <p>怪物从左上角涌入,沿路径冲向基地。在空地建塔拦截它们!</p>
+  <p>塔可连续升级:<b style="color:#fff">箭塔 → 飞刀 → 机枪塔 → 导弹塔 → 激光塔</b></p>
+  <div id="monsterKey"></div>
+  <button class="btn" id="btnStart">开 始</button>
+  <p style="margin-top:10px;font-size:11px;">最高纪录 <b id="bestShow" style="color:var(--gold)">-</b></p>
+</div>
+
+<!-- 波间奖励 -->
+<div class="ov hide" id="upgOv">
+  <h2>波次 <span id="upgWave">1</span> 击破!</h2>
+  <p>选择一项奖励</p>
+  <div class="upgs" id="upgBox"></div>
+</div>
+
+<!-- 游戏结束 -->
+<div class="ov hide" id="overOv">
+  <h2 style="color:var(--red)">基地沦陷</h2>
+  <p>你守住了 <b id="overWave">0</b> 波</p>
+  <p>最高纪录 <b id="overBest" style="color:var(--gold)">-</b></p>
+  <button class="btn" id="btnRetry">再来一局</button>
+</div>
+
+<!-- 胜利 -->
+<div class="ov hide" id="winOv">
+  <h2 style="color:var(--gold)">胜 利!</h2>
+  <p>20 波全部击破,基地屹立不倒。</p>
+  <button class="btn" id="btnAgain">再来一局</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+'use strict';
+/* ============================================================
+ * 无敌塔防 Invincible TD — 2.5D 固定空中视角塔防
+ * ============================================================ */
+
+/* ---------- 基础工具 ---------- */
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rndi=(a,b)=>Math.floor(rnd(a,b+1));
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const $=id=>document.getElementById(id);
+const dist2=(ax,az,bx,bz)=>{const dx=ax-bx,dz=az-bz;return dx*dx+dz*dz;};
+
+/* ---------- 全局状态 ---------- */
+const G={
+  st:'menu',            // menu | play | upg | over | win
+  wave:0, totalWaves:20,
+  gold:150, lives:20, score:0,
+  monsters:[], towers:[], bullets:[], fx:[], parts:[],
+  spawnQ:[], spawnT:0,
+  sel:null,             // 选中塔
+  hover:null,           // hover 格子 [c,r]
+  speed:1, muted:false,
+  frame:0, time:0,
+  build:false,          // 建塔模式(点击空地建箭塔)
+};
+
+/* ---------- 地图定义 ---------- */
+const COLS=16, ROWS=10;
+// 路径折返点(格子坐标),从出生到终点
+const WAYPOINTS=[[0,0],[14,0],[14,2],[0,2],[0,4],[14,4],[14,6],[0,6],[0,8],[14,8],[14,9]];
+const grid=[];           // grid[r][c]: '.' 空地 | '#' 路径 | 'R' 岩石 | 'S' 出生 | 'E' 终点
+const PATH=[];           // 世界坐标路径点(格子中心)
+(function buildGrid(){
+  for(let r=0;r<ROWS;r++){ grid[r]=[]; for(let c=0;c<COLS;c++) grid[r][c]='.'; }
+  for(let i=0;i<WAYPOINTS.length-1;i++){
+    const [c1,r1]=WAYPOINTS[i],[c2,r2]=WAYPOINTS[i+1];
+    const dc=Math.sign(c2-c1), dr=Math.sign(r2-r1);
+    let c=c1,r=r1;
+    for(;;){ grid[r][c]='#'; if(c===c2&&r===r2) break; c+=dc; r+=dr; }
+  }
+  grid[WAYPOINTS[0][1]][WAYPOINTS[0][0]]='S';
+  const [ec,er]=WAYPOINTS[WAYPOINTS.length-1];
+  grid[er][ec]='E';
+  // 岩石(避开路径)
+  const ROCK_SPOTS=[[2,0],[4,2],[7,0],[10,2],[13,0],[15,2],[2,6],[4,8],[6,6],[8,8],[11,6],[13,8],[15,6],[15,8],[1,9],[0,5],[15,0],[15,4],[3,4],[6,4]];
+  for(const [c,r] of ROCK_SPOTS){ if(grid[r][c]==='.') grid[r][c]='R'; }
+  // 世界坐标路径点(去重)
+  const pushPt=(x,z)=>{ const last=PATH[PATH.length-1]; if(!last||last[0]!==x||last[2]!==z) PATH.push([x,0,z]); };
+  for(let i=0;i<WAYPOINTS.length-1;i++){
+    const [c1,r1]=WAYPOINTS[i],[c2,r2]=WAYPOINTS[i+1];
+    const dc=Math.sign(c2-c1), dr=Math.sign(r2-r1);
+    let c=c1,r=r1;
+    for(;;){ pushPt(c+0.5,r+0.5); if(c===c2&&r===r2) break; c+=dc; r+=dr; }
+  }
+})();
+// 格子坐标 → 世界(格子中心)
+const cellWorld=(c,r)=>[c+0.5,0,r+0.5];
+// 世界 → 格子
+const worldCell=(x,z)=>{ const c=Math.floor(x), r=Math.floor(z); return (c>=0&&c<COLS&&r>=0&&r<ROWS)?[c,r]:null; };
+// 该格子是否可建塔
+const canBuild=(c,r)=>grid[r]&&grid[r][c]==='.';
+// 路径总长(世界单位)
+const PATH_LEN=(()=>{let L=0;for(let i=1;i<PATH.length;i++){const a=PATH[i-1],b=PATH[i];L+=Math.hypot(b[0]-a[0],b[2]-a[2]);}return L;})();
+
+/* ---------- 怪物定义 ---------- */
+const MON_DEFS=[
+  {key:'g',  name:'格兰玛雅', hp:30,  spd:1.15, gold:5,  dmg:1, color:0x84cc16, r:0.42, desc:'基础小怪,成群出现'},
+  {key:'bat',name:'蝙蝠怪',   hp:18,  spd:1.9,  gold:6,  dmg:1, color:0xa78bfa, r:0.34, dodge:0.3, desc:'高速,30% 闪避攻击'},
+  {key:'b',  name:'布鲁',     hp:75,  spd:0.95, gold:10, dmg:2, color:0x38bdf8, r:0.5,  desc:'精英,皮糙肉厚'},
+  {key:'a',  name:'装甲兽',   hp:95,  spd:0.7,  gold:14, dmg:2, color:0x94a3b8, r:0.52, armor:0.3, desc:'30% 减伤,导弹激光无视'},
+  {key:'s',  name:'分裂怪',   hp:42,  spd:1.05, gold:10, dmg:1, color:0xf472b6, r:0.4,  split:true, desc:'死亡分裂为 2 只小怪'},
+  {key:'boss',name:'哥斯拉',  hp:1500,spd:0.42, gold:150,dmg:5, color:0xdc2626, r:0.9,  boss:true, desc:'每 5 波降临,血越少越狂暴'},
+];
+const MON_BY={}; MON_DEFS.forEach((d,i)=>MON_BY[d.key]=d);
+
+/* ---------- 塔定义(5级升级链) ---------- */
+const TOWER_DEFS=[
+  {lv:1, name:'箭塔',   cost:50,  range:3.0, rate:1.1, dmg:12, color:0x10b981, tip:'基础远程,单体射击'},
+  {lv:2, name:'飞刀塔', cost:40,  range:3.3, rate:1.3, dmg:20, color:0x34d399, tip:'更快更疼,单体'},
+  {lv:3, name:'机枪塔', cost:70,  range:3.2, rate:6.0, dmg:7,  color:0xfbbf24, tip:'高速连射,单体'},
+  {lv:4, name:'导弹塔', cost:120, range:4.6, rate:0.8, dmg:48, color:0xf97316, tip:'抛物线溅射,无视护甲'},
+  {lv:5, name:'激光塔', cost:200, range:5.8, rate:2.2, dmg:30, color:0xef4444, tip:'穿透光束,灼烧整列'},
+];
+const SELL_RATIO=0.7;
+
+/* ---------- 波次表(20波) ---------- */
+const WAVES=[
+  {boss:false, seq:'g6'},
+  {boss:false, seq:'g9'},
+  {boss:false, seq:'g6 bat4'},
+  {boss:false, seq:'g10 bat6'},
+  {boss:true,  seq:'g8 boss1'},
+  {boss:false, seq:'b5 g8'},
+  {boss:false, seq:'g12 bat8 a3'},
+  {boss:false, seq:'b8 s4'},
+  {boss:false, seq:'g15 a5 bat6'},
+  {boss:true,  seq:'s6 a4 boss1'},
+  {boss:false, seq:'b10 s6'},
+  {boss:false, seq:'a8 s8 bat8'},
+  {boss:false, seq:'b12 g10 a4'},
+  {boss:false, seq:'s10 a8 b8'},
+  {boss:true,  seq:'a6 s8 b6 boss1'},
+  {boss:false, seq:'b12 s10 a6 bat8'},
+  {boss:false, seq:'a10 s12 b10'},
+  {boss:false, seq:'b14 s12 a8 g12'},
+  {boss:false, seq:'s14 a12 b12 bat10'},
+  {boss:true,  seq:'b10 s10 a10 bat8 boss1'},
+];
+
+/* ---------- Three 场景 ---------- */
+const canvas=$('cv');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0a0e14);
+scene.fog=new THREE.Fog(0x0a0e14,26,42);
+
+// 固定 2.5D 空中视角
+const cam=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,100);
+const CAM_POS=[7.5,17.5,14.5];
+cam.position.set(...CAM_POS);
+cam.lookAt(7.5,0,4.5);
+
+// 灯光
+const sun=new THREE.DirectionalLight(0xfff5e0,1.0);
+sun.position.set(10,22,6);
+sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-12; sun.shadow.camera.right=27;
+sun.shadow.camera.top=20;  sun.shadow.camera.bottom=-10;
+scene.add(sun);
+scene.add(new THREE.AmbientLight(0x8899bb,0.75));
+const hemi=new THREE.HemisphereLight(0xbdd8ff,0x3a4a3a,0.35);
+scene.add(hemi);
+
+// 地面
+const ground=new THREE.Mesh(
+  new THREE.PlaneGeometry(COLS+0.5,ROWS+0.5),
+  new THREE.MeshLambertMaterial({color:0x1e293b})
+);
+ground.rotation.x=-Math.PI/2; ground.position.set(7.5,0,4.5); ground.receiveShadow=true;
+scene.add(ground);
+
+// 地图外围(更深的地)
+const outer=new THREE.Mesh(
+  new THREE.PlaneGeometry(36,24),
+  new THREE.MeshLambertMaterial({color:0x111827})
+);
+outer.rotation.x=-Math.PI/2; outer.position.set(7.5,-0.02,4.5);
+scene.add(outer);
+
+// 路径带
+(function buildPathMesh(){
+  const shape=new THREE.Shape();
+  shape.moveTo(PATH[0][0]-0.5,PATH[0][2]-0.5);
+  for(let i=0;i<PATH.length;i++){
+    const p=PATH[i];
+    shape.lineTo(p[0]+0.5,p[2]-0.5);
+  }
+  for(let i=PATH.length-1;i>=0;i--){
+    const p=PATH[i];
+    shape.lineTo(p[0]+0.5,p[2]+0.5);
+  }
+  shape.lineTo(PATH[0][0]-0.5,PATH[0][2]-0.5);
+  const pathMesh=new THREE.Mesh(
+    new THREE.ShapeGeometry(shape),
+    new THREE.MeshLambertMaterial({color:0xd8b98a})
+  );
+  pathMesh.rotation.x=-Math.PI/2;
+  pathMesh.position.y=0.01;
+  pathMesh.receiveShadow=true;
+  scene.add(pathMesh);
+})();
+
+// 路径边线(视觉提示)
+(function buildPathLines(){
+  const pts=PATH.map(p=>new THREE.Vector3(p[0],0.02,p[2]));
+  const line=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0x8a6f4d})
+  );
+  scene.add(line);
+})();
+
+// 出生点标记
+const spawnMark=new THREE.Mesh(
+  new THREE.BoxGeometry(1,0.15,1),
+  new THREE.MeshLambertMaterial({color:0xf59e0b})
+);
+spawnMark.position.set(PATH[0][0],0.02,PATH[0][2]);
+scene.add(spawnMark);
+// 基地(终点)标记
+const baseMark=new THREE.Mesh(
+  new THREE.CylinderGeometry(0.75,0.75,0.12,6),
+  new THREE.MeshLambertMaterial({color:0xef4444})
+);
+baseMark.rotation.x=Math.PI/2;
+baseMark.position.set(PATH[PATH.length-1][0],0.03,PATH[PATH.length-1][2]);
+scene.add(baseMark);
+
+// 岩石
+const GEO_ROCK=new THREE.DodecahedronGeometry(0.42,0);
+const MAT_ROCK=new THREE.MeshLambertMaterial({color:0x52525b});
+for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+  if(grid[r][c]==='R'){
+    const m=new THREE.Mesh(GEO_ROCK,MAT_ROCK);
+    m.position.set(c+0.5,0.28,r+0.5);
+    m.scale.set(rnd(0.8,1.4),rnd(0.6,1.1),rnd(0.8,1.4));
+    m.rotation.y=rnd(0,3);
+    m.castShadow=true;
+    scene.add(m);
+  }
+}
+
+/* ---------- 网格叠加层(hover 高亮) ---------- */
+const hoverMesh=new THREE.Mesh(
+  new THREE.PlaneGeometry(0.92,0.92),
+  new THREE.MeshBasicMaterial({color:0x10b981,transparent:true,opacity:0.35,side:THREE.DoubleSide})
+);
+hoverMesh.rotation.x=-Math.PI/2; hoverMesh.position.y=0.05; hoverMesh.visible=false;
+scene.add(hoverMesh);
+
+/* ---------- 射线拾取 ---------- */
+const raycaster=new THREE.Raycaster();
+const ndc=new THREE.Vector2();
+function pickCell(px,py){
+  ndc.x=(px/window.innerWidth)*2-1;
+  ndc.y=-(py/window.innerHeight)*2+1;
+  raycaster.setFromCamera(ndc,cam);
+  const hits=raycaster.intersectObject(ground);
+  if(!hits.length) return null;
+  const p=hits[0].point;
+  return worldCell(p.x,p.z);
+}
+
+/* ============================================================
+ * 怪物系统
+ * ============================================================ */
+const GEO_SPHERE=new THREE.SphereGeometry(1,10,8);
+const GEO_CONE=new THREE.ConeGeometry(0.5,1,6);
+const GEO_BOX=new THREE.BoxGeometry(1,1,1);
+const MAT_EYE=new THREE.MeshBasicMaterial({color:0xffffff});
+const MAT_PUPIL=new THREE.MeshBasicMaterial({color:0x111111});
+const MON_MATS={};
+MON_DEFS.forEach(d=>{MON_MATS[d.key]=new THREE.MeshLambertMaterial({color:d.color});});
+
+function monModel(def,mini){
+  const grp=new THREE.Group();
+  const r=def.r*(mini?0.6:1);
+  const body=new THREE.Mesh(GEO_SPHERE,MON_MATS[def.key]);
+  body.scale.set(r,r*0.85,r);
+  body.position.y=r*0.85;
+  body.castShadow=true;
+  grp.add(body);
+  // 眼睛(朝移动方向,默认 +z)
+  const ew=0.1*r, eh=0.12*r;
+  const eyeL=new THREE.Mesh(GEO_BOX,MAT_EYE); eyeL.scale.set(ew,eh,0.05); eyeL.position.set(-0.32*r,0.95*r,0.8*r);
+  const eyeR=new THREE.Mesh(GEO_BOX,MAT_EYE); eyeR.scale.set(ew,eh,0.05); eyeR.position.set(0.32*r,0.95*r,0.8*r);
+  const pupL=new THREE.Mesh(GEO_BOX,MAT_PUPIL); pupL.scale.set(0.5*ew,0.5*eh,0.06); pupL.position.set(-0.32*r,0.95*r,0.84*r);
+  const pupR=new THREE.Mesh(GEO_BOX,MAT_PUPIL); pupR.scale.set(0.5*ew,0.5*eh,0.06); pupR.position.set(0.32*r,0.95*r,0.84*r);
+  grp.add(eyeL,eyeR,pupL,pupR);
+  // 特征
+  if(def.boss){
+    for(let i=0;i<4;i++){
+      const spike=new THREE.Mesh(GEO_CONE,MON_MATS[def.key]);
+      spike.scale.set(0.22,0.9,0.22);
+      spike.position.set((i-1.5)*0.42*r,2.2*r,-0.2*r);
+      grp.add(spike);
+    }
+  } else if(def.key==='bat'){
+    const wingL=new THREE.Mesh(GEO_BOX,MON_MATS[def.key]);
+    wingL.scale.set(0.7,0.06,0.5); wingL.position.set(-0.95*r,1.15*r,0);
+    wingL.rotation.z=0.5;
+    const wingR=wingL.clone(); wingR.position.x=0.95*r; wingR.rotation.z=-0.5;
+    grp.add(wingL,wingR);
+  } else if(def.key==='s'){
+    const ant=new THREE.Mesh(GEO_CONE,MON_MATS[def.key]);
+    ant.scale.set(0.12,0.4,0.12); ant.position.set(0,1.55*r,0.2*r);
+    grp.add(ant);
+  }
+  return grp;
+}
+
+function spawnMonster(key,hpMul,mini){
+  const def=MON_BY[key];
+  const hp=(mini?def.hp*0.5:def.hp)*(mini?1:hpMul);
+  const m={
+    key,def,mini:!!mini,
+    hp,maxHp:hp,
+    spd:def.spd*(1+Math.min(0.8,(G.wave-1)*0.025)),
+    gold:def.gold,
+    seg:0,pos:[PATH[0][0],0,PATH[0][2]],
+    done:false,dead:false,flash:0,sprint:0,sprintCd:0,slowT:0,slowF:1,
+    hitCd:0,
+  };
+  m.grp=monModel(def,mini);
+  scene.add(m.grp);
+  G.monsters.push(m);
+  return m;
+}
+
+function moveMonsters(dt){
+  for(const m of G.monsters){
+    if(m.done||m.dead) continue;
+    m.flash=Math.max(0,m.flash-dt);
+    if(m.hitCd>0) m.hitCd-=dt;
+    if(m.sprint>0) m.sprint-=dt;
+    if(m.slowT>0){ m.slowT-=dt; if(m.slowT<=0) m.slowF=1; }
+    const spd=m.spd*m.slowF*(m.sprint>0?3:1);
+    let remain=spd*dt;
+    while(remain>0&&m.seg<PATH.length-1){
+      const a=PATH[m.seg], b=PATH[m.seg+1];
+      const dx=b[0]-a[0], dz=b[2]-a[2];
+      const segLen=Math.hypot(dx,dz)||1;
+      const proj=(m.pos[0]-a[0])*dx+(m.pos[2]-a[2])*dz;
+      const toEnd=segLen-proj;
+      if(toEnd<=remain){ remain-=toEnd; m.seg++; m.pos[0]=b[0]; m.pos[2]=b[2]; }
+      else { const f=remain/segLen; m.pos[0]+=dx*f; m.pos[2]+=dz*f; remain=0; }
+    }
+    if(m.seg>=PATH.length-1){ m.done=true; continue; }
+    // 面向移动方向
+    const a=PATH[m.seg], b=PATH[m.seg+1];
+    const ang=Math.atan2(b[2]-a[2],b[0]-a[0]);
+    m.grp.rotation.y=ang;
+    // 模型位置 + 受伤闪白
+    const g=m.grp;
+    g.position.set(m.pos[0],m.def.r*(m.mini?0.6:1)*0.85,m.pos[2]);
+    if(m.flash>0&&!m.flashOn){ m.flashOn=true; g.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive)o.material.emissive.set(0xffffff);}); }
+    else if(m.flash<=0&&m.flashOn){ m.flashOn=false; g.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive)o.material.emissive.set(0x000000);}); }
+    // 哥斯拉冲刺残留特效
+    if(m.sprint>0&&m.def.boss&&G.frame%3===0) dust(m.pos[0],m.pos[2]);
+  }
+}
+
+function hitMonster(m,dmg,opt){
+  opt=opt||{};
+  if(m.dead||m.done) return 'dead';
+  // 闪避(蝙蝠怪)
+  if(m.def.dodge&&!opt.bypassDodge&&Math.random()<m.def.dodge){
+    toast(m.def.name+' 闪避!',0xffffff); return 'dodge';
+  }
+  let d=dmg;
+  if(m.def.armor&&!opt.ignoreArmor) d*=1-m.def.armor;
+  m.hp-=d;
+  m.flash=0.1;
+  // 哥斯拉狂暴冲刺:每损 30% 血触发
+  if(m.def.boss&&m.sprintCd<=0&&m.hp<m.maxHp*0.7&&m.hp>0){
+    m.sprint=2; m.sprintCd=5;
+    dust(m.pos[0],m.pos[2],8);
+    toast('哥斯拉狂暴冲刺!',0xef4444);
+  }
+  if(m.hp<=0) killMonster(m);
+  return 'hit';
+}
+
+function killMonster(m){
+  if(m.dead) return;
+  m.dead=true;
+  const i=G.monsters.indexOf(m);
+  if(i>=0) G.monsters.splice(i,1);
+  scene.remove(m.grp);
+  G.gold+=m.def.gold;
+  G.score+=Math.round(m.def.gold*10*(m.def.boss?10:1));
+  burst(m.pos[0],m.pos[2],m.def.color,m.def.boss?14:7);
+  if(m.def.boss&&G.st==='play'){
+    const n=G.wave+5;
+    if(n<=G.totalWaves){ toast('哥斯拉被击败!第 '+n+' 波再会',0xdc2626); }
+    else toast('哥斯拉被击败!',0xdc2626);
+  }
+  if(m.def.split&&!m.mini){
+    for(let i=0;i<2;i++){ spawnMonster('s',1,true); }
+  }
+}
+
+/* ---------- 波次系统 ---------- */
+function parseSeq(seq){
+  const q=[];
+  for(const part of seq.split(' ')){
+    const m=part.match(/^([a-z]+)(\d+)$/);
+    if(m) for(let i=0;i<+m[2];i++) q.push(m[1]);
+  }
+  return q;
+}
+function startWave(n){
+  G.wave=n;
+  G.spawnQ=parseSeq(WAVES[n-1].seq);
+  G.spawnT=0.8;
+  G.monsters.forEach(m=>{m.done=true;});
+  G.monsters=[]; // 清理残留(波间不会有残留,防御)
+  $('hWave').textContent=n;
+  updateWaveBar();
+}
+function updateSpawning(dt){
+  if(!G.spawnQ.length) return;
+  G.spawnT-=dt;
+  if(G.spawnT<=0){
+    const key=G.spawnQ.shift();
+    const hpMul=1+0.12*(G.wave-1)+(key==='boss'?(G.wave-1)*0.05:0);
+    spawnMonster(key,hpMul);
+    G.spawnT=Math.max(0.12,0.8-Math.min(0.4,(G.wave-1)*0.025));
+  }
+}
+function waveCleared(){
+  return G.spawnQ.length===0&&G.monsters.length===0;
+}
+
+/* ---------- 特效:粒子爆发/灰尘 ---------- */
+const MAXPARTS=500;
+function burst(x,z,color,n){
+  if(G.parts.length>MAXPARTS) return;
+  const mat=new THREE.MeshBasicMaterial({color});
+  for(let i=0;i<n;i++){
+    const s=0.06+rnd(0,0.08);
+    const p=new THREE.Mesh(GEO_BOX,mat);
+    p.position.set(x+rnd(-0.2,0.2),0.3+rnd(0,0.3),z+rnd(-0.2,0.2));
+    p.scale.set(s,s,s);
+    p.userData={vx:rnd(-1.6,1.6),vy:rnd(1.4,3.2),vz:rnd(-1.6,1.6),life:0.5+rnd(0,0.3),max:0.8};
+    scene.add(p);
+    G.parts.push(p);
+  }
+}
+function dust(x,z,n){
+  n=n||4;
+  if(G.parts.length>MAXPARTS) return;
+  const mat=MAT_DUST;
+  for(let i=0;i<n;i++){
+    const s=0.1+rnd(0,0.12);
+    const p=new THREE.Mesh(GEO_BOX,mat);
+    p.position.set(x+rnd(-0.3,0.3),0.12,z+rnd(-0.3,0.3));
+    p.scale.set(s,s*0.5,s);
+    p.userData={vx:rnd(-0.8,0.8),vy:rnd(0.4,1.0),vz:rnd(-0.8,0.8),life:0.4+rnd(0,0.2),max:0.6};
+    scene.add(p);
+    G.parts.push(p);
+  }
+}
+const MAT_DUST=new THREE.MeshBasicMaterial({color:0xc8b08a,transparent:true,opacity:0.7});
+function updateParts(dt){
+  for(let i=G.parts.length-1;i>=0;i--){
+    const p=G.parts[i], u=p.userData;
+    u.life-=dt;
+    if(u.life<=0){ scene.remove(p); G.parts.splice(i,1); continue; }
+    p.position.x+=u.vx*dt; p.position.y+=u.vy*dt; p.position.z+=u.vz*dt;
+    u.vy-=4*dt;
+    const s=Math.max(0.02,1-u.life/u.max);
+    p.scale.set(s*0.4,s*0.4,s*0.4);
+  }
+}
+
+/* ============================================================
+ * 塔系统
+ * ============================================================ */
+const GEO_CYL=new THREE.CylinderGeometry(0.38,0.46,0.26,8);
+const MAT_BASE=new THREE.MeshLambertMaterial({color:0x3f3f46});
+const MAT_BARREL=new THREE.MeshLambertMaterial({color:0x1c1917});
+const TOWER_MATS=TOWER_DEFS.map(d=>new THREE.MeshLambertMaterial({color:d.color}));
+
+function towerModel(lv){
+  const grp=new THREE.Group();
+  const base=new THREE.Mesh(GEO_CYL,MAT_BASE);
+  base.position.y=0.13; base.castShadow=true;
+  grp.add(base);
+  const turret=new THREE.Group();
+  turret.position.y=0.34;
+  const body=new THREE.Mesh(GEO_BOX,TOWER_MATS[lv-1]);
+  body.scale.set(0.5,0.55,0.5);
+  body.position.y=0.18;
+  turret.add(body);
+  const barrel=new THREE.Mesh(GEO_BOX,MAT_BARREL);
+  barrel.scale.set(0.13,0.13,0.5);
+  barrel.position.set(0,0.32,0.35);
+  turret.add(barrel);
+  grp.add(turret);
+  return {grp,turret};
+}
+
+function buildTower(c,r){
+  const t={c,r,lv:1,cd:0,invest:TOWER_DEFS[0].cost,x:c+0.5,z:r+0.5,rotY:0};
+  const md=towerModel(1);
+  t.grp=md.grp; t.turret=md.turret;
+  t.grp.position.set(t.x,0,t.z);
+  scene.add(t.grp);
+  G.towers.push(t);
+  G.gold-=TOWER_DEFS[0].cost;
+  sfx('build');
+  return t;
+}
+function removeTower(t){
+  const i=G.towers.indexOf(t);
+  if(i>=0) G.towers.splice(i,1);
+  scene.remove(t.grp);
+  if(G.sel===t) G.sel=null;
+}
+function upgradeTower(t){
+  const next=TOWER_DEFS[t.lv]; // 下一级(索引 lv-1+1)
+  if(t.lv>=5) return;
+  const cost=next.cost;
+  if(G.gold<cost) return;
+  G.gold-=cost;
+  t.invest+=cost;
+  t.lv++;
+  t.cd=0.3;
+  const md=towerModel(t.lv);
+  scene.remove(t.grp);
+  t.grp=md.grp; t.turret=md.turret;
+  t.grp.position.set(t.x,0,t.z);
+  scene.add(t.grp);
+  sfx('upgrade');
+}
+function sellTower(t){
+  const refund=Math.round(t.invest*SELL_RATIO);
+  G.gold+=refund;
+  removeTower(t);
+  sfx('sell');
+  return refund;
+}
+function towerUpgCost(t){ return t.lv<5?TOWER_DEFS[t.lv].cost:null; }
+
+/* ---------- 目标选择:射程内路径进度最大(最接近终点) ---------- */
+function findTarget(t,def){
+  let best=null,bestProg=-1;
+  for(const m of G.monsters){
+    if(m.dead||m.done) continue;
+    const dx=m.pos[0]-t.x, dz=m.pos[2]-t.z;
+    if(dx*dx+dz*dz>def.range*def.range) continue;
+    // 进度 = 已走路径比例(seg 为主,段内进度为辅)
+    let prog=m.seg;
+    if(m.seg<PATH.length-1){
+      const a=PATH[m.seg], b=PATH[m.seg+1];
+      const segLen=Math.hypot(b[0]-a[0],b[2]-a[2])||1;
+      prog+=( (m.pos[0]-a[0])*(b[0]-a[0])+(m.pos[2]-a[2])*(b[2]-a[2]) )/segLen;
+    }
+    if(prog>bestProg){ bestProg=prog; best=m; }
+  }
+  return best;
+}
+
+/* ---------- 子弹 ---------- */
+const GEO_BULLET=new THREE.SphereGeometry(0.09,6,6);
+const BULLET_MATS={};
+function bulletMat(color){
+  if(!BULLET_MATS[color]) BULLET_MATS[color]=new THREE.MeshBasicMaterial({color});
+  return BULLET_MATS[color];
+}
+function fireBullet(t,def,target,spd,color,splashR,ignoreArmor,grav){
+  const sx=t.x, sz=t.z;
+  const dx=target.pos[0]-sx, dz=target.pos[2]-sz;
+  const d=Math.hypot(dx,dz)||1;
+  const b={
+    x:sx,y:1.05,z:sz,
+    vx:dx/d*spd, vz:dz/d*spd,
+    dmg:def.dmg, spd, life:def.range/spd+1.2,
+    color, splashR:!!splashR, ignoreArmor:!!ignoreArmor, grav:grav||0,
+    target,
+  };
+  const mesh=new THREE.Mesh(GEO_BULLET,bulletMat(color));
+  const s=splashR?0.16:0.11;
+  mesh.scale.set(s,s,s);
+  b.mesh=mesh;
+  scene.add(mesh);
+  G.bullets.push(b);
+}
+function removeBullet(b){
+  const i=G.bullets.indexOf(b);
+  if(i>=0) G.bullets.splice(i,1);
+  scene.remove(b.mesh);
+  if(b.trail&&b.trail.parent){ scene.remove(b.trail); }
+}
+function updateBullets(dt){
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const b=G.bullets[i];
+    b.life-=dt;
+    if(b.life<=0){ removeBullet(b); continue; }
+    if(b.target&&!b.target.dead&&!b.target.done){
+      const tx=b.target.pos[0], tz=b.target.pos[2];
+      const dx=tx-b.x, dz=tz-b.z;
+      const d=Math.hypot(dx,dz)||1;
+      const wantX=dx/d*b.spd, wantZ=dz/d*b.spd;
+      b.vx=lerp(b.vx,wantX,dt*3.2);
+      b.vz=lerp(b.vz,wantZ,dt*3.2);
+    }
+    b.x+=b.vx*dt; b.z+=b.vz*dt;
+    if(b.grav){ b.y-=b.grav*dt; b.y=Math.max(0.35,b.y); }
+    b.mesh.position.set(b.x,b.y,b.z);
+    if(b.splashR){
+      // 尾迹光点
+      if(G.frame%3===0){
+        const tr=new THREE.Mesh(GEO_BULLET,bulletMat(0xffd27a));
+        tr.scale.set(0.07,0.07,0.07);
+        tr.position.set(b.x,0.4,b.z);
+        scene.add(tr);
+        tr.userData.life=0.25;
+        G.fx.push(tr);
+      }
+    }
+    // 命中检测
+    let hit=false;
+    for(const m of G.monsters){
+      if(m.dead||m.done) continue;
+      const dx=m.pos[0]-b.x, dz=m.pos[2]-b.z;
+      const rr=m.def.r+(b.splashR?0.45:0.22);
+      if(dx*dx+dz*dz<rr*rr){
+        if(b.splashR){
+          for(const m2 of G.monsters){
+            if(m2.dead||m2.done) continue;
+            if(dist2(m2.pos[0],m2.pos[2],b.x,b.z)<b.splashR*b.splashR){
+              hitMonster(m2,b.dmg,{ignoreArmor:b.ignoreArmor});
+            }
+          }
+          explodeFx(b.x,b.z,b.color);
+          sfx('boom');
+        } else {
+          hitMonster(m,b.dmg);
+        }
+        hit=true;
+        break;
+      }
+    }
+    if(hit) removeBullet(b);
+  }
+}
+
+/* ---------- 激光(穿透光束) ---------- */
+function laserAttack(t,def,target){
+  const ang=Math.atan2(target.pos[0]-t.x,target.pos[2]-t.z);
+  const sx=t.x, sz=t.z;
+  const cosA=Math.cos(ang), sinA=Math.sin(ang);
+  let hitAny=false;
+  for(const m of G.monsters){
+    if(m.dead||m.done) continue;
+    const dx=m.pos[0]-sx, dz=m.pos[2]-sz;
+    const along=dx*cosA+dz*sinA;
+    if(along<0||along>def.range) continue;
+    const perp=Math.abs(-dx*sinA+dz*cosA);
+    if(perp<0.5+m.def.r*0.7){
+      hitMonster(m,def.dmg);
+      hitAny=true;
+    }
+  }
+  // 光束视觉
+  const endX=sx+Math.cos(ang)*def.range, endZ=sz+Math.sin(ang)*def.range;
+  const geom=new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(sx,1.0,sz), new THREE.Vector3(endX,0.6,endZ)
+  ]);
+  const line=new THREE.Line(geom,new THREE.LineBasicMaterial({color:def.color,transparent:true,opacity:0.9}));
+  scene.add(line);
+  line.userData.life=0.12;
+  G.fx.push(line);
+  sfx('laser');
+  return hitAny;
+}
+
+/* ---------- 塔开火分发 ---------- */
+function fireTower(t,def,target){
+  t.rotY=Math.atan2(target.pos[0]-t.x,target.pos[2]-t.z);
+  const lv=t.lv;
+  if(lv===1){ fireBullet(t,def,target,13,def.color); sfx('arrow'); }
+  else if(lv===2){ fireBullet(t,def,target,16,def.color); sfx('arrow'); }
+  else if(lv===3){ fireBullet(t,def,target,21,def.color); sfx('mg'); }
+  else if(lv===4){ fireBullet(t,def,target,9,0xf97316,1.5,true,6); sfx('missile'); }
+  else if(lv===5){ laserAttack(t,def,target); }
+}
+function updateTowers(dt){
+  for(const t of G.towers){
+    t.cd-=dt;
+    const base=TOWER_DEFS[t.lv-1];
+    const def={
+      name:base.name,color:base.color,cost:base.cost,tip:base.tip,
+      dmg:Math.round(base.dmg*(G.dmgMul||1)),
+      rate:base.rate*(G.rateMul||1),
+      range:base.range*(G.rangeMul||1),
+    };
+    const target=findTarget(t,def);
+    if(target){
+      if(t.cd<=0){ t.cd=1/def.rate; fireTower(t,def,target); }
+    }
+    if(t.turret){
+      const ang=target?Math.atan2(target.pos[0]-t.x,target.pos[2]-t.z):t.rotY;
+      t.turret.rotation.y=ang;
+    }
+  }
+}
+
+/* ---------- 爆炸特效(mesh 限流,沿用抢滩经验) ---------- */
+function explodeFx(x,z,color){
+  burst(x,z,color,10);
+  if(G.fx.length>24) return;
+  const flash=new THREE.Mesh(GEO_SPHERE,bulletMat(0xffe9a8));
+  flash.scale.set(0.3,0.3,0.3);
+  flash.position.set(x,0.55,z);
+  flash.userData={life:0.18,max:0.18,flash:true};
+  scene.add(flash);
+  G.fx.push(flash);
+}
+function updateFx(dt){
+  for(let i=G.fx.length-1;i>=0;i--){
+    const f=G.fx[i];
+    f.userData.life-=dt;
+    if(f.userData.life<=0){
+      scene.remove(f);
+      if(f.geometry) f.geometry.dispose();
+      G.fx.splice(i,1);
+      continue;
+    }
+    if(f.userData.flash){
+      const s=0.3+0.5*(1-f.userData.life/f.userData.max);
+      f.scale.set(s,s,s);
+    } else if(f.material&&f.material.opacity!==undefined){
+      f.material.opacity=Math.max(0,f.userData.life/f.userData.max*0.9);
+    }
+  }
+}
+
+/* ============================================================
+ * 音效(WebAudio 合成)
+ * ============================================================ */
+let AC=null;
+const SND={
+  arrow:[880,0.06,'square'], mg:[440,0.03,'square'], missile:[160,0.32,'sawtooth'],
+  boom:[85,0.35,'sine'], laser:[1100,0.14,'sawtooth'], build:[520,0.08,'triangle'],
+  upgrade:[660,0.12,'triangle'], sell:[330,0.09,'triangle'], hit:[190,0.06,'sine'],
+  coin:[990,0.07,'square'], select:[700,0.05,'triangle'], lose:[150,0.5,'sine'],
+  win:[523,0.4,'triangle'], start:[392,0.16,'triangle'],
+};
+function sfx(kind){
+  if(G.muted) return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const c=SND[kind]||SND.arrow;
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    o.type=c[2]; o.frequency.setValueAtTime(c[0],AC.currentTime);
+    g.gain.setValueAtTime(0.1,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+c[1]);
+    o.start(); o.stop(AC.currentTime+c[1]+0.02);
+  }catch(e){}
+}
+
+/* ---------- toast ---------- */
+let toastTimer=null;
+function toast(msg,color){
+  const el=$('toast');
+  el.textContent=msg;
+  el.style.color=color!==undefined?('#'+color.toString(16).padStart(6,'0')):'#fff';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),1200);
+}
+
+/* ---------- HUD ---------- */
+function updateHUD(){
+  $('hLives').textContent=G.lives;
+  $('hGold').textContent=G.gold;
+  $('hCount').textContent=G.monsters.length+G.spawnQ.length;
+  updateWaveBar();
+}
+function waveTotalCount(seq){
+  return seq.split(' ').reduce((s,p)=>{const m=p.match(/^[a-z]+(\d+)$/);return s+(m?+m[1]:0);},0);
+}
+function updateWaveBar(){
+  if(G.wave<=0){ $('waveFill').style.width='0%'; return; }
+  const total=waveTotalCount(WAVES[G.wave-1].seq);
+  const left=G.spawnQ.length;
+  $('waveFill').style.width=(100*(1-left/total)).toFixed(1)+'%';
+}
+
+/* ---------- 波间奖励(三选一) ---------- */
+const UPGS=[
+  {name:'金币补给',   ds:'+150 金币',                     fn:()=>{G.gold+=150;}},
+  {name:'急速射击',   ds:'全塔射速 +10%',                 fn:()=>{G.rateMul=(G.rateMul||1)*1.1;}},
+  {name:'基地加固',   ds:'基地生命 +5',                   fn:()=>{G.lives+=5;}},
+  {name:'塔械强化',   ds:'全塔伤害 +15%',                 fn:()=>{G.dmgMul=(G.dmgMul||1)*1.15;}},
+  {name:'资深射手',   ds:'全塔射程 +10%',                 fn:()=>{G.rangeMul=(G.rangeMul||1)*1.1;}},
+];
+function showUpgrade(){
+  G.st='upg';
+  $('upgWave').textContent=G.wave;
+  const box=$('upgBox');
+  box.innerHTML='';
+  const pool=[...UPGS];
+  const picks=[];
+  for(let i=0;i<3&&pool.length;i++){
+    picks.push(pool.splice(rndi(0,pool.length-1),1)[0]);
+  }
+  picks.forEach((u,i)=>{
+    const div=document.createElement('div');
+    div.className='upg';
+    div.innerHTML='<div class="num">'+(i+1)+'</div><div class="tt">'+u.name+'</div><div class="ds">'+u.ds+'</div>';
+    div.onclick=()=>{ u.fn(); sfx('coin'); $('upgOv').classList.add('hide'); G.st='play'; nextWaveOrWin(); };
+    box.appendChild(div);
+  });
+}
+function nextWaveOrWin(){
+  if(G.wave>=G.totalWaves){ winGame(); return; }
+  startWave(G.wave+1);
+  updateHUD();
+}
+
+/* ---------- 胜负 ---------- */
+function saveBest(){
+  if(G.wave>G.best.wave||(G.wave===G.best.wave&&G.score>G.best.score)){
+    G.best={wave:G.wave,score:G.score};
+    try{ localStorage.setItem(BEST_KEY,JSON.stringify(G.best)); }catch(e){}
+  }
+}
+function gameOver(){
+  G.st='over';
+  saveBest();
+  $('overWave').textContent=G.wave;
+  $('overBest').textContent=G.best.wave>0?('第 '+G.best.wave+' 波 · '+G.best.score+' 分'):'无';
+  $('overOv').classList.remove('hide');
+  sfx('lose');
+}
+function winGame(){
+  G.st='win';
+  saveBest();
+  sfx('win');
+  $('winOv').classList.remove('hide');
+}
+function startGame(){
+  G.monsters.forEach(m=>scene.remove(m.grp)); G.monsters=[];
+  G.towers.forEach(t=>scene.remove(t.grp)); G.towers=[];
+  G.bullets.forEach(b=>scene.remove(b.mesh)); G.bullets=[];
+  G.fx.forEach(f=>scene.remove(f)); G.fx=[];
+  G.parts.forEach(p=>scene.remove(p)); G.parts=[];
+  G.spawnQ=[]; G.sel=null; G.hover=null;
+  G.gold=150; G.lives=20; G.score=0; G.wave=0;
+  G.rateMul=1; G.dmgMul=1; G.rangeMul=1;
+  G.speed=1;
+  $('speedTag').style.display='none';
+  $('menuOv').classList.add('hide'); $('upgOv').classList.add('hide');
+  $('overOv').classList.add('hide'); $('winOv').classList.add('hide');
+  hideTowerInfo();
+  G.st='play';
+  startWave(1);
+  updateHUD();
+  sfx('start');
+  if(document.activeElement) document.activeElement.blur();
+}
+
+/* ---------- 塔信息面板 ---------- */
+function showTowerInfo(t){
+  G.sel=t;
+  const def=TOWER_DEFS[t.lv-1];
+  const next=TOWER_DEFS[t.lv];
+  const el=$('towerInfo');
+  let html='<div class="row"><span>Lv'+t.lv+' '+def.name+'</span><b>'+def.dmg+' 伤</b></div>';
+  html+='<div class="row"><span>射速</span><b>'+def.rate+'/s</b></div>';
+  html+='<div class="row"><span>射程</span><b>'+def.range+'</b></div>';
+  html+='<div class="row"><span>出售</span><b>'+Math.round(t.invest*SELL_RATIO)+'¤</b></div>';
+  if(next){
+    html+='<div class="btnRow"><button class="up" id="btnUpg">升级→'+next.name+' ('+next.cost+'¤)</button><button class="sell" id="btnSell">出售</button></div>';
+    html+='<div class="tip">'+next.tip+'</div>';
+  }else{
+    html+='<div class="row" style="color:var(--gold)"><span>已满级</span><b>MAX</b></div>';
+    html+='<div class="btnRow"><button class="sell" id="btnSell">出售</button></div>';
+  }
+  el.innerHTML=html;
+  el.style.display='block';
+  const bUpg=$('btnUpg');
+  if(bUpg) bUpg.onclick=()=>{ upgradeTower(t); updateHUD(); showTowerInfo(t); };
+  $('btnSell').onclick=()=>{ sellTower(t); hideTowerInfo(); updateHUD(); };
+  sfx('select');
+}
+function hideTowerInfo(){ G.sel=null; $('towerInfo').style.display='none'; }
+
+/* ---------- 交互输入 ---------- */
+function handleClick(e){
+  if(G.st!=='play') return;
+  const cell=pickCell(e.clientX,e.clientY);
+  if(!cell) return;
+  const [c,r]=cell;
+  const tower=G.towers.find(t=>t.c===c&&t.r===r);
+  if(tower){ showTowerInfo(tower); return; }
+  hideTowerInfo();
+  if(grid[r][c]==='.'){
+    if(G.gold>=TOWER_DEFS[0].cost){ buildTower(c,r); updateHUD(); }
+    else toast('金币不足',0xef4444);
+  }
+}
+function toggleSpeed(){
+  G.speed=G.speed===1?2:1;
+  $('speedTag').style.display=G.speed===2?'block':'none';
+}
+function toggleMute(){
+  G.muted=!G.muted;
+  toast(G.muted?'已静音':'声音开启',0xffffff);
+}
+window.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k==='m'||k==='M'){ toggleMute(); return; }
+  if(G.st!=='play') return;
+  if(k===' '){ e.preventDefault(); toggleSpeed(); }
+  else if(k==='1'){
+    G.sel=null; hideTowerInfo();
+    toast('点击空地建箭塔 (50¤)',0x10b981);
+  }
+  else if(k==='2'){
+    if(!G.sel){ toast('先点击选中一座塔',0x71717a); return; }
+    const cost=towerUpgCost(G.sel);
+    if(cost===null){ toast('已满级',0xf59e0b); }
+    else if(G.gold>=cost){ upgradeTower(G.sel); updateHUD(); showTowerInfo(G.sel); }
+    else toast('金币不足',0xef4444);
+  }
+  else if(k==='3'){
+    if(!G.sel){ toast('先点击选中一座塔',0x71717a); return; }
+    sellTower(G.sel); hideTowerInfo(); updateHUD();
+  }
+  else if(k==='Escape'){ hideTowerInfo(); }
+});
+
+/* ---------- 主循环 ---------- */
+let lastT=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(0.05,(now-lastT)/1000);
+  lastT=now;
+  G.frame++;
+  if(G.st==='play'){
+    G.time+=dt;
+    updateSpawning(dt*G.speed);
+    moveMonsters(dt*G.speed);
+    updateTowers(dt*G.speed);
+    updateBullets(dt*G.speed);
+    updateParts(dt*G.speed);
+    updateFx(dt*G.speed);
+    // 到达终点的怪物扣血
+    for(const m of G.monsters){
+      if(m.done&&!m.dead){
+        m.dead=true;
+        scene.remove(m.grp);
+        G.lives-=m.def.dmg;
+        sfx('hit');
+        toast('基地受到攻击 -'+m.def.dmg,0xef4444);
+        if(G.lives<=0){ G.lives=0; gameOver(); break; }
+      }
+    }
+    G.monsters=G.monsters.filter(m=>!m.dead&&!m.done);
+    // 波次推进
+    if(G.st==='play'&&waveCleared()){
+      if(G.wave>=G.totalWaves){ winGame(); }
+      else showUpgrade();
+    }
+    updateHUD();
+  }
+  // hover 高亮
+  if(G.st==='play'&&G.hover){
+    const [c,r]=G.hover;
+    const onTower=G.towers.some(t=>t.c===c&&t.r===r);
+    if(grid[r][c]==='.'||onTower){
+      hoverMesh.visible=true;
+      hoverMesh.position.set(c+0.5,0.05,r+0.5);
+      hoverMesh.material.color.setHex(onTower?0xf59e0b:0x10b981);
+    } else hoverMesh.visible=false;
+  } else if(hoverMesh.visible) hoverMesh.visible=false;
+  renderer.render(scene,cam);
+}
+
+/* ---------- 初始化 ---------- */
+const BEST_KEY='invincible_td_best';
+G.best={wave:0,score:0};
+try{ G.best=JSON.parse(localStorage.getItem(BEST_KEY))||{wave:0,score:0}; }catch(e){}
+(function initMonsterKey(){
+  const box=$('monsterKey');
+  MON_DEFS.forEach(d=>{
+    const div=document.createElement('div');
+    div.className='mk';
+    div.innerHTML='<span class="dot" style="background:#'+d.color.toString(16).padStart(6,'0')+'"></span>'+d.name+' — '+d.desc;
+    box.appendChild(div);
+  });
+})();
+$('bestShow').textContent=G.best.wave>0?('第 '+G.best.wave+' 波 · '+G.best.score+' 分'):'无';
+$('btnStart').onclick=startGame;
+$('btnRetry').onclick=startGame;
+$('btnAgain').onclick=startGame;
+canvas.addEventListener('click',handleClick);
+canvas.addEventListener('mousemove',e=>{
+  if(G.st!=='play'){ G.hover=null; return; }
+  G.hover=pickCell(e.clientX,e.clientY);
+});
+canvas.addEventListener('mouseleave',()=>{ G.hover=null; });
+window.addEventListener('resize',()=>{
+  cam.aspect=window.innerWidth/window.innerHeight;
+  cam.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+requestAnimationFrame(loop);
+
+/* ===== 占位(后续模块注入点) ===== */
+window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget};
+
+})();
+</script>
+</body>
+</html>
