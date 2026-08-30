@@ -15,6 +15,10 @@ h1{color:#facc15;font-size:22px;letter-spacing:3px;text-shadow:2px 2px 0 #7c2d12
 h1 small{color:#a1a1aa;font-size:11px;letter-spacing:2px;margin-left:6px}
 #mbtn{background:#18181b;border:1px solid #27272a;color:#e4e4e7;width:34px;height:34px;border-radius:4px;font-size:16px;cursor:pointer}
 #mbtn:hover{border-color:#facc15}
+.hbtns{display:flex;gap:6px}
+#cbtn{background:#18181b;border:1px solid #3f3f46;color:#a1a1aa;min-width:78px;height:34px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;font-family:inherit}
+#cbtn:hover{border-color:#f87171}
+#cbtn.on{background:#dc2626;border-color:#991b1b;color:#fff}
 .hud{width:100%;display:flex;justify-content:space-between;gap:4px;background:#18181b;border:1px solid #27272a;border-radius:4px;padding:6px 10px;font-size:11px;letter-spacing:1px}
 .hud-item{display:flex;flex-direction:column;align-items:center;gap:2px}
 .hud-item .lbl{color:#71717a}
@@ -48,7 +52,10 @@ footer{margin-top:2px;color:#3f3f46;font-size:10px;letter-spacing:2px;text-trans
 <div class="wrap">
   <header>
     <h1>坦克大战<small>BATTLE CITY</small></h1>
-    <button id="mbtn" title="静音(M)">🔊</button>
+    <div class="hbtns">
+      <button id="cbtn" title="疯狂模式:敌人也能捡道具">疯狂</button>
+      <button id="mbtn" title="静音(M)">🔊</button>
+    </div>
   </header>
   <div class="hud">
     <div class="hud-item"><span class="lbl">LEVEL</span><span id="hudLv" class="val">1</span></div>
@@ -66,6 +73,7 @@ footer{margin-top:2px;color:#3f3f46;font-size:10px;letter-spacing:2px;text-trans
         经典红白机复刻 · 守住基地鹰徽<br>
         <b>WASD/方向键</b> 移动 · <b>空格/J</b> 射击 · <b>P</b> 暂停<br>
         吃掉 <b>★</b> 升级坦克,<b>🛡</b> 护盾,<b>💣</b> 全屏轰炸,<b>🔥</b> 强化炮弹<br>
+        右上角 <b style="color:#f87171">🔥疯狂模式</b>:敌人也能抢道具!<br>
         <span class="warn">⚠ 别误伤自家基地!</span>
       </div>
       <button id="btnStart" class="btn">▶ 开始游戏</button>
@@ -274,9 +282,9 @@ const SPR=[
 const G={
  st:'menu',lvl:1,score:0,hi:+(localStorage.getItem('bc_hi')||0),lives:3,
  grid:[],queue:[],enemies:[],bullets:[],pows:[],parts:[],
- frame:0,spawnT:0,respT:0,frozen:0,shovel:0,shovelCells:null,bid:0,muted:false
+ frame:0,spawnT:0,respT:0,frozen:0,shovel:0,shovelCells:null,bid:0,muted:false,crazy:false
 };
-const P={x:0,y:0,dir:U,lv:1,alive:false,shield:0,cd:0,super:0};
+const P={x:0,y:0,dir:U,lv:1,alive:false,shield:0,cd:0,super:0,stun:0};
 const KEYS={};
 const TOUCH={u:false,d:false,l:false,r:false,f:false};
 const SPX=[32,192,352]; // 敌人出生点 col1,6,11
@@ -363,7 +371,7 @@ function resetLevel(){
  setHud();
 }
 function resetPlayer(){
- P.x=4*CELL;P.y=12*CELL;P.dir=U;P.alive=true;P.shield=150;
+ P.x=4*CELL;P.y=12*CELL;P.dir=U;P.alive=true;P.shield=150;P.stun=0;
 }
 function startGame(){
  G.lvl=1;G.score=0;G.lives=3;
@@ -398,7 +406,7 @@ function fireP(){
 function fireE(e){
  if(G.bullets.some(b=>b.eid===e.id))return;
  const bx=e.x+16+DX[e.dir]*20-2,by=e.y+16+DY[e.dir]*20-2;
- G.bullets.push({x:bx,y:by,dx:DX[e.dir],dy:DY[e.dir],spd:3.2+(e.type===2?0.4:0),owner:'e',eid:e.id});
+ G.bullets.push({x:bx,y:by,dx:DX[e.dir],dy:DY[e.dir],spd:3.2+(e.type===2?0.4:0),owner:'e',eid:e.id,sp:e.super>0?1:0});
  sfx('fire');
 }
 function updateBullets(dt){
@@ -409,7 +417,7 @@ function updateBullets(dt){
   if(c<0||c>=COLS||r<0||r>=ROWS){b.dead=true;continue;}
   const cell=G.grid[r][c];
   if(cell.t===STEEL){
-   if(b.owner==='p'&&b.sp){
+   if(b.sp){
     cell.t=EMPTY;
     for(let i=0;i<10;i++)G.parts.push({x:c*32+16,y:r*32+16,vx:rnd(-1.5,1.5),vy:rnd(-1.5,1.5),life:rnd(10,20),c:Math.random()<0.5?'#e8e8e8':'#9a9a9a',s:rnd(2,4)});
     b.dead=true;sfx('boom');
@@ -438,6 +446,7 @@ function updateBullets(dt){
  G.bullets=G.bullets.filter(b=>!b.dead);
 }
 function hitE(e,b){
+ if(e.shield>0){e.shield--;spark(b.x+2,b.y+2);sfx('hit');return;}
  e.hp-=(b.sp?2:1);
  if(e.hp<=0){
   explode(e.x,e.y,true);
@@ -481,6 +490,33 @@ function applyPow(p){
  }
  setHud();
 }
+/* 疯狂模式:敌人捡道具 */
+function applyEnemyPow(e,p){
+ G.pows=G.pows.filter(q=>q!==p);
+ sfx('pow');
+ switch(p.t){
+  case 0:e.lv=Math.min(2,(e.lv||0)+1);break;    // ★ 精英: 提速+射速
+  case 1:e.shield=(e.shield||0)+2;break;        // 🛡 护盾: 挡2发
+  case 2:e.hp++;break;                          // ⛏ 装甲: +1血
+  case 3:spawnExtra();break;                    // 🎖 增援
+  case 4:demolishBricks();break;                // 💣 全图拆砖
+  case 5:P.stun=60*8;break;                     // ⏰ 定住玩家8秒
+  case 6:e.super=60*10;break;                   // 🔥 敌弹可破钢墙(10秒)
+ }
+}
+function spawnExtra(){
+ if(G.enemies.length<4&&G.queue.length>0)trySpawn();
+ else if(G.enemies.length>0){
+  const e=G.enemies[Math.floor(Math.random()*G.enemies.length)];
+  e.hp++;
+ }
+}
+function demolishBricks(){
+ explode(6*CELL,6*CELL,true);
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+  if(G.grid[r][c].t===BRICK)G.grid[r][c].t=EMPTY;
+ }
+}
 function doShovel(){
  G.shovelCells=[];
  for(let r=10;r<=12;r++)for(let c=4;c<=8;c++){
@@ -523,7 +559,8 @@ function update(dt){
  if(--G.spawnT<=0){G.spawnT=90;trySpawn();}
  /* 玩家 */
  if(P.alive){
-  P.cd-=dt;P.shield-=dt;if(P.super>0)P.super-=dt;
+  P.cd-=dt;P.shield-=dt;if(P.super>0)P.super-=dt;if(P.stun>0)P.stun-=dt;
+  if(P.stun<=0){
   const k=KEYS,t=TOUCH;
   let dx=0,dy=0;
   if(k.ArrowLeft||k.KeyA||t.l)dx=-1;else if(k.ArrowRight||k.KeyD||t.r)dx=1;
@@ -533,21 +570,22 @@ function update(dt){
   if(dx!==0&&dy!==0){moveAligned(P,dx,0,spd);moveAligned(P,0,dy,spd);}
   else if(dx!==0||dy!==0)moveAligned(P,dx,dy,spd);
   if((k.Space||k.KeyJ||k.KeyZ||t.f)&&P.cd<=0){fireP();P.cd=P.lv>=3?16:P.lv===2?22:28;}
+  }
  }else{
   if(--G.respT<=0)resetPlayer();
  }
  /* 敌人 */
  for(const e of G.enemies){
   if(G.frozen>0)continue;
-  e.cd-=dt;e.think-=dt;
-  const st=ET[e.type];
-  if(!moveAligned(e,DX[e.dir],DY[e.dir],st.spd)){
+  e.cd-=dt;e.think-=dt;if(e.super>0)e.super-=dt;
+  const st=ET[e.type],lv=e.lv||0;
+  if(!moveAligned(e,DX[e.dir],DY[e.dir],st.spd*(1+0.2*lv))){
    e.dir=Math.floor(Math.random()*4);
    if(Math.random()<0.3)fireE(e);
   }
   if(e.cd<=0){
    if(Math.random()<0.6)fireE(e);
-   e.cd=st.cd*rnd(0.7,1.3);
+   e.cd=(st.cd/(1+0.25*lv))*rnd(0.7,1.3);
   }
   if(e.think<=0){
    e.think=rnd(30,110);
@@ -559,13 +597,20 @@ function update(dt){
   }
  }
  updateBullets(dt);
- /* 道具下落 */
- for(const p of [...G.pows]){
-  p.life-=dt;
-  if(!hasSolid(p.x,p.y+0.35*dt,16,16))p.y+=0.35*dt;
-  if(P.alive&&p.x+16>P.x&&p.x<P.x+32&&p.y+16>P.y&&p.y<P.y+32)applyPow(p);
-  if(p.life<=0)G.pows=G.pows.filter(q=>q!==p);
+/* 道具下落 */
+for(const p of [...G.pows]){
+ p.life-=dt;
+ if(!hasSolid(p.x,p.y+0.35*dt,16,16))p.y+=0.35*dt;
+ let taken=false;
+ if(P.alive&&p.x+16>P.x&&p.x<P.x+32&&p.y+16>P.y&&p.y<P.y+32){applyPow(p);taken=true;}
+ else if(G.crazy){
+  for(const e of G.enemies){
+   if(p.x+16>e.x&&p.x<e.x+32&&p.y+16>e.y&&p.y<e.y+32){applyEnemyPow(e,p);taken=true;break;}
+  }
  }
+ if(taken)continue;
+ if(p.life<=0)G.pows=G.pows.filter(q=>q!==p);
+}
  /* 粒子 */
  for(const pt of [...G.parts]){pt.life-=dt;pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;if(pt.life<=0)G.parts=G.parts.filter(q=>q!==pt);}
  /* 通关判定 */
@@ -586,6 +631,20 @@ function draw(){
  for(const e of G.enemies){
   const col=e.sp&&Math.floor(G.frame/12)%2===0?FLASHCOL:ETCOL[e.type];
   drawTank(e.x,e.y,e.dir,col,false);
+  if(e.shield>0&&Math.floor(G.frame/6)%2===0){ // 敌人护盾:绿色光圈
+   cx.strokeStyle='rgba(120,255,160,.6)';cx.lineWidth=2;
+   cx.beginPath();cx.arc(e.x+16,e.y+16,21,0,Math.PI*2);cx.stroke();
+  }
+  if(e.super>0){ // 敌人强化炮口:橙色脉冲
+   const tx=e.x+16+DX[e.dir]*18,ty=e.y+16+DY[e.dir]*18;
+   cx.fillStyle=Math.floor(G.frame/4)%2===0?'#ff8c2a':'#ffd400';
+   cx.fillRect(tx-3,ty-3,6,6);
+  }
+  if(e.lv>0){ // 精英等级:黄色条
+   cx.fillStyle='#ffd400';
+   cx.fillRect(e.x+8,e.y-4,16,3);
+   if(e.lv>1)cx.fillRect(e.x+4,e.y-8,24,3);
+  }
   if(e.type===3){ // 重型坦克血条
    for(let i=0;i<4;i++){cx.fillStyle=i<e.hp?'#f87171':'#3f3f46';cx.fillRect(e.x+4+i*7,e.y+35,5,3);}
   }
@@ -597,6 +656,7 @@ function draw(){
   cx.fillStyle=Math.floor(G.frame/4)%2===0?'#ff8c2a':'#ffd400';
   cx.fillRect(tx-3,ty-3,6,6);
  }
+ if(P.alive&&P.stun>0){cx.fillStyle='rgba(120,180,255,.4)';cx.fillRect(P.x,P.y,32,32);}
  drawTrees();
  drawBullets();
  for(const pt of G.parts)drawPart(pt);
@@ -763,6 +823,8 @@ document.getElementById('btnStart').addEventListener('click',startGame);
 document.getElementById('btnNext').addEventListener('click',()=>{G.lvl++;resetLevel();G.st='play';hideOv();sfx('spawn');});
 document.getElementById('btnAgain').addEventListener('click',()=>{G.st='menu';resetLevel();showOv('ovMenu');});
 document.getElementById('mbtn').addEventListener('click',()=>{G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';});
+const cbtn=document.getElementById('cbtn');
+cbtn.addEventListener('click',()=>{G.crazy=!G.crazy;cbtn.classList.toggle('on',G.crazy);cbtn.textContent=G.crazy?'疯狂 ON':'疯狂';});
 
 /* ================= 主循环 ================= */
 let last=0,acc=0;
