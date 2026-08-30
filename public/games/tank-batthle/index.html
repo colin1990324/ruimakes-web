@@ -243,10 +243,10 @@ const MAPS=[
 
 /* ================= 敌人类型(经典4种) ================= */
 const ET=[
- {spd:0.9, hp:1, sc:100, cd:1500},  // 0 普通装甲车
- {spd:1.7, hp:1, sc:200, cd:1500},  // 1 快速坦克
- {spd:1.15,hp:1, sc:300, cd:950},   // 2 火力坦克
- {spd:0.72,hp:4, sc:400, cd:1600}   // 3 重型坦克(4血)
+ {spd:0.9, hp:1, sc:100, cd:100},   // 0 普通装甲车
+ {spd:1.7, hp:1, sc:200, cd:90},    // 1 快速坦克
+ {spd:1.15,hp:1, sc:300, cd:60},    // 2 火力坦克
+ {spd:0.72,hp:4, sc:400, cd:120}    // 3 重型坦克(4血)
 ];
 const ETCOL=[
  {body:'#b5b5b5',trk:'#3a3a3a',tur:'#d8d8d8',gun:'#8a8a8a'},
@@ -287,8 +287,7 @@ const uid=()=>{G.bid++;return G.bid;};
 function solidCell(c,r){
  if(r<0||r>=ROWS||c<0||c>=COLS)return true;
  const t=G.grid[r][c].t;
- if(t===BRICK){const cell=G.grid[r][c];return cell.b[0]||cell.b[1]||cell.b[2]||cell.b[3];}
- return t===STEEL||t===WATER||t===BASE;
+ return t===BRICK||t===STEEL||t===WATER||t===BASE;
 }
 function hasSolid(x,y,w,h){
  const c0=Math.floor(x/CELL),c1=Math.floor((x+w-1)/CELL),r0=Math.floor(y/CELL),r1=Math.floor((y+h-1)/CELL);
@@ -314,7 +313,7 @@ function parseMap(m){
    let t=EMPTY;
    if(ch==='#')t=BRICK;else if(ch==='@')t=STEEL;else if(ch==='~')t=WATER;
    else if(ch==='%')t=TREE;else if(ch==='B')t=BASE;
-   cells.push({t,b:[true,true,true,true]});
+   cells.push({t});
   }
   g.push(cells);
  }
@@ -395,9 +394,9 @@ function updateBullets(dt){
   const cell=G.grid[r][c];
   if(cell.t===STEEL){spark(b.x+2,b.y+2);b.dead=true;sfx('hit');continue;}
   if(cell.t===BRICK){
-   const sx=b.x+2-c*CELL,sy=b.y+2-r*CELL;
-   const sub=(sy<16?0:2)+(sx<16?0:1);
-   if(cell.b[sub]){cell.b[sub]=false;chip(c,r,sub);b.dead=true;sfx('hit');}
+   cell.t=EMPTY;
+   chipBrick(c,r);
+   b.dead=true;sfx('hit');
    continue;
   }
   if(cell.t===BASE){destroyBase();b.dead=true;continue;}
@@ -484,9 +483,9 @@ function explode(x,y,big){
 function spark(x,y){
  for(let i=0;i<4;i++)G.parts.push({x,y,vx:rnd(-1,1),vy:rnd(-1,1),life:8,c:'#ffffff',s:2});
 }
-function chip(c,r,sub){
- const sx=c*32+(sub%2)*16+8,sy=r*32+Math.floor(sub/2)*16+8;
- for(let i=0;i<5;i++)G.parts.push({x:sx,y:sy,vx:rnd(-1.2,1.2),vy:rnd(-1.2,1.2),life:rnd(8,16),c:'#c9772e',s:2});
+function chipBrick(c,r){
+ const sx=c*32+16,sy=r*32+16;
+ for(let i=0;i<10;i++)G.parts.push({x:sx,y:sy,vx:rnd(-1.5,1.5),vy:rnd(-1.5,1.5),life:rnd(10,20),c:'#c9772e',s:rnd(2,4)});
 }
 
 /* ================= 主更新 ================= */
@@ -512,7 +511,7 @@ function update(dt){
    if(!tankHit(nx,P.y,'P'))P.x=nx;
    if(!tankHit(P.x,ny,'P'))P.y=ny;
   }
-  if((k.Space||k.KeyJ||k.KeyZ||t.f)&&P.cd<=0){fireP();P.cd=P.lv>=3?170:P.lv===2?240:330;}
+  if((k.Space||k.KeyJ||k.KeyZ||t.f)&&P.cd<=0){fireP();P.cd=P.lv>=3?16:P.lv===2?22:28;}
  }else{
   if(--G.respT<=0)resetPlayer();
  }
@@ -523,7 +522,11 @@ function update(dt){
   const st=ET[e.type];
   const nx=e.x+DX[e.dir]*st.spd*dt,ny=e.y+DY[e.dir]*st.spd*dt;
   if(!tankHit(nx,ny,e)){e.x=nx;e.y=ny;}
-  else e.dir=Math.floor(Math.random()*4);
+  else {e.dir=Math.floor(Math.random()*4);if(Math.random()<0.3)fireE(e);}
+  if(e.cd<=0){
+   if(Math.random()<0.6)fireE(e);
+   e.cd=st.cd*rnd(0.7,1.3);
+  }
   if(e.think<=0){
    e.think=rnd(30,110);
    if(Math.random()<0.45)e.dir=Math.floor(Math.random()*4);
@@ -531,7 +534,6 @@ function update(dt){
     const adx=P.x-e.x,ady=P.y-e.y;
     e.dir=Math.abs(adx)>Math.abs(ady)?(adx>0?R:L):(ady>0?D:U);
    }
-   if(Math.random()<0.3&&e.cd<=0){fireE(e);e.cd=st.cd*rnd(0.6,1.4);}
   }
  }
  updateBullets(dt);
@@ -576,13 +578,10 @@ function drawGrid(){
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
   const cell=G.grid[r][c],x=c*CELL,y=r*CELL;
   if(cell.t===BRICK){
-   for(let i=0;i<4;i++){
-    if(!cell.b[i])continue;
-    const sx=x+(i%2)*16,sy=y+Math.floor(i/2)*16;
-    cx.fillStyle='#7a3c0e';cx.fillRect(sx,sy,16,16);
-    cx.fillStyle='#c9772e';cx.fillRect(sx+1,sy+1,14,14);
-    cx.fillStyle='#e0a25e';cx.fillRect(sx+1,sy+1,14,3);
-   }
+   cx.fillStyle='#7a3c0e';cx.fillRect(x,y,CELL,CELL);
+   cx.fillStyle='#c9772e';cx.fillRect(x+1,y+1,30,30);
+   cx.fillStyle='#e0a25e';cx.fillRect(x+1,y+1,30,5);
+   cx.fillStyle='#7a3c0e';cx.fillRect(x+15,y+2,2,28);cx.fillRect(x+2,y+15,28,2);
   }else if(cell.t===STEEL){
    cx.fillStyle='#c8c8c8';cx.fillRect(x,y,CELL,CELL);
    cx.fillStyle='#9a9a9a';cx.fillRect(x+14,y,4,CELL);cx.fillRect(x,y+14,CELL,4);
