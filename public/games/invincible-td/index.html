@@ -318,7 +318,8 @@ const outer=new THREE.Mesh(
 outer.rotation.x=-Math.PI/2; outer.position.set(7.5,-0.02,4.5);
 scene.add(outer);
 
-// 路径带
+// 路径带(深土色,与深色工业风环境协调——原浅沙色 0xd8b98a 在强光下泛白,
+// 俯瞰视角屏幕上方三段横路看起来像无意义的白色横条)
 (function buildPathMesh(){
   const shape=new THREE.Shape();
   shape.moveTo(PATH[0][0]-0.5,PATH[0][2]-0.5);
@@ -333,7 +334,7 @@ scene.add(outer);
   shape.lineTo(PATH[0][0]-0.5,PATH[0][2]-0.5);
   const pathMesh=new THREE.Mesh(
     new THREE.ShapeGeometry(shape),
-    new THREE.MeshLambertMaterial({color:0xd8b98a})
+    new THREE.MeshLambertMaterial({color:0x8a7355})
   );
   pathMesh.rotation.x=-Math.PI/2;
   pathMesh.position.y=0.01;
@@ -346,7 +347,7 @@ scene.add(outer);
   const pts=PATH.map(p=>new THREE.Vector3(p[0],0.02,p[2]));
   const line=new THREE.Line(
     new THREE.BufferGeometry().setFromPoints(pts),
-    new THREE.LineBasicMaterial({color:0x8a6f4d})
+    new THREE.LineBasicMaterial({color:0x5d4e38})
   );
   scene.add(line);
 })();
@@ -1394,7 +1395,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.12'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.13'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
