@@ -129,7 +129,7 @@ const ENEMY={
  tank:{hp:120,score:80,reach:25},
  heli:{hp:80,score:100},
  jet:{hp:60,score:150},
- boss:{hp:1000,score:1000}
+ boss:{hp:300,score:1000}
 };
 
 /* ================= Three.js 场景 ================= */
@@ -449,8 +449,9 @@ function findAirTarget(){
  let best=null,bd=1e9;
  for(const e of G.enemies){
   if(e.type!=='heli'&&e.type!=='jet'&&e.type!=='boss')continue;
+  if(e.dead)continue;
   const d=e.mesh.position.distanceTo(muzzlePos);
-  if(d<bd){bd=d;best=e;}
+  if(d<bd&&d<90){bd=d;best=e;} /* 90m 内自动锁定 */
  }
  return best;
 }
@@ -464,10 +465,11 @@ function updateBullets(dt){
   }
   else if(b.kind==='missile'){
    b.age+=dt;
-   if(b.target&&b.target.dead){b.target=findAirTarget();}
-   if(b.target&&b.age>0.15){
-    const tp=b.target.mesh.position,tv=tp.clone().sub(b.p).normalize();
-    b.v.lerp(tv,dt*3).normalize().multiplyScalar(70);
+   if(!b.target||b.target.dead){b.target=findAirTarget();} /* 飞行中持续搜索目标 */
+   if(b.target){
+    const tp=b.target.mesh.position;
+    const tv=tp.clone().sub(b.p).normalize().multiplyScalar(70); /* 目标速度向量,与 b.v 同量级 */
+    b.v.lerp(tv,dt*5).normalize().multiplyScalar(70); /* 强追踪(坑:tv 必须乘 70,否则混合被 normalize 稀释=直线飞) */
    }
    b.p.addScaledVector(b.v,dt);
    spawnPart(b.p.x,b.p.y,b.p.z,-b.v.x*0.15+rnd(-0.3,0.3),-b.v.y*0.15+rnd(-0.3,0.3),-b.v.z*0.15+rnd(-0.3,0.3),0.3,0xff8c2a,1.4);
@@ -509,7 +511,7 @@ function updateBullets(dt){
    if(b.kind==='bomb'&&gp.distanceTo(BASE_TARGET)<7)baseHit(10,gp);
    b.dead=true;continue;
   }
-  if(b.kind==='missile'&&b.p.y<gy){
+  if(b.kind==='missile'&&b.p.y<gy&&!b.target){
    const gp=new THREE.Vector3(b.p.x,gy,b.p.z);
    explode(gp,true);splashArea(gp,6,b.dmg);
    b.dead=true;continue;
@@ -792,7 +794,7 @@ function updateEnemies(dt){
    if(p.x>20)p.dir=-1;if(p.x<-20)p.dir=1;
    p.z+=0.4*dt;p.y=6.5+Math.sin(g.frame*0.05)*0.6;
    if(e.mesh.rotor)e.mesh.rotor.rotation.y+=dt*30;
-   if(e.t<=0&&p.z<-2){e.t=2.0;baseHit(2);} /* 直升机扫射:无爆炸无曳光(性能) */
+   if(e.t<=0&&p.z<-2){e.t=2.0;baseHit(2);tracerFrom(p);} /* 扫射光点(1发1点) */
    if(p.z>9){baseHit(20);killEnemy(e);}
   }else if(e.type==='jet'){
    p.x+=e.spd*dt;
@@ -807,14 +809,15 @@ function updateEnemies(dt){
    if(e.t<=0){e.t=3.4;for(let i=0;i<3;i++)setTimeout(()=>bossShell(p),i*220);}
   }
  }
- /* 敌人炮弹落地 */
- for(const s of [...G.bullets]){
-  if(s.kind!=='eshell')continue;
-  s.life-=dt;
-  s.v.y-=s.grav*dt;
-  s.p.addScaledVector(s.v,dt);
-  s.m.position.copy(s.p);
-  if(s.p.y<groundY(s.p.x,s.p.z)||s.life<=0){
+/* 敌人炮弹落地 */
+for(const s of [...G.bullets]){
+ if(s.kind!=='eshell')continue;
+ s.life-=dt;
+ s.v.y-=s.grav*dt;
+ s.p.addScaledVector(s.v,dt);
+ s.m.position.copy(s.p);
+ spawnPart(s.p.x,s.p.y,s.p.z,rnd(-0.2,0.2),rnd(-0.2,0.2),rnd(-0.2,0.2),0.15,0xff8c2a,0.8); /* 炮弹光点(1发1点) */
+ if(s.p.y<groundY(s.p.x,s.p.z)||s.life<=0){
    const gp=new THREE.Vector3(s.p.x,groundY(s.p.x,s.p.z),s.p.z);
    explode(gp,false);
    if(gp.distanceTo(BASE_TARGET)<6)baseHit(s.dmg||6,gp);
@@ -844,9 +847,8 @@ function dropBomb(from){
  G.bullets.push({kind:'bomb',m,p:m.position.clone(),v:new THREE.Vector3(30,-1,0),grav:20,life:6,dead:false});
 }
 function tracerFrom(from){
- for(let i=0;i<2;i++){
-  spawnPart(from.x+rnd(-0.3,0.3),from.y-0.5,from.z+rnd(-0.3,0.3),rnd(-1,1),rnd(0.2,0.8),rnd(-1,1),0.3,0xfff3b0,1.5);
- }
+ /* 敌人开火光点:1发1个 */
+ spawnPart(from.x+rnd(-0.3,0.3),from.y-0.5,from.z+rnd(-0.3,0.3),rnd(-1,1),rnd(0.2,0.8),rnd(-1,1),0.3,0xfff3b0,1.5);
 }
 
 /* ================= 波次系统 ================= */
