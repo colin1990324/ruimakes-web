@@ -366,7 +366,8 @@ const GATE_BOX=new THREE.BoxGeometry(1,1,1);
 const GATE_CYL=new THREE.CylinderGeometry(0.38,0.46,0.26,8);
 const GATE_SPHERE=new THREE.SphereGeometry(1,10,8);
 G.gateMats=[];
-function buildGate(x,z,edgeColor){
+// dirX/dirZ = 路径行进方向;门整体旋转让门柱垂直于路径(怪物从两柱间穿过)
+function buildGate(x,z,edgeColor,dirX,dirZ){
   const gate=new THREE.Group();
   const post=new THREE.Mesh(GATE_BOX,GATE_POST);
   post.scale.set(0.2,1.15,0.2); post.position.set(-0.66,0.58,0);
@@ -389,12 +390,14 @@ function buildGate(x,z,edgeColor){
   mem.scale.set(1.2,1.0,0.06); mem.position.set(0,0.58,0);
   gate.add(mem);
   G.gateMats.push(mem.material);
+  gate.userData.isGate=true;
   gate.position.set(x,0,z);
+  gate.rotation.y=Math.atan2(dirX,dirZ); // 门正面朝向路径方向
   scene.add(gate);
   return gate;
 }
-buildGate(PATH[0][0],PATH[0][2],0xf59e0b);            // 出生门(金)
-buildGate(PATH[PATH.length-1][0],PATH[PATH.length-1][2],0xef4444); // 基地门(红)
+buildGate(PATH[0][0],PATH[0][2],0xf59e0b,1,0);            // 出生门(金,路径朝+x)
+buildGate(PATH[PATH.length-1][0],PATH[PATH.length-1][2],0xef4444,0,1); // 基地门(红,路径朝+z)
 
 // 岩石
 const GEO_ROCK=new THREE.DodecahedronGeometry(0.42,0);
@@ -1455,7 +1458,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.16'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.17'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
