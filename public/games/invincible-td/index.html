@@ -358,21 +358,43 @@ scene.add(outer);
   scene.add(line);
 })();
 
-// 出生点标记
-const spawnMark=new THREE.Mesh(
-  new THREE.BoxGeometry(1,0.15,1),
-  new THREE.MeshLambertMaterial({color:0xf59e0b})
-);
-spawnMark.position.set(PATH[0][0],0.02,PATH[0][2]);
-scene.add(spawnMark);
-// 基地(终点)标记
-const baseMark=new THREE.Mesh(
-  new THREE.CylinderGeometry(0.75,0.75,0.12,6),
-  new THREE.MeshLambertMaterial({color:0xef4444})
-);
-baseMark.rotation.x=Math.PI/2;
-baseMark.position.set(PATH[PATH.length-1][0],0.03,PATH[PATH.length-1][2]);
-scene.add(baseMark);
+// 出生门(炫酷能量门:门柱+横梁+顶部灯+脉动能量膜)
+const GATE_POST=new THREE.MeshLambertMaterial({color:0x2a2a30});
+const GATE_EDGE=new THREE.MeshLambertMaterial({color:0xf59e0b});
+// 门用自建几何(场景区先于 GEO_* 常量定义,不能引用后面的共享几何)
+const GATE_BOX=new THREE.BoxGeometry(1,1,1);
+const GATE_CYL=new THREE.CylinderGeometry(0.38,0.46,0.26,8);
+const GATE_SPHERE=new THREE.SphereGeometry(1,10,8);
+G.gateMats=[];
+function buildGate(x,z,edgeColor){
+  const gate=new THREE.Group();
+  const post=new THREE.Mesh(GATE_BOX,GATE_POST);
+  post.scale.set(0.2,1.15,0.2); post.position.set(-0.66,0.58,0);
+  post.castShadow=true;
+  gate.add(post);
+  const post2=post.clone(); post2.position.x=0.66; gate.add(post2);
+  const beam=new THREE.Mesh(GATE_BOX,GATE_POST);
+  beam.scale.set(1.6,0.18,0.22); beam.position.set(0,1.16,0);
+  gate.add(beam);
+  const edgeMat=new THREE.MeshLambertMaterial({color:edgeColor});
+  for(const sx of [-1,1]){
+    const lamp=new THREE.Mesh(GATE_SPHERE,edgeMat);
+    lamp.scale.set(0.14,0.14,0.14); lamp.position.set(sx*0.66,1.28,0);
+    gate.add(lamp);
+    const baseRing=new THREE.Mesh(GATE_CYL,edgeMat);
+    baseRing.scale.set(1.0,0.6,1.0); baseRing.position.set(sx*0.66,0.1,0);
+    gate.add(baseRing);
+  }
+  const mem=new THREE.Mesh(GATE_BOX,new THREE.MeshBasicMaterial({color:edgeColor,transparent:true,opacity:0.6}));
+  mem.scale.set(1.2,1.0,0.06); mem.position.set(0,0.58,0);
+  gate.add(mem);
+  G.gateMats.push(mem.material);
+  gate.position.set(x,0,z);
+  scene.add(gate);
+  return gate;
+}
+buildGate(PATH[0][0],PATH[0][2],0xf59e0b);            // 出生门(金)
+buildGate(PATH[PATH.length-1][0],PATH[PATH.length-1][2],0xef4444); // 基地门(红)
 
 // 岩石
 const GEO_ROCK=new THREE.DodecahedronGeometry(0.42,0);
@@ -435,7 +457,7 @@ function monModel(def,mini){
   };
   const key=def.key;
   if(key==='g'){
-    // 格兰玛雅:圆耳小球怪
+    // 格兰玛雅:圆耳球怪(酷版:呆毛+脚+嘴+尖牙)
     const body=new THREE.Mesh(GEO_SPHERE,col);
     body.scale.set(r,r*0.9,r); body.position.y=r*0.85; body.castShadow=true;
     grp.add(body);
@@ -446,7 +468,33 @@ function monModel(def,mini){
       ear.rotation.z=sx*0.28;
       grp.add(ear);
     }
-    eye(-0.33*r,0.98*r,0.82*r); eye(0.33*r,0.98*r,0.82*r);
+    // 呆毛
+    const ahoge=new THREE.Mesh(GEO_CONE,col);
+    ahoge.scale.set(0.14*r,0.5*r,0.14*r);
+    ahoge.position.set(0,1.9*r,-0.15*r);
+    ahoge.rotation.z=-0.35;
+    grp.add(ahoge);
+    // 脚
+    for(const sx of [-1,1]){
+      const foot=new THREE.Mesh(GEO_BOX,col);
+      foot.scale.set(0.32*r,0.22*r,0.4*r);
+      foot.position.set(sx*0.42*r,0.1*r,0.2*r);
+      grp.add(foot);
+    }
+    // 嘴
+    const mouth=new THREE.Mesh(GEO_BOX,MAT_PUPIL);
+    mouth.scale.set(0.36*r,0.07*r,0.06*r);
+    mouth.position.set(0,0.72*r,0.8*r);
+    grp.add(mouth);
+    // 尖牙(倒挂)
+    for(const sx of [-1,1]){
+      const fang=new THREE.Mesh(GEO_CONE,MAT_EYE);
+      fang.scale.set(0.11*r,0.22*r,0.11*r);
+      fang.rotation.x=Math.PI;
+      fang.position.set(sx*0.15*r,0.6*r,0.82*r);
+      grp.add(fang);
+    }
+    eye(-0.34*r,1.02*r,0.82*r,1.15); eye(0.34*r,1.02*r,0.82*r,1.15);
   } else if(key==='bat'){
     // 蝙蝠怪:扁身 + 大翅膀 + 尖耳
     const body=new THREE.Mesh(GEO_SPHERE,col);
@@ -1387,6 +1435,12 @@ function loop(now){
     }
     updateHUD();
   }
+  // 能量门膜脉动(任何状态都动)
+  G.gateT=(G.gateT||0)+dt;
+  const gt=G.gateT*3;
+  for(let i=0;i<G.gateMats.length;i++){
+    G.gateMats[i].opacity=0.5+0.35*Math.sin(gt+i*2.1);
+  }
   // hover 高亮
   if(G.st==='play'&&G.hover){
     const [c,r]=G.hover;
@@ -1401,7 +1455,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.15'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.16'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
