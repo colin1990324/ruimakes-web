@@ -641,7 +641,7 @@ function spawnEnemy(type){
  }else if(type==='boss'){
   mesh.position.set(0,0,-52);
   scene.add(mesh);
-  e={type,mesh,hp:ENEMY.boss.hp*(1+0.15*(Math.floor(g.wave/5)-1)),spd:0.5,hitR:5,dead:false,t:2,state:'go'};
+  e={type,mesh,hp:ENEMY.boss.hp*(1+0.15*(Math.floor(g.wave/5)-1)),spd:0.5,hitR:5,dead:false,t:2,state:'go',dir:1};
  }
  G.enemies.push(e);
  return e;
@@ -801,7 +801,9 @@ function updateEnemies(dt){
    if(p.x>100){e.dead=true;scene.remove(e.mesh);G.enemies=G.enemies.filter(x=>x!==e);checkWave();}
   }else if(e.type==='boss'){
    e.t-=dt;
-   p.x=Math.sin(g.frame*0.02)*14;
+   p.x+=e.dir*(e.spd+0.3)*dt; /* 缓慢巡弋,到边界掉头(不是正弦反复) */
+   if(p.x>18)e.dir=-1;
+   if(p.x<-18)e.dir=1;
    if(e.t<=0){e.t=3.4;for(let i=0;i<3;i++)setTimeout(()=>bossShell(p),i*220);}
   }
  }
