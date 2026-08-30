@@ -305,13 +305,13 @@ function muzzleFlash(){
 }
 function fireMG(){
  const p=muzzleWorld(),f=aimDir.clone().add(new THREE.Vector3(rnd(-0.012,0.012),rnd(-0.012,0.012),rnd(-0.012,0.012))).normalize();
- const len=3.4;
- const m=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,len),
-  new THREE.MeshBasicMaterial({color:0xffd400}));
+ const len=4.2;
+ const m=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,len),
+  new THREE.MeshBasicMaterial({color:0xffd400,transparent:true,opacity:0.95}));
  m.position.copy(p).addScaledVector(f,len/2);
  m.lookAt(p.x+f.x*5,p.y+f.y*5,p.z+f.z*5);
  scene.add(m);
- G.bullets.push({kind:'mg',m,p:p.clone(),v:f.clone(),spd:120,life:0.6,dmg:1,prev:p.clone()});
+ G.bullets.push({kind:'mg',m,p:p.clone(),v:f.clone(),spd:120,life:0.7,dmg:2,prev:p.clone()});
 }
 function fireCannon(){
  const p=muzzleWorld(),tp=rayGroundHit();
@@ -360,7 +360,7 @@ function updateBullets(dt){
   else if(b.kind==='bomb'){b.v.y-=b.grav*dt;b.p.addScaledVector(b.v,dt);}
   else{
    b.p.addScaledVector(b.v,b.spd*dt);
-   spawnPart(b.p.x,b.p.y,b.p.z,-b.v.x*0.3+rnd(-0.15,0.15),-b.v.y*0.3+rnd(-0.15,0.15),-b.v.z*0.3+rnd(-0.15,0.15),0.12,0xffd400,1.2);
+   for(let i=0;i<2;i++)spawnPart(b.p.x+rnd(-0.05,0.05),b.p.y+rnd(-0.05,0.05),b.p.z+rnd(-0.05,0.05),-b.v.x*0.4+rnd(-0.2,0.2),-b.v.y*0.4+rnd(-0.2,0.2),-b.v.z*0.4+rnd(-0.2,0.2),0.22,0xffd400,1.6);
   }
   b.m.position.copy(b.p);
   if(b.kind==='missile')b.m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.v.clone().normalize());
@@ -396,7 +396,11 @@ function updateBullets(dt){
    explode(gp,true);splashArea(gp,6,b.dmg);
    b.dead=true;continue;
   }
-  if(b.kind==='mg'&&(b.p.y<gy||b.p.z>GUN_POS.z+2||Math.abs(b.p.x)>90)){splash(new THREE.Vector3(b.p.x,gy,b.p.z));b.dead=true;continue;}
+  if(b.kind==='mg'&&(b.p.y<gy||b.p.z>GUN_POS.z+2||Math.abs(b.p.x)>90)){
+   splash(new THREE.Vector3(b.p.x,gy,b.p.z));
+   burst(b.p.x,gy+0.1,b.p.z,4,4,0xffd400,0.25); /* 落点火花,弹道终点可见 */
+   b.dead=true;continue;
+  }
   if(b.life<=0)b.dead=true;
  }
  G.bullets=G.bullets.filter(b=>{if(b.dead)scene.remove(b.m);return !b.dead;});
@@ -476,7 +480,7 @@ function spawnEnemy(type){
  if(type==='soldier'){
   mesh.position.set(x,0,z);
   scene.add(mesh);
-  e={type,mesh,hp:ENEMY.soldier.hp,spd:2.3+g.wave*0.07,hitR:0.55,dead:false,t:rnd(0,2),state:'run'};
+  e={type,mesh,hp:ENEMY.soldier.hp,spd:2.3+g.wave*0.07,hitR:0.55,dead:false,t:rnd(0,2),state:'run',land:0.5};
  }else if(type==='boat'){
   mesh.position.set(x,0,z);
   mesh.rotation.y=Math.atan2(-x,-z);
@@ -515,6 +519,7 @@ function make(type){
 function damageEnemy(e,dmg,from){
  if(e.dead)return;
  e.hp-=dmg;
+ if(from)burst(from.x,from.y,from.z,4,3,0xff5533,0.3); /* 命中火花 */
  if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){
@@ -554,19 +559,21 @@ function updateEnemies(dt){
   if(e.type==='soldier'){
    const dx=BASE_TARGET.x-p.x,dz=BASE_TARGET.z-p.z;
    const d=Math.hypot(dx,dz);
+   if(e.land>0){e.land-=dt;e.mesh.rotation.y=Math.atan2(dx,dz);continue;} /* 下船停顿 */
    p.x+=dx/d*e.spd*dt;p.z+=dz/d*e.spd*dt;
    e.mesh.rotation.y=Math.atan2(dx,dz);
    if(d<2.3){baseHit(ENEMY.soldier.reach,p.clone());killEnemy(e);}
   }else if(e.type==='boat'){
-   const dx=-p.x,dz=2-p.z;
+   const dx=-p.x,dz=6-p.z;
    const d=Math.hypot(dx,dz);
    p.x+=dx/d*e.spd*dt;p.z+=dz/d*e.spd*dt;
-   if(p.z<2.5){
+   if(p.z<6.5){
     for(let i=0;i<e.soldiers;i++){
      const s=spawnEnemy('soldier');
-     s.mesh.position.set(p.x+rnd(-1,1),0,p.z+2);
+     s.mesh.position.set(p.x+rnd(-1,1),0,Math.min(7.8,p.z+1.5));
      s.mesh.rotation.y=Math.PI;
      s.state='run';
+     s.land=0.5+rnd(0,0.4);
     }
     explode(p,false);killEnemy(e);
    }
@@ -644,8 +651,8 @@ function buildWave(n){
  const q=[];
  if(n%5===0)q.push('boss');
  const groups=Math.min(7,2+Math.floor(n/2));
- for(let i=0;i<groups*3;i++)q.push({type:'soldier'});
- const boats=n>=2?Math.min(5,Math.floor(n/2)):0;
+ /* 步兵全部由登陆艇运载(不再直接从海里冒出来) */
+ const boats=Math.max(2,Math.min(6,Math.ceil(groups*3/4)));
  for(let i=0;i<boats;i++)q.push({type:'boat'});
  const tanks=n>=3?Math.min(4,Math.floor((n-1)/2)):0;
  for(let i=0;i<tanks;i++)q.push({type:'tank'});
