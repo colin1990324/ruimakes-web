@@ -61,7 +61,7 @@
 <body>
 <canvas id="cv"></canvas>
 <div id="top">
-  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.3</span>
+  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.4</span>
   <span class="info"><b id="cntTxt">0</b> 个质数 · 点击质数查看数值 · 拖拽平移 · 滚轮缩放</span>
 </div>
 <div id="left">
@@ -318,13 +318,14 @@ function updateButtons(){
 }
 
 /* ---------- 交互 ---------- */
+const DPR=window.devicePixelRatio||1; // canvas 像素 = CSS 像素 × DPR,拾取必须换算
 let dragging=false,lastX=0,lastY=0,dragDist=0;
-cv.addEventListener('mousedown',e=>{ dragging=true; dragDist=0; lastX=e.clientX; lastY=e.clientY; });
+cv.addEventListener('mousedown',e=>{ dragging=true; dragDist=0; lastX=e.clientX*DPR; lastY=e.clientY*DPR; });
 window.addEventListener('mouseup',()=>{
   if(dragging){ dragging=false; renderBase(); } // 拖动结束重建底图补齐边缘
 });
 cv.addEventListener('mousemove',e=>{
-  const mx=e.clientX, my=e.clientY;
+  const mx=e.clientX*DPR, my=e.clientY*DPR;
   if(dragging){
     dragDist+=Math.abs(mx-lastX)+Math.abs(my-lastY);
     S.offX+=mx-lastX; S.offY+=my-lastY;
@@ -334,14 +335,14 @@ cv.addEventListener('mousemove',e=>{
   }
   const idx=pick(mx,my);
   S.hoverIdx=idx;
-  if(idx>=0) showInfo(idx,mx,my);
+  if(idx>=0) showInfo(idx,e.clientX,e.clientY); // 弹窗用 CSS 坐标定位
   else if(S.pickIdx<0) pv.style.display='none';
   display();
 });
 cv.addEventListener('mouseleave',()=>{ S.hoverIdx=-1; if(S.pickIdx<0) pv.style.display='none'; display(); });
 cv.addEventListener('click',e=>{
   if(dragDist>8) return; // 拖动后不触发拾取
-  const idx=pick(e.clientX,e.clientY);
+  const idx=pick(e.clientX*DPR,e.clientY*DPR);
   S.pickIdx=idx;
   if(idx>=0) showInfo(idx,e.clientX,e.clientY);
   else { pv.style.display='none'; }
@@ -350,7 +351,7 @@ cv.addEventListener('click',e=>{
 cv.addEventListener('wheel',e=>{
   e.preventDefault();
   const f=e.deltaY<0?1.4:1/1.4;
-  zoomAt(f,e.clientX,e.clientY);
+  zoomAt(f,e.clientX*DPR,e.clientY*DPR);
 },{passive:false});
 function zoomAt(f,mx,my){
   const ns=S.scale*f;
@@ -362,19 +363,20 @@ function zoomAt(f,mx,my){
 // 触屏
 let touch0=null;
 cv.addEventListener('touchstart',e=>{
-  if(e.touches.length===1){ dragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+  if(e.touches.length===1){ dragging=true; dragDist=0; lastX=e.touches[0].clientX*DPR; lastY=e.touches[0].clientY*DPR; }
 }, {passive:true});
 cv.addEventListener('touchmove',e=>{
   e.preventDefault();
   if(e.touches.length===1&&dragging){
-    const mx=e.touches[0].clientX, my=e.touches[0].clientY;
+    const mx=e.touches[0].clientX*DPR, my=e.touches[0].clientY*DPR;
+    dragDist+=Math.abs(mx-lastX)+Math.abs(my-lastY);
     S.offX+=mx-lastX; S.offY+=my-lastY;
     lastX=mx; lastY=my;
     display();
   } else if(e.touches.length===2){
     const t=e.touches;
     const d=Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-    if(touch0){ const f=d/touch0.d; zoomAt(f,(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2); }
+    if(touch0){ const f=d/touch0.d; zoomAt(f,(t[0].clientX+t[1].clientX)/2*DPR,(t[0].clientY+t[1].clientY)/2*DPR); }
     touch0={d};
   }
 },{passive:false});
