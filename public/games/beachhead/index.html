@@ -137,7 +137,7 @@ const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x87ceeb);
 scene.fog=new THREE.Fog(0x9fd4ef,60,220);
 const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.1,400);
-camera.position.set(0,8.0,15.5);
+camera.position.set(0,7.8,16);
 camera.lookAt(0,0.5,-42);
 const renderer=new THREE.WebGLRenderer({canvas:CV,antialias:true});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
@@ -177,13 +177,13 @@ beach.rotation.x=-Math.PI/2;
 beach.position.set(0,0.02,3);
 scene.add(beach);
 
-/* ---- 悬崖高地(玩家在制高点,海面在下方) ---- */
+/* ---- 悬崖高地(矮海堤 + 高炮塔:制高点且俯角可覆盖滩头) ---- */
 const cliffMat=new THREE.MeshLambertMaterial({color:0xc4a86a,flatShading:true});
-const cliff=new THREE.Mesh(new THREE.BoxGeometry(50,6.6,1.6),cliffMat);
-cliff.position.set(0,3.3,8.8);
+const cliff=new THREE.Mesh(new THREE.BoxGeometry(50,2.5,1.6),cliffMat);
+cliff.position.set(0,1.25,8.8);
 scene.add(cliff);
 const top=new THREE.Mesh(new THREE.BoxGeometry(56,0.5,5),cliffMat);
-top.position.set(0,6.35,12.5);
+top.position.set(0,2.25,12.5);
 scene.add(top);
 
 /* ---- 远处沙丘 ---- */
@@ -196,9 +196,14 @@ dune.position.set(0,0.04,24);
 scene.add(dune);
 
 /* ---- 阵地掩体(沙袋) ---- */
-const GUN_POS=new THREE.Vector3(0,6.6,12);
-const BASE_TARGET=new THREE.Vector3(0,0,5); // 敌人冲击点:悬崖脚下的滩头
-const groundY=(x,z)=>z>=8?6.6:0;             // 地形高度:悬崖面以上6.6,海/滩0
+const GUN_POS=new THREE.Vector3(0,6.5,12);   // 炮台:海堤上的高塔堡垒
+const BASE_TARGET=new THREE.Vector3(0,0,5);  // 敌人冲击点:海堤脚下的滩头
+const CLIFF_Z=8,CLIFF_H=2.5;                 // 崖面位置/高度(矮海堤)
+const groundY=(x,z)=>z>=CLIFF_Z?CLIFF_H:0;   // 地形高度:堤上2.5,海/滩0
+/* 炮台高塔(混凝土塔座,把炮口抬高到堤面上方,俯角可覆盖滩头) */
+const tower=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.6,4.1,10),cliffMat);
+tower.position.set(GUN_POS.x,CLIFF_H+2.05,GUN_POS.z);
+scene.add(tower);
 const bagMat=new THREE.MeshLambertMaterial({color:0x8a7a52,flatShading:true});
 for(let i=0;i<7;i++){
  const a=(i/7)*Math.PI*2;
@@ -231,7 +236,7 @@ turret.position.set(GUN_POS.x,GUN_POS.y,GUN_POS.z);
 scene.add(turret);
 
 /* 枪口世界位置(每帧更新) */
-const muzzlePos=new THREE.Vector3(GUN_POS.x,7.9,GUN_POS.z);
+const muzzlePos=new THREE.Vector3(GUN_POS.x,GUN_POS.y+1.25,GUN_POS.z);
 const aimDir=new THREE.Vector3(0,0,-1);
 
 /* ================= 粒子系统 ================= */
@@ -300,27 +305,30 @@ function muzzleFlash(){
 }
 function fireMG(){
  const p=muzzleWorld(),f=aimDir.clone().add(new THREE.Vector3(rnd(-0.012,0.012),rnd(-0.012,0.012),rnd(-0.012,0.012))).normalize();
- const len=2.6;
- const m=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.05,len),
-  new THREE.MeshBasicMaterial({color:0xfff3b0}));
+ const len=3.4;
+ const m=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,len),
+  new THREE.MeshBasicMaterial({color:0xffd400}));
  m.position.copy(p).addScaledVector(f,len/2);
  m.lookAt(p.x+f.x*5,p.y+f.y*5,p.z+f.z*5);
  scene.add(m);
- G.bullets.push({kind:'mg',m,p:p.clone(),v:f.clone(),spd:120,life:0.6,dmg:1});
+ G.bullets.push({kind:'mg',m,p:p.clone(),v:f.clone(),spd:120,life:0.6,dmg:1,prev:p.clone()});
 }
 function fireCannon(){
- const p=muzzleWorld(),f=aimDir;
- const m=new THREE.Mesh(new THREE.SphereGeometry(0.16,6,5),
+ const p=muzzleWorld(),tp=rayGroundHit();
+ const dx=tp.x-p.x,dz=tp.z-p.z,dy=tp.y-p.y;
+ const dist=Math.hypot(dx,dz);
+ const T=Math.max(0.12,dist/65);
+ const m=new THREE.Mesh(new THREE.SphereGeometry(0.18,6,5),
   new THREE.MeshBasicMaterial({color:0x222222}));
  m.position.copy(p);scene.add(m);
- G.bullets.push({kind:'shell',m,p:p.clone(),v:f.clone(),spd:65,life:3,dmg:60,grav:26});
+ G.bullets.push({kind:'shell',m,p:p.clone(),v:new THREE.Vector3(dx/T,(dy+0.5*26*T*T)/T,dz/T),spd:65,life:3,dmg:60,grav:26});
 }
 function fireMissile(){
  const p=muzzleWorld(),f=aimDir;
  const m=new THREE.Mesh(new THREE.ConeGeometry(0.14,0.7,6),
   new THREE.MeshBasicMaterial({color:0xef4444}));
  m.rotation.x=Math.PI/2;m.position.copy(p);scene.add(m);
- G.bullets.push({kind:'missile',m,p:p.clone(),v:f.clone(),spd:70,life:4,dmg:110,target:findAirTarget(),age:0});
+ G.bullets.push({kind:'missile',m,p:p.clone(),v:f.clone().multiplyScalar(70),spd:70,life:4,dmg:110,target:findAirTarget(),age:0});
 }
 function findAirTarget(){
  let best=null,bd=1e9;
@@ -334,9 +342,10 @@ function findAirTarget(){
 function updateBullets(dt){
  for(const b of G.bullets){
   b.life-=dt;
+  const ox=b.p.x,oy=b.p.y,oz=b.p.z; /* 帧前位置(线段碰撞用) */
   if(b.kind==='shell'){
    b.v.y-=b.grav*dt;b.p.addScaledVector(b.v,dt);
-   if(Math.random()<0.6)spawnPart(b.p.x,b.p.y,b.p.z,rnd(-0.4,0.4),rnd(0.3,0.8),rnd(-0.4,0.4),0.5,0xbbbbbb,1.1);
+   if(Math.random()<0.9)spawnPart(b.p.x,b.p.y,b.p.z,rnd(-0.4,0.4),rnd(0.3,0.8),rnd(-0.4,0.4),0.5,0xbbbbbb,1.1);
   }
   else if(b.kind==='missile'){
    b.age+=dt;
@@ -349,16 +358,24 @@ function updateBullets(dt){
    spawnPart(b.p.x,b.p.y,b.p.z,-b.v.x*0.15+rnd(-0.3,0.3),-b.v.y*0.15+rnd(-0.3,0.3),-b.v.z*0.15+rnd(-0.3,0.3),0.3,0xff8c2a,1.4);
   }
   else if(b.kind==='bomb'){b.v.y-=b.grav*dt;b.p.addScaledVector(b.v,dt);}
-  else{b.p.addScaledVector(b.v,dt);}
+  else{
+   b.p.addScaledVector(b.v,b.spd*dt);
+   spawnPart(b.p.x,b.p.y,b.p.z,-b.v.x*0.3+rnd(-0.15,0.15),-b.v.y*0.3+rnd(-0.15,0.15),-b.v.z*0.3+rnd(-0.15,0.15),0.12,0xffd400,1.2);
+  }
   b.m.position.copy(b.p);
   if(b.kind==='missile')b.m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.v.clone().normalize());
-  /* 命中判定 */
+  /* 命中判定:线段-球(高速弹不穿模) */
   let hit=null;
+  const ddx=b.p.x-ox,ddy=b.p.y-oy,ddz=b.p.z-oz;
+  const l2=ddx*ddx+ddy*ddy+ddz*ddz;
   for(const e of G.enemies){
    if(e.dead)continue;
-   const ep=e.mesh.position,hr=e.hitR||1.2;
-   const dx=b.p.x-ep.x,dy=b.p.y-ep.y,dz=b.p.z-ep.z;
-   if(dx*dx+dy*dy+dz*dz<hr*hr){hit=e;break;}
+   const hr=e.hitR||1.2;
+   const ex=e.mesh.position.x-ox,ey=e.mesh.position.y-oy,ez=e.mesh.position.z-oz;
+   let tt=0;
+   if(l2>1e-9)tt=clamp((ex*ddx+ey*ddy+ez*ddz)/l2,0,1);
+   const cx=ddx*tt-ex,cy=ddy*tt-ey,cz=ddz*tt-ez;
+   if(cx*cx+cy*cy+cz*cz<hr*hr){hit=e;break;}
   }
   if(hit){
    if(b.kind==='shell'||b.kind==='missile'){explode(b.p,true);splashArea(b.p,b.kind==='shell'?4.5:6,b.dmg);}
@@ -715,7 +732,7 @@ function switchWeapon(i){
 /* ================= 瞄准 ================= */
 function applyAim(dyaw,dpitch){
  G.yaw=clamp(G.yaw+dyaw,Math.PI-1.2,Math.PI+1.2);
- G.pitch=clamp(G.pitch+dpitch,-1.05,0.9);
+ G.pitch=clamp(G.pitch+dpitch,-1.2,0.9);
  aimDir.set(Math.sin(G.yaw)*Math.cos(G.pitch),Math.sin(G.pitch),Math.cos(G.yaw)*Math.cos(G.pitch));
 }
 function updateTurret(){
@@ -728,10 +745,10 @@ function updateTurret(){
 /* 双视角:第一人称(炮手眼睛,视线随炮口,越过悬崖) / 第三人称(右侧后方俯瞰,悬崖不挡) */
 function updateCamera(){
  if(G.view==='tp'){
-  camera.position.set(4.8,8.6,10.8);
+  camera.position.set(4.8,8.2,10.8);
   camera.lookAt(0,1,-35);
  }else{
-  camera.position.set(0,8.0,11.4);
+  camera.position.set(0,GUN_POS.y+0.8,11.4);
   camera.lookAt(muzzlePos.x+aimDir.x*50,muzzlePos.y+aimDir.y*50,muzzlePos.z+aimDir.z*50);
  }
 }
@@ -816,28 +833,33 @@ function animateSea(dt){
  seaPos.needsUpdate=true;
  sea.geometry.computeVertexNormals();
 }
+/* 射线与地形(含悬崖阶跃)的第一交点:从枪口出发,粗采+二分精化 */
+function rayGroundHit(){
+ const p=muzzlePos,d=aimDir;
+ if(d.y>=-0.001){
+  return new THREE.Vector3(p.x+d.x*50,p.y+d.y*50,p.z+d.z*50);
+ }
+ if(p.y<=groundY(p.x,p.z))return new THREE.Vector3(p.x,p.y,p.z);
+ let t=0.5,hitT=-1;
+ while(t<200){
+  const x=p.x+d.x*t,y=p.y+d.y*t,z=p.z+d.z*t;
+  if(y<=groundY(x,z)){hitT=t;break;}
+  t+=0.5;
+ }
+ if(hitT<0)return new THREE.Vector3(p.x+d.x*200,p.y+d.y*200,p.z+d.z*200);
+ let a=hitT-0.5,b=hitT;
+ for(let i=0;i<8;i++){
+  const m=(a+b)/2,x=p.x+d.x*m,y=p.y+d.y*m,z=p.z+d.z*m;
+  if(y<=groundY(x,z))b=m;else a=m;
+ }
+ const m=(a+b)/2,x=p.x+d.x*m,z=p.z+d.z*m;
+ return new THREE.Vector3(x,groundY(x,z),z);
+}
 function updateHUDcross(){
  const el=document.getElementById('cross');
  if(G.st==='play'){
-  /* 准星锚定子弹实际落点:枪口射线与地形交点(悬崖感知);朝天时投影固定距离点 */
-  let pt;
-  if(aimDir.y<-0.01){
-   const t0=-muzzlePos.y/aimDir.y;
-   const z0=muzzlePos.z+aimDir.z*t0;
-   if(z0<8){
-    const t8=(8-muzzlePos.z)/aimDir.z;
-    const y8=muzzlePos.y+aimDir.y*t8;
-    if(y8<6.6){
-     pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t8,y8,8);
-    }else{
-     pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t0,0,z0);
-    }
-   }else{
-    pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t0,0,z0);
-   }
-  }else{
-   pt=new THREE.Vector3(muzzlePos.x+aimDir.x*50,muzzlePos.y+aimDir.y*50,muzzlePos.z+aimDir.z*50);
-  }
+  /* 准星锚定子弹实际落点(枪口射线与地形交点,含悬崖感知) */
+  const pt=rayGroundHit();
   pt.project(camera);
   el.style.display='block';
   el.style.left=((pt.x*0.5+0.5)*innerWidth)+'px';
