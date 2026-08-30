@@ -177,14 +177,14 @@ beach.rotation.x=-Math.PI/2;
 beach.position.set(0,0.02,3);
 scene.add(beach);
 
-/* ---- 悬崖高地(矮海堤 + 高炮塔:制高点且俯角可覆盖滩头) ---- */
+/* ---- 前景装饰(暂不渲染:排查遮挡,确认基本功能) ---- */
 const cliffMat=new THREE.MeshLambertMaterial({color:0xc4a86a,flatShading:true});
 const cliff=new THREE.Mesh(new THREE.BoxGeometry(50,2.5,1.6),cliffMat);
 cliff.position.set(0,1.25,8.8);
-scene.add(cliff);
+/* scene.add(cliff); */
 const top=new THREE.Mesh(new THREE.BoxGeometry(56,0.5,5),cliffMat);
 top.position.set(0,2.25,12.5);
-scene.add(top);
+/* scene.add(top); */
 
 /* ---- 远处沙丘 ---- */
 const dune=new THREE.Mesh(
@@ -200,21 +200,21 @@ const GUN_POS=new THREE.Vector3(0,6.5,12);   // 炮台:海堤上的高塔堡垒
 const BASE_TARGET=new THREE.Vector3(0,0,5);  // 敌人冲击点:海堤脚下的滩头
 const CLIFF_Z=8,CLIFF_H=2.5;                 // 崖面位置/高度(矮海堤)
 const groundY=(x,z)=>z>=CLIFF_Z?CLIFF_H:0;   // 地形高度:堤上2.5,海/滩0
-/* 炮台高塔(混凝土塔座,把炮口抬高到堤面上方,俯角可覆盖滩头) */
+/* 炮台高塔(暂不渲染) */
 const tower=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.6,4.1,10),cliffMat);
 tower.position.set(GUN_POS.x,CLIFF_H+2.05,GUN_POS.z);
-scene.add(tower);
+/* scene.add(tower); */
 const bagMat=new THREE.MeshLambertMaterial({color:0x8a7a52,flatShading:true});
 for(let i=0;i<7;i++){
  const a=(i/7)*Math.PI*2;
  const bag=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.5,1.1,7),bagMat);
  bag.position.set(GUN_POS.x+Math.cos(a)*1.15,GUN_POS.y+0.35,GUN_POS.z+Math.sin(a)*1.15);
- scene.add(bag);
+ /* scene.add(bag); */
 }
-/* 沙袋圈底部平台 */
+/* 沙袋圈底部平台(暂不渲染) */
 const plat=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.7,0.4,10),bagMat);
 plat.position.set(GUN_POS.x,GUN_POS.y+0.1,GUN_POS.z);
-scene.add(plat);
+/* scene.add(plat); */
 
 /* ---- 炮台 ---- */
 const turret=new THREE.Group();
@@ -233,7 +233,7 @@ shield.position.z=0.55;barrelGrp.add(shield);
 barrelGrp.position.y=1.25;
 turret.add(barrelGrp);
 turret.position.set(GUN_POS.x,GUN_POS.y,GUN_POS.z);
-scene.add(turret);
+/* scene.add(turret); */ /* 炮台暂不渲染 */
 
 /* 枪口世界位置(每帧更新) */
 const muzzlePos=new THREE.Vector3(GUN_POS.x,GUN_POS.y+1.25,GUN_POS.z);
@@ -745,9 +745,8 @@ function applyAim(dyaw,dpitch){
 function updateTurret(){
  turret.rotation.y=G.yaw;
  barrelGrp.rotation.x=-G.pitch;
- /* 更新枪口世界位置 */
- const mp=muzzleWorld();
- muzzlePos.copy(mp);
+ /* muzzlePos 是固定锚点,muzzleWorld() 计算实际出弹点。
+    不要每帧把 muzzlePos 更新成出弹点——会沿 aimDir 累积漂移,1 秒枪口就飘到海上,子弹全打偏 */
 }
 /* 双视角:第一人称(炮手眼睛,视线随炮口) / 第三人称(环绕跟随:绕炮台转到炮口后方,拉远俯瞰) */
 function updateCamera(){
@@ -847,7 +846,7 @@ function animateSea(dt){
 }
 /* 射线与地形(含悬崖阶跃)的第一交点:从枪口出发,粗采+二分精化 */
 function rayGroundHit(){
- const p=muzzlePos,d=aimDir;
+ const p=muzzleWorld(),d=aimDir;
  if(d.y>=-0.001){
   return new THREE.Vector3(p.x+d.x*50,p.y+d.y*50,p.z+d.z*50);
  }
