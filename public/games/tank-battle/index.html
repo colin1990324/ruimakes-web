@@ -9,7 +9,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{background:#09090b;color:#e4e4e7;font-family:'Courier New',monospace;display:flex;justify-content:center;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
-.wrap{max-width:720px;width:100%;display:flex;flex-direction:column;align-items:center;padding:20px 16px 8px;gap:12px}
+.wrap{max-width:720px;width:100%;display:flex;flex-direction:column;align-items:center;padding:20px 16px 8px;gap:12px;transform-origin:top center}
 header{width:100%;display:flex;align-items:center;justify-content:space-between}
 h1{color:#facc15;font-size:33px;letter-spacing:4px;text-shadow:3px 3px 0 #7c2d12}
 h1 small{color:#a1a1aa;font-size:16px;letter-spacing:3px;margin-left:8px}
@@ -820,6 +820,16 @@ document.getElementById('btnAgain').addEventListener('click',()=>{G.st='menu';re
 document.getElementById('mbtn').addEventListener('click',()=>{G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';});
 const cbtn=document.getElementById('cbtn');
 cbtn.addEventListener('click',()=>{G.crazy=!G.crazy;cbtn.classList.toggle('on',G.crazy);cbtn.textContent=G.crazy?'疯狂 ON':'疯狂';});
+
+/* ================= 移动端自适应:整体缩放,保证一屏完整显示 ================= */
+const wrapEl=document.querySelector('.wrap');
+function fit(){
+ const s=Math.min(1,innerWidth/wrapEl.offsetWidth,innerHeight/wrapEl.offsetHeight);
+ wrapEl.style.transform='scale('+s+')';
+}
+addEventListener('resize',fit);
+addEventListener('orientationchange',fit);
+fit();
 
 /* ================= 主循环 ================= */
 let last=0,acc=0;
