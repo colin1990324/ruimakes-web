@@ -91,12 +91,11 @@ footer{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#3f3f
 </div>
 <div id="ovUpg" class="ov">
   <div class="t2" style="font-size:20px">第 <span id="upWave" style="color:#facc15">2</span> 波来袭</div>
-  <div class="desc">弹药已补给 · 选择一项强化:</div>
+  <div class="desc">弹药已补给 · 选择一项强化(<b>1/2/3</b> 翻页)</div>
+  <div id="upgPage" style="color:#71717a;font-size:13px;letter-spacing:2px">1/3</div>
   <div id="upgRow">
-    <button class="btn alt" data-up="0">⚡ 强化枪管<br><small>射速 +15%</small></button>
-    <button class="btn alt" data-up="1">💥 高爆弹药<br><small>伤害 +20%</small></button>
-    <button class="btn alt" data-up="2">🛡 修复掩体<br><small>阵地血量 +30</small></button>
   </div>
+  <button id="upgNext" class="btn alt" style="padding:8px 24px;font-size:13px">下一页 →</button>
 </div>
 <div id="ovOver" class="ov">
   <div class="t1" style="font-size:30px;letter-spacing:6px">阵地失守</div>
@@ -456,7 +455,7 @@ function updateBullets(dt){
   else{
    b.v.y-=b.grav*dt; /* 机枪轻下坠(微弧曳光) */
    b.p.addScaledVector(b.v,dt);
-   if(b.origin&&b.p.distanceTo(b.origin)>35){b.dead=true;continue;} /* 有效射程 35m,超出消失 */
+   if(b.origin&&b.p.distanceTo(b.origin)>(G.mgRange||35)){b.dead=true;continue;} /* 有效射程(可升级),超出消失 */
    for(let i=0;i<2;i++)spawnPart(b.p.x+rnd(-0.05,0.05),b.p.y+rnd(-0.05,0.05),b.p.z+rnd(-0.05,0.05),-b.v.x*0.4+rnd(-0.2,0.2),-b.v.y*0.4+rnd(-0.2,0.2),-b.v.z*0.4+rnd(-0.2,0.2),0.22,0xffd400,1.6);
   }
   b.m.position.copy(b.p);
@@ -519,20 +518,34 @@ function box(w,h,d,color,x,y,z){
  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(color));
  m.position.set(x,y,z);return m;
 }
+/* 可动肢体:顶部为旋转轴(跑步动画用) */
+function limb(w,h,d,color,x,y,z){
+ const grp=new THREE.Group();
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(color));
+ m.position.y=-h/2;
+ grp.position.set(x,y,z);
+ grp.add(m);
+ return grp;
+}
 function makeSoldier(){
  const g=new THREE.Group();
  g.add(box(0.32,0.5,0.3,0x4a5d4a,0,0.7,0));        // 身体
  g.add(box(0.2,0.2,0.2,0xd9b88c,0,1.1,0));         // 头
  g.add(box(0.24,0.1,0.24,0x3a4a3a,0,1.24,0));      // 钢盔
  g.add(box(0.34,0.06,0.32,0x3a2f22,0,0.52,0));     // 腰带
- g.add(box(0.1,0.35,0.12,0x4a5d4a,0.22,0.82,0));   // 右臂
- g.add(box(0.1,0.35,0.12,0x4a5d4a,-0.22,0.82,0));  // 左臂
  g.add(box(0.06,0.06,0.55,0x222222,0.26,0.78,0.18));// 步枪(斜挎)
  g.add(box(0.18,0.3,0.12,0x3a4a3a,-0.26,0.72,0.08));// 背包
- g.add(box(0.12,0.4,0.14,0x3a4a3a,-0.1,0.25,0));   // 左腿
- g.add(box(0.12,0.4,0.14,0x3a4a3a,0.1,0.25,0));    // 右腿
- g.add(box(0.13,0.08,0.18,0x1a1a1a,-0.1,0.04,0.02));// 左靴
- g.add(box(0.13,0.08,0.18,0x1a1a1a,0.1,0.04,0.02)); // 右靴
+ /* 可动四肢(顶部轴,跑步摆动) */
+ const legL=limb(0.12,0.42,0.14,0x3a4a3a,-0.1,0.45,0);
+ const legR=limb(0.12,0.42,0.14,0x3a4a3a,0.1,0.45,0);
+ const armL=limb(0.1,0.35,0.12,0x4a5d4a,-0.22,0.87,0);
+ const armR=limb(0.1,0.35,0.12,0x4a5d4a,0.22,0.87,0);
+ const bootL=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.09,0.18),M(0x1a1a1a));
+ bootL.position.y=-0.42;legL.add(bootL);
+ const bootR=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.09,0.18),M(0x1a1a1a));
+ bootR.position.y=-0.42;legR.add(bootR);
+ g.add(legL);g.add(legR);g.add(armL);g.add(armR);
+ g.legL=legL;g.legR=legR;g.armL=armL;g.armR=armR;
  return g;
 }
 function makeBoat(){
@@ -654,6 +667,7 @@ function addCombo(){
 }
 function baseHit(dmg,pos){
  if(G.st!=='play')return;
+ if(G.shield>0){if(pos)explode(pos,false);return;} /* 护盾无敌 */
  G.baseHP-=dmg;
  if(pos)explode(pos,false);
  updateHUD();
@@ -679,13 +693,25 @@ function updateEnemies(dt){
    const dx=tx-p.x,dz=tz-p.z;
    const d=Math.hypot(dx,dz);
    if(e.land>0){e.land-=dt;e.mesh.rotation.y=Math.atan2(dx,dz);continue;} /* 下船停顿 */
-   const sway=Math.sin(g.frame*0.08+(e.sw||0))*1.0; /* 大范围蛇形分散推进 */
-   const nx=dx/d,nz=dz/d;
-   p.x+=(nx-nz*sway)*e.spd*dt;
-   p.z+=(nz+nx*sway)*e.spd*dt;
+   /* 随机横向漂移:每 0.8~1.6s 换偏移目标,路径随机折线分散整个海滩 */
+   e.wt=(e.wt===undefined?0:e.wt)-dt;
+   if(e.wt<=0){e.wt=rnd(0.8,1.6);e.ox=rnd(-12,12);}
+   const tx2=tx+(e.ox||0),tz2=tz;
+   const dx2=tx2-p.x,dz2=tz2-p.z;
+   const d2=Math.hypot(dx2,dz2)||1;
+   p.x+=dx2/d2*e.spd*dt;
+   p.z+=dz2/d2*e.spd*dt;
    const [ax2,az2]=avoidRocks(p.x,p.z,0.3);p.x=ax2;p.z=az2; /* 岩石碰撞,沿法线滑移 */
-   e.mesh.rotation.y=Math.atan2(tx-p.x,tz-p.z);
-   if(d<2.3){baseHit(ENEMY.soldier.reach,p.clone());killEnemy(e);}
+   /* 跑步手脚动画 */
+   if(e.mesh.legL){
+    e.step=(e.step||0)+dt*e.spd*5;
+    e.mesh.legL.rotation.x=Math.sin(e.step)*0.65;
+    e.mesh.legR.rotation.x=Math.sin(e.step+Math.PI)*0.65;
+    e.mesh.armL.rotation.x=Math.sin(e.step+Math.PI)*0.5;
+    e.mesh.armR.rotation.x=Math.sin(e.step)*0.5;
+   }
+   e.mesh.rotation.y=Math.atan2(dx2,dz2);
+   if(Math.abs(p.z-BASE_TARGET.z)<2.3){baseHit(ENEMY.soldier.reach,p.clone());killEnemy(e);}
   }else if(e.type==='boat'){
    if(e.landed){
     /* 已冲滩:逐个放下士兵,船留在岸边当残骸(无爆炸) */
@@ -719,15 +745,19 @@ function updateEnemies(dt){
    const tz=e.az!==undefined?e.az:BASE_TARGET.z;
    const dx=tx-p.x,dz=tz-p.z;
    const d=Math.hypot(dx,dz);
-   const sway=Math.sin(g.frame*0.05+(e.sw||0))*0.55; /* 坦克中幅摆动分散 */
-   const nx=dx/d,nz=dz/d;
-   p.x+=(nx-nz*sway)*e.spd*dt;
-   p.z+=(nz+nx*sway)*e.spd*dt;
+   /* 坦克小幅随机横向漂移 */
+   e.wt=(e.wt===undefined?0:e.wt)-dt;
+   if(e.wt<=0){e.wt=rnd(1.2,2.4);e.ox=rnd(-6,6);}
+   const tx2=tx+(e.ox||0),tz2=tz;
+   const dx2=tx2-p.x,dz2=tz2-p.z;
+   const d2=Math.hypot(dx2,dz2)||1;
+   p.x+=dx2/d2*e.spd*dt;
+   p.z+=dz2/d2*e.spd*dt;
    const [ax2,az2]=avoidRocks(p.x,p.z,0.7);p.x=ax2;p.z=az2; /* 岩石碰撞 */
-   e.mesh.rotation.y=Math.atan2(dx,dz);
+   e.mesh.rotation.y=Math.atan2(dx2,dz2);
    e.t-=dt;
    if(e.t<=0){e.t=3.2;tankShell(p);}
-   if(d<2.6){baseHit(ENEMY.tank.reach,p.clone());killEnemy(e);}
+   if(Math.abs(p.z-BASE_TARGET.z)<2.6){baseHit(ENEMY.tank.reach,p.clone());killEnemy(e);}
   }else if(e.type==='heli'){
    e.t-=dt;
    p.x+=e.dir*e.spd*dt;
@@ -829,18 +859,45 @@ function checkWave(){
   G.waveClearT=1.4;
  }
 }
+let upgPage=0;
+const UPGS=[
+ ['⚡ 强化枪管','射速 +15%'],
+ ['💥 高爆弹药','伤害 +20%'],
+ ['🛡 修复掩体','阵地血量 +30'],
+ ['🎖 弹药补给','炮+6 导弹+3'],
+ ['🎯 加长枪管','机枪射程 +5m'],
+ ['⛨ 阵地护盾','10秒基地无敌'],
+];
 function showUpgrade(){
  G.st='upg';
  G.ammo.cannon=12+Math.floor(G.wave/2);
  G.ammo.missile=6+Math.floor(G.wave/3);
  document.getElementById('upWave').textContent=G.wave+1;
+ upgPage=0;
+ renderUpg();
  showOv('ovUpg');
  updateHUD();
+}
+function renderUpg(){
+ const row=document.getElementById('upgRow');
+ row.innerHTML='';
+ for(let k=0;k<2;k++){
+  const i=upgPage*2+k;
+  const b=document.createElement('button');
+  b.className='btn alt';
+  b.innerHTML=UPGS[i][0]+'<br><small>'+UPGS[i][1]+'</small>';
+  b.addEventListener('click',()=>applyUpg(i));
+  row.appendChild(b);
+ }
+ document.getElementById('upgPage').textContent=(upgPage+1)+'/3';
 }
 function applyUpg(i){
  if(i===0)G.upg.rate=Math.min(2.5,G.upg.rate*1.15);
  if(i===1)G.upg.dmg=Math.min(3,G.upg.dmg*1.2);
  if(i===2)G.baseHP=Math.min(G.baseMax,G.baseHP+30);
+ if(i===3){G.ammo.cannon+=6;G.ammo.missile+=3;}
+ if(i===4){G.mgRange=(G.mgRange||35)+5;}
+ if(i===5){G.shield=10;}
  G.wave++;
  startWave();
 }
@@ -928,6 +985,7 @@ function loop(ts){
   updateEnemies(dt);
   updateBullets(dt);
   updateWeapons(dt);
+  if(G.shield>0){G.shield-=dt;if(G.shield<=0)G.shield=0;}
   if(G.waveClearT>0){G.waveClearT-=dt;if(G.waveClearT<=0)showUpgrade();}
   /* 敌人掩体光效/音效节奏 */
   if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0){G.combo=0;document.getElementById('combo').style.display='none';}}
@@ -1035,6 +1093,7 @@ function startGame(){
  G.wave=1;G.score=0;G.baseHP=G.baseMax;G.combo=0;
  G.upg.rate=1;G.upg.dmg=1;
  G.ammo.cannon=12;G.ammo.missile=6;
+ G.mgRange=35;G.shield=0;
  clearEnemies();
  startWave();
 }
@@ -1139,6 +1198,9 @@ addEventListener('keydown',e=>{
  if(e.code==='ArrowDown'||e.code==='KeyS')keys.d=true;
  if(e.code==='KeyM'){G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';}
  if(e.code==='KeyC')toggleView();
+ if(G.st==='upg'&&['Digit1','Digit2','Digit3'].includes(e.code)){
+  upgPage=+e.code.slice(5)-1;renderUpg();
+ }
  if(e.code==='Enter'){
   if(G.st==='menu')startGame();
   else if(G.st==='over'){G.st='menu';resetScene();showOv('ovMenu');}
@@ -1162,10 +1224,8 @@ document.getElementById('fireBtn').addEventListener('pointerleave',e=>{touchHeld
 document.getElementById('mbtn').addEventListener('click',()=>{G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';});
 document.getElementById('vbtn').addEventListener('click',toggleView);
 document.getElementById('btnStart').addEventListener('click',startGame);
+document.getElementById('upgNext').addEventListener('click',()=>{upgPage=(upgPage+1)%3;renderUpg();});
 document.getElementById('btnAgain').addEventListener('click',()=>{G.st='menu';resetScene();showOv('ovMenu');});
-document.querySelectorAll('#upgRow .btn').forEach(b=>{
- b.addEventListener('click',()=>applyUpg(+b.dataset.up));
-});
 function resetScene(){
  clearEnemies();
  for(const f of G.fx)scene.remove(f.m);
