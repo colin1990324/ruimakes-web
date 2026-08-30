@@ -64,6 +64,13 @@
   #verStat{ font-size:12px; color:var(--dim); border-color:#3f3f46; }
   #verStat b{ color:#facc15; letter-spacing:1px; }
   .ov h1 .ver{ font-size:16px; color:var(--dim); letter-spacing:3px; margin-left:10px; vertical-align:middle; }
+  /* Boss 血条 */
+  #bossBar{ position:absolute; top:54px; left:50%; transform:translateX(-50%); width:min(420px,82%); z-index:6;
+    display:none; text-align:center; pointer-events:none; }
+  #bossBar .bb-name{ font-size:13px; color:#ef4444; letter-spacing:3px; text-shadow:0 1px 3px #000; margin-bottom:3px; }
+  #bossBar .bb-track{ height:10px; background:rgba(0,0,0,.6); border:1px solid #7f1d1d; border-radius:5px; overflow:hidden; }
+  #bossBar .bb-track i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,#f59e0b,#ef4444);
+    transition:width .15s; border-radius:4px; }
   @media (max-width:700px){ .ov h1{ font-size:30px; } .ov p{ font-size:12px; } #hud{ font-size:12px; } }
 </style>
 </head>
@@ -80,6 +87,7 @@
 </div>
 <div id="waveBar"><i id="waveFill"></i></div>
 <div id="speedTag">2×</div>
+<div id="bossBar"><div class="bb-name">👹 哥斯拉</div><div class="bb-track"><i id="bossFill"></i></div></div>
 <div id="towerInfo"></div>
 <div id="toast"></div>
 
@@ -1035,11 +1043,22 @@ function toast(msg,color){
 }
 
 /* ---------- HUD ---------- */
+function updateBossBar(){
+  let boss=null;
+  for(const m of G.monsters){ if(m.def.boss&&!m.dead&&!m.done){ boss=m; break; } }
+  const bar=$('bossBar');
+  if(!boss){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  const fill=$('bossFill');
+  fill.style.width=Math.max(0,100*boss.hp/boss.maxHp).toFixed(1)+'%';
+  fill.style.background=boss.hp<boss.maxHp*0.7?'#ef4444':'linear-gradient(90deg,#f59e0b,#ef4444)';
+}
 function updateHUD(){
   $('hLives').textContent=G.lives;
   $('hGold').textContent=G.gold;
   $('hCount').textContent=G.monsters.length+G.spawnQ.length;
   updateWaveBar();
+  updateBossBar();
 }
 function waveTotalCount(seq){
   return seq.split(' ').reduce((s,p)=>{const m=p.match(/^[a-z]+(\d+)$/);return s+(m?+m[1]:0);},0);
@@ -1093,6 +1112,7 @@ function saveBest(){
 }
 function gameOver(){
   G.st='over';
+  $('bossBar').style.display='none';
   saveBest();
   $('overWave').textContent=G.wave;
   $('overBest').textContent=G.best.wave>0?('第 '+G.best.wave+' 波 · '+G.best.score+' 分'):'无';
@@ -1101,6 +1121,7 @@ function gameOver(){
 }
 function winGame(){
   G.st='win';
+  $('bossBar').style.display='none';
   saveBest();
   sfx('win');
   $('winOv').classList.remove('hide');
@@ -1245,7 +1266,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.4'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.5'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
@@ -1278,7 +1299,7 @@ window.addEventListener('resize',()=>{
 requestAnimationFrame(loop);
 
 /* ===== 占位(后续模块注入点) ===== */
-window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget};
+window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget,updateHUD,updateBossBar};
 
 })();
 </script>
