@@ -17,6 +17,12 @@
   #top .info{ font-size:12px; color:var(--dim); background:rgba(0,0,0,.55); border:1px solid #27272a;
     border-radius:6px; padding:3px 10px; }
   #top .info b{ color:var(--gold); }
+  /* 模数选择(模运算时钟模式) */
+  #modRow{ position:absolute; top:52px; left:50%; transform:translateX(-50%); z-index:5; display:none; gap:6px; }
+  #modRow button{ font-family:inherit; font-size:13px; letter-spacing:1px; padding:5px 16px; background:#18181b;
+    color:var(--fg); border:1px solid #3f3f46; border-radius:6px; cursor:pointer; }
+  #modRow button.cur{ background:rgba(16,185,129,.15); border-color:var(--acc); color:var(--acc); }
+  #modRow .ml{ font-size:11px; color:var(--dim); align-self:center; margin-right:2px; letter-spacing:1px; }
   /* ===== 左侧:螺旋模式 ===== */
   #left{ position:absolute; left:10px; top:50%; transform:translateY(-50%); z-index:5; width:150px;
     background:rgba(0,0,0,.72); border:1px solid #27272a; border-radius:10px; padding:10px; }
@@ -61,13 +67,20 @@
 <body>
 <canvas id="cv"></canvas>
 <div id="top">
-  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.4</span>
-  <span class="info"><b id="cntTxt">0</b> 个质数 · 点击质数查看数值 · 拖拽平移 · 滚轮缩放</span>
+  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.5</span>
+  <span class="info"><b id="cntTxt">0</b> 个质数 · 点击查看数值 · 拖拽平移 · 滚轮缩放</span>
+</div>
+<div id="modRow">
+  <span class="ml">模数 M</span>
+  <button data-m="12" class="cur">12</button>
+  <button data-m="30">30</button>
+  <button data-m="210">210</button>
 </div>
 <div id="left">
-  <div class="tt">螺旋模式</div>
+  <div class="tt">排列模式</div>
   <button id="mPolar" class="cur">极坐标 (p,p)<span class="sub">r=p · θ=p 弧度</span></button>
   <button id="mUlam">乌拉姆螺旋<span class="sub">方形螺旋 · 质数涂色</span></button>
+  <button id="mMod">模运算时钟<span class="sub">n mod M 表盘</span></button>
 </div>
 <div id="right">
   <div class="tt">数据规模</div>
@@ -97,10 +110,13 @@ const PRIMES_1E4=[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,
 
 /* ---------- 状态 ---------- */
 const S={
-  mode:'polar',      // polar | ulam
+  mode:'polar',      // polar | ulam | mod
   tag:'1e4',
+  modM:12,           // 模运算时钟的模数
   primes:PRIMES_1E4,
   wx:null,           // 世界坐标 Float32Array(x 交错)
+  modCnt:null,       // mod 模式:每个刻度的质数计数
+  modMax:1,
   scale:1, offX:0, offY:0,
   hoverIdx:-1, pickIdx:-1,
   loading:false,
@@ -154,6 +170,18 @@ function computeWorld(){
   }
   S.wx=arr;
 }
+/* ---------- 模运算时钟:统计每个刻度 (p mod M) 的质数数量 ---------- */
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+function computeCounts(){
+  const M=S.modM;
+  const cnt=new Uint32Array(M);
+  const n=S.primes.length;
+  for(let i=0;i<n;i++) cnt[S.primes[i]%M]++;
+  S.modCnt=cnt;
+  let mx=1;
+  for(let i=0;i<M;i++) if(cnt[i]>mx) mx=cnt[i];
+  S.modMax=mx;
+}
 
 /* ---------- 视图适配 ---------- */
 function bounds(){
@@ -206,6 +234,21 @@ function renderBase(){
 }
 function display(){
   ctx.clearRect(0,0,W,H);
+  if(S.mode==='mod'){
+    // 模时钟:直接矢量绘制(固定视图,无平移缩放)
+    renderMod();
+    const hl=(S.hoverIdx>=0?S.hoverIdx:S.pickIdx);
+    if(hl>=0){
+      const a=-Math.PI/2+hl/S.modM*Math.PI*2;
+      const R=Math.min(W,H)*0.42;
+      ctx.strokeStyle='#f59e0b';
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.arc(W/2,H/2,R+5,a-0.06,a+0.06);
+      ctx.stroke();
+    }
+    return;
+  }
   if(baseReady) ctx.drawImage(off,S.offX-baseOffX,S.offY-baseOffY);
   // 高亮:悬停 + 选中
   const hl=(S.hoverIdx>=0?S.hoverIdx:S.pickIdx);
@@ -223,7 +266,74 @@ function display(){
   }
 }
 function render(){
+  if(S.mode==='mod'){ computeCounts(); display(); return; }
   renderBase();
+}
+/* ---------- 模运算时钟表盘 ---------- */
+function renderMod(){
+  const M=S.modM, cnt=S.modCnt||(S.modCnt=new Uint32Array(M));
+  const cx=W/2, cy=H/2;
+  const R=Math.min(W,H)*0.42;
+  // 外圆
+  ctx.strokeStyle='rgba(113,113,122,0.5)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+  // 刻度线:与 M 互质的刻度金色加长(质数候选),其余灰色
+  for(let i=0;i<M;i++){
+    const a=-Math.PI/2+i/M*Math.PI*2;
+    const cop=gcd(i,M)===1;
+    const len=cop?12:6;
+    ctx.strokeStyle=cop?'rgba(245,158,11,0.85)':'rgba(113,113,122,0.3)';
+    ctx.lineWidth=cop?1.6:1;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*(R-len), cy+Math.sin(a)*(R-len));
+    ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
+    ctx.stroke();
+  }
+  // 质数计数条:从圆周向圆心,长度 ∝ 该刻度质数数量
+  const max=S.modMax||1;
+  for(let i=0;i<M;i++){
+    const c=cnt[i];
+    if(!c) continue;
+    const a=-Math.PI/2+i/M*Math.PI*2;
+    const len=R*0.88*(c/max);
+    ctx.strokeStyle='rgba(239,68,68,0.85)';
+    ctx.lineWidth=Math.max(2,W/700);
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
+    ctx.lineTo(cx+Math.cos(a)*(R-len), cy+Math.sin(a)*(R-len));
+    ctx.stroke();
+  }
+  // 刻度数字(M<=30 时显示)
+  if(M<=30){
+    ctx.fillStyle='rgba(161,161,170,0.7)';
+    ctx.font='11px Courier New';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(let i=0;i<M;i++){
+      const a=-Math.PI/2+i/M*Math.PI*2;
+      const rr=R+14;
+      ctx.fillText(String(i),cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);
+    }
+  }
+  // 中心信息
+  ctx.fillStyle='#a1a1aa';
+  ctx.font='14px Courier New';
+  ctx.textAlign='center';
+  ctx.fillText('mod '+M, cx, cy-10);
+  ctx.fillStyle='#71717a';
+  ctx.font='12px Courier New';
+  ctx.fillText(S.primes.length.toLocaleString()+' 个质数 · 红色条=该刻度质数数量', cx, cy+10);
+}
+/* ---------- 模时钟拾取:点击角度 → 最近刻度 ---------- */
+function pickMod(mx,my){
+  const cx=W/2, cy=H/2;
+  const dx=mx-cx, dy=my-cy;
+  const d=Math.hypot(dx,dy);
+  const R=Math.min(W,H)*0.42;
+  if(d<R*0.5||d>R+22) return -1;
+  let a=Math.atan2(dy,dx)+Math.PI/2; // 顶部=0,顺时针
+  if(a<0) a+=Math.PI*2;
+  return Math.round(a/(Math.PI*2)*S.modM)%S.modM;
 }
 
 /* ---------- 点击拾取(网格索引) ---------- */
@@ -243,6 +353,7 @@ function buildGrid(){
 }
 function pick(mx,my){
   if(!S.wx) return -1;
+  if(S.mode==='mod') return pickMod(mx,my);
   const gx=(mx/CELL)|0, gy=(my/CELL)|0;
   let best=-1,bestD=1e18;
   for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
@@ -261,6 +372,22 @@ function pick(mx,my){
 const pv=document.getElementById('pv');
 function showInfo(idx,mx,my){
   if(idx<0){ pv.style.display='none'; return; }
+  if(S.mode==='mod'){
+    const M=S.modM, c=S.modCnt[idx], cop=gcd(idx,M)===1;
+    pv.innerHTML='<div class="pv-num">刻度 '+idx+'</div>'+
+      '<div class="pv-row"><span>质数数量</span><b>'+c.toLocaleString()+'</b></div>'+
+      '<div class="pv-row"><span>与 '+M+' 互质</span><b>'+(cop?'是 · 质数候选':'否 · 被筛除')+'</b></div>'+
+      '<div class="pv-pos">质数 p 满足 p mod '+M+' = '+idx+'</div>';
+    pv.style.display='block';
+    const Wp=pv.offsetWidth||190, Hp=pv.offsetHeight||120;
+    let px=Math.round(mx+16), py=Math.round(my+16);
+    if(px+Wp>window.innerWidth) px=mx-Wp-16;
+    if(py+Hp>window.innerHeight) py=my-Hp-16;
+    if(px<6)px=6; if(py<6)py=6;
+    pv.style.left=px+'px';
+    pv.style.top=py+'px';
+    return;
+  }
   const p=S.primes[idx];
   const x=S.wx[idx*2], y=S.wx[idx*2+1];
   pv.innerHTML='<div class="pv-num">'+p+'</div>'+
@@ -293,8 +420,8 @@ async function loadTag(tag){
       for(let i=0;i<n;i++) arr[i]=dv.getUint32(i*4,true);
       S.primes=arr;
     }
-    computeWorld();
-    fit();
+    if(S.mode==='mod'){ computeCounts(); display(); }
+    else { computeWorld(); fit(); }
     updateButtons();
   }catch(e){
     alert('加载质数表失败: '+e.message);
@@ -307,8 +434,17 @@ function switchMode(mode){
   S.hoverIdx=-1; S.pickIdx=-1; pv.style.display='none';
   document.getElementById('mPolar').classList.toggle('cur',mode==='polar');
   document.getElementById('mUlam').classList.toggle('cur',mode==='ulam');
-  computeWorld();
-  fit();
+  document.getElementById('mMod').classList.toggle('cur',mode==='mod');
+  document.getElementById('modRow').style.display=(mode==='mod')?'flex':'none';
+  if(mode==='mod'){ computeCounts(); display(); }
+  else { computeWorld(); fit(); }
+}
+function setModM(m){
+  S.modM=m;
+  document.querySelectorAll('#modRow button[data-m]').forEach(b=>{
+    b.classList.toggle('cur',+b.dataset.m===m);
+  });
+  if(S.mode==='mod'){ S.hoverIdx=-1; S.pickIdx=-1; pv.style.display='none'; computeCounts(); display(); }
 }
 function updateButtons(){
   document.getElementById('cntTxt').textContent=S.primes.length.toLocaleString();
@@ -320,7 +456,7 @@ function updateButtons(){
 /* ---------- 交互 ---------- */
 const DPR=window.devicePixelRatio||1; // canvas 像素 = CSS 像素 × DPR,拾取必须换算
 let dragging=false,lastX=0,lastY=0,dragDist=0;
-cv.addEventListener('mousedown',e=>{ dragging=true; dragDist=0; lastX=e.clientX*DPR; lastY=e.clientY*DPR; });
+cv.addEventListener('mousedown',e=>{ if(S.mode==='mod') return; dragging=true; dragDist=0; lastX=e.clientX*DPR; lastY=e.clientY*DPR; });
 window.addEventListener('mouseup',()=>{
   if(dragging){ dragging=false; renderBase(); } // 拖动结束重建底图补齐边缘
 });
@@ -354,6 +490,7 @@ cv.addEventListener('wheel',e=>{
   zoomAt(f,e.clientX*DPR,e.clientY*DPR);
 },{passive:false});
 function zoomAt(f,mx,my){
+  if(S.mode==='mod') return; // 模时钟固定视图
   const ns=S.scale*f;
   S.offX=mx-(mx-S.offX)*(ns/S.scale);
   S.offY=my-(my-S.offY)*(ns/S.scale);
@@ -385,6 +522,10 @@ cv.addEventListener('touchend',e=>{ if(dragging){ dragging=false; renderBase(); 
 // 按钮
 document.getElementById('mPolar').onclick=()=>switchMode('polar');
 document.getElementById('mUlam').onclick=()=>switchMode('ulam');
+document.getElementById('mMod').onclick=()=>switchMode('mod');
+document.querySelectorAll('#modRow button[data-m]').forEach(b=>{
+  b.onclick=()=>setModM(+b.dataset.m);
+});
 document.querySelectorAll('#right button[data-tag]').forEach(b=>{
   b.onclick=()=>loadTag(b.dataset.tag);
 });
@@ -397,7 +538,7 @@ computeWorld();
 resize();
 buildGrid();
 updateButtons();
-window.__PV__={S,PRIMES_1E4,spiralPos,computeWorld,buildGrid,pick,loadTag,switchMode,renderBase,zoomAt};
+window.__PV__={S,PRIMES_1E4,spiralPos,computeWorld,computeCounts,buildGrid,pick,pickMod,loadTag,switchMode,setModM,renderBase,renderMod,zoomAt,gcd};
 })();
 </script>
 </body>
