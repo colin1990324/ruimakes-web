@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Pac-Man · ruimakes</title>
+<title>吃豆人 Pac-Man · ruimakes</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 body{background:#09090b;display:flex;justify-content:center;align-items:center;min-height:100dvh;font-family:'Courier New',monospace;overflow:hidden}
@@ -413,7 +413,7 @@ function ss(type){
     ls.appendChild(btn);}
   ls.querySelectorAll('button').forEach(b=>b.classList.toggle('cur',parseInt(b.dataset.l)===g.l));
   b.style.display='block';
-  if(type==='menu'){h2.textContent='🟡 吃豆人 v0.1';h2.style.color='#10b981';
+  if(type==='menu'){h2.textContent='🟡 吃豆人 · PAC-MAN v0.1';h2.style.color='#10b981';
     p.innerHTML='← ↑ → ↓ 控制吃豆人吃掉所有豆子<br/>躲避幽灵，吃绿色能量豆可以反击！';
     b.textContent='开始游戏';b.onclick=()=>sg(0);}
   else if(type==='go'){h2.textContent='GAME OVER';h2.style.color='#ef4444';
