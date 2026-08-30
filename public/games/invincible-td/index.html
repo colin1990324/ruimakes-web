@@ -483,7 +483,7 @@ function killMonster(m){
   scene.remove(m.grp);
   G.gold+=m.def.gold;
   G.score+=Math.round(m.def.gold*10*(m.def.boss?10:1));
-  burst(m.pos[0],m.pos[2],m.def.color,m.def.boss?14:7);
+  burst(m.pos[0],m.pos[2],m.def.color,m.def.boss?10:6);
   if(m.def.boss&&G.st==='play'){
     const n=G.wave+5;
     if(n<=G.totalWaves){ toast('哥斯拉被击败!第 '+n+' 波再会',0xdc2626); }
@@ -527,10 +527,16 @@ function waveCleared(){
 }
 
 /* ---------- 特效:粒子爆发/灰尘 ---------- */
-const MAXPARTS=500;
+const MAXPARTS=300;
+// 粒子材质按颜色缓存(踩过坑:每次死亡 new 材质 → 大量死亡后 WebGL 程序/材质对象堆积卡死)
+const PART_MATS={};
+function partMat(color){
+  if(!PART_MATS[color]) PART_MATS[color]=new THREE.MeshBasicMaterial({color});
+  return PART_MATS[color];
+}
 function burst(x,z,color,n){
   if(G.parts.length>MAXPARTS) return;
-  const mat=new THREE.MeshBasicMaterial({color});
+  const mat=partMat(color);
   for(let i=0;i<n;i++){
     const s=0.06+rnd(0,0.08);
     const p=new THREE.Mesh(GEO_BOX,mat);
@@ -659,6 +665,7 @@ function findTarget(t,def){
 /* ---------- 子弹 ---------- */
 const GEO_BULLET=new THREE.SphereGeometry(0.09,6,6);
 const BULLET_MATS={};
+const TRAIL_MAT=new THREE.MeshBasicMaterial({color:0xffd27a});
 function bulletMat(color){
   if(!BULLET_MATS[color]) BULLET_MATS[color]=new THREE.MeshBasicMaterial({color});
   return BULLET_MATS[color];
@@ -704,13 +711,13 @@ function updateBullets(dt){
     if(b.grav){ b.y-=b.grav*dt; b.y=Math.max(0.35,b.y); }
     b.mesh.position.set(b.x,b.y,b.z);
     if(b.splashR){
-      // 尾迹光点
+      // 尾迹光点(独立材质缓存,不干扰共享 bulletMat)
       if(G.frame%3===0){
-        const tr=new THREE.Mesh(GEO_BULLET,bulletMat(0xffd27a));
+        const tr=new THREE.Mesh(GEO_BULLET,TRAIL_MAT);
         tr.scale.set(0.07,0.07,0.07);
         tr.position.set(b.x,0.4,b.z);
         scene.add(tr);
-        tr.userData.life=0.25;
+        tr.userData={life:0.25,max:0.25,fade:true};
         G.fx.push(tr);
       }
     }
@@ -742,6 +749,12 @@ function updateBullets(dt){
 }
 
 /* ---------- 激光(穿透光束) ---------- */
+// 光束材质按颜色缓存(避免每发 new 材质堆积)
+const LASER_MATS={};
+function laserMat(color){
+  if(!LASER_MATS[color]) LASER_MATS[color]=new THREE.LineBasicMaterial({color,transparent:true,opacity:0.9});
+  return LASER_MATS[color];
+}
 function laserAttack(t,def,target){
   const ang=Math.atan2(target.pos[0]-t.x,target.pos[2]-t.z);
   const sx=t.x, sz=t.z;
@@ -758,14 +771,14 @@ function laserAttack(t,def,target){
       hitAny=true;
     }
   }
-  // 光束视觉
+  // 光束视觉(几何每次 new 但 0.12s 后 dispose;材质缓存复用)
   const endX=sx+Math.cos(ang)*def.range, endZ=sz+Math.sin(ang)*def.range;
   const geom=new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(sx,1.0,sz), new THREE.Vector3(endX,0.6,endZ)
   ]);
-  const line=new THREE.Line(geom,new THREE.LineBasicMaterial({color:def.color,transparent:true,opacity:0.9}));
+  const line=new THREE.Line(geom,laserMat(def.color));
   scene.add(line);
-  line.userData.life=0.12;
+  line.userData={life:0.12,max:0.12,fade:true};
   G.fx.push(line);
   sfx('laser');
   return hitAny;
@@ -804,7 +817,7 @@ function updateTowers(dt){
 
 /* ---------- 爆炸特效(mesh 限流,沿用抢滩经验) ---------- */
 function explodeFx(x,z,color){
-  burst(x,z,color,10);
+  burst(x,z,color,8);
   if(G.fx.length>24) return;
   const flash=new THREE.Mesh(GEO_SPHERE,bulletMat(0xffe9a8));
   flash.scale.set(0.3,0.3,0.3);
@@ -826,7 +839,7 @@ function updateFx(dt){
     if(f.userData.flash){
       const s=0.3+0.5*(1-f.userData.life/f.userData.max);
       f.scale.set(s,s,s);
-    } else if(f.material&&f.material.opacity!==undefined){
+    } else if(f.userData.fade&&f.material&&f.material.opacity!==undefined){
       f.material.opacity=Math.max(0,f.userData.life/f.userData.max*0.9);
     }
   }
