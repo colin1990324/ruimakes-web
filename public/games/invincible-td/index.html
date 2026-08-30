@@ -77,6 +77,20 @@
     letter-spacing:1px; cursor:pointer; }
   #nukeBtn:disabled{ opacity:.4; cursor:default; color:var(--dim); border-color:#3f3f46; }
   #nukeBtn b{ margin-left:4px; }
+  /* 怪物图鉴(左侧头像列表 + 详情面板) */
+  #mobList{ position:absolute; left:8px; top:50%; transform:translateY(-50%); z-index:6;
+    display:flex; flex-direction:column; gap:7px; }
+  #mobList .mob{ width:42px; height:42px; border-radius:50%; border:2px solid #3f3f46; background:#18181b;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; padding:0; }
+  #mobList .mob:hover{ border-color:var(--acc); transform:scale(1.1); }
+  #mobList .mob .dot{ width:20px; height:20px; border-radius:50%; display:block; }
+  #mobList .mob.new{ border-color:var(--gold); box-shadow:0 0 10px rgba(245,158,11,.45); }
+  #mobInfo{ position:absolute; left:60px; top:50%; transform:translateY(-50%); z-index:6; background:rgba(0,0,0,.85);
+    border:1px solid #3f3f46; border-radius:10px; padding:12px 16px; font-size:13px; min-width:210px; display:none; }
+  #mobInfo .mi-name{ font-size:16px; font-weight:bold; letter-spacing:2px; margin-bottom:6px; }
+  #mobInfo .mi-row{ display:flex; justify-content:space-between; gap:16px; margin:3px 0; }
+  #mobInfo .mi-row b{ color:var(--acc); }
+  #mobInfo .mi-desc{ color:var(--dim); font-size:12px; line-height:1.6; margin-top:6px; border-top:1px solid #27272a; padding-top:6px; }
   @media (max-width:700px){ .ov h1{ font-size:30px; } .ov p{ font-size:12px; } #hud{ font-size:12px; } }
 </style>
 </head>
@@ -96,6 +110,8 @@
 <div id="speedTag">2×</div>
 <div id="bossBar"><div class="bb-name">👹 哥斯拉</div><div class="bb-track"><i id="bossFill"></i></div></div>
 <button id="nukeBtn" title="核弹:消灭全图怪物 (N)" disabled>☢<b id="nukeCnt">0</b></button>
+<div id="mobList"></div>
+<div id="mobInfo"></div>
 <div id="towerInfo"></div>
 <div id="toast"></div>
 
@@ -154,6 +170,8 @@ const G={
   speed:1, muted:false,
   frame:0, time:0,
   build:false,          // 建塔模式(点击空地建箭塔)
+  nukes:0,              // 核弹数量(每20关+1)
+  seen:{},              // 已出现的怪物(图鉴)
 };
 
 /* ---------- 地图定义 ---------- */
@@ -528,6 +546,8 @@ function spawnMonster(key,hpMul,mini){
   };
   m.grp=monModel(def,mini);
   scene.add(m.grp);
+  // 怪物首次出现 → 左侧图鉴加头像
+  if(!mini&&!G.seen[key]){ G.seen[key]=true; addMobAvatar(key); }
   G.monsters.push(m);
   return m;
 }
@@ -1124,6 +1144,37 @@ function showUpgrade(){
     box.appendChild(div);
   });
 }
+/* ---------- 怪物图鉴(首次出现加头像,点击看详情) ---------- */
+function addMobAvatar(key){
+  const def=MON_BY[key];
+  const list=$('mobList');
+  // 防重复
+  if(list.querySelector&&list.querySelector('[data-mob="'+key+'"]')) return;
+  const div=document.createElement('div');
+  div.className='mob new';
+  div.setAttribute('data-mob',key);
+  div.innerHTML='<span class="dot" style="background:#'+def.color.toString(16).padStart(6,'0')+'"></span>';
+  div.title=def.name;
+  div.onclick=()=>showMobInfo(key);
+  list.appendChild(div);
+  toast('新怪物:'+def.name+'!点击左侧头像查看情报',def.color);
+}
+function showMobInfo(key){
+  const def=MON_BY[key];
+  const el=$('mobInfo');
+  let skill=def.desc;
+  if(def.boss) skill='每 5 波降临,血量低于 80% 触发狂暴冲刺(4倍速,持续 2.5 秒)';
+  el.innerHTML=
+    '<div class="mi-name" style="color:#'+def.color.toString(16).padStart(6,'0')+'">'+def.name+'</div>'+
+    '<div class="mi-row"><span>❤ 血量</span><b>'+def.hp+'</b></div>'+
+    '<div class="mi-row"><span>⚡ 速度</span><b>'+def.spd+' 格/s</b></div>'+
+    '<div class="mi-row"><span>💀 伤害</span><b>'+def.dmg+'</b></div>'+
+    '<div class="mi-row"><span>🪙 赏金</span><b>'+def.gold+'¤</b></div>'+
+    '<div class="mi-desc">'+skill+'</div>';
+  el.style.display='block';
+}
+function hideMobInfo(){ $('mobInfo').style.display='none'; }
+
 /* ---------- 核弹(每通过 20 关获得一枚,消灭全图怪物) ---------- */
 const NUKE_MAT=new THREE.MeshBasicMaterial({color:0xfff3c4,transparent:true,opacity:0.85});
 function nukeFx(){
@@ -1180,6 +1231,7 @@ function startGame(){
   G.parts.forEach(p=>scene.remove(p)); G.parts=[];
   G.spawnQ=[]; G.sel=null; G.hover=null;
   G.gold=150; G.lives=20; G.score=0; G.wave=0; G.nukes=0;
+  G.seen={}; $('mobList').innerHTML=''; hideMobInfo();
   G.rateMul=1; G.dmgMul=1; G.rangeMul=1;
   G.speed=1;
   $('speedTag').style.display='none';
@@ -1240,6 +1292,7 @@ function hideTowerInfo(){ G.sel=null; $('towerInfo').style.display='none'; }
 /* ---------- 交互输入 ---------- */
 function handleClick(e){
   if(G.st!=='play') return;
+  hideMobInfo();
   const cell=pickCell(e.clientX,e.clientY);
   if(!cell) return;
   const [c,r]=cell;
@@ -1280,7 +1333,7 @@ window.addEventListener('keydown',e=>{
     if(!G.sel){ toast('先点击选中一座塔',0x71717a); return; }
     sellTower(G.sel); hideTowerInfo(); updateHUD();
   }
-  else if(k==='Escape'){ hideTowerInfo(); }
+  else if(k==='Escape'){ hideTowerInfo(); hideMobInfo(); }
   else if(k==='n'||k==='N'){ useNuke(); }
 });
 
@@ -1337,7 +1390,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.10'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.11'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
@@ -1371,7 +1424,7 @@ window.addEventListener('resize',()=>{
 requestAnimationFrame(loop);
 
 /* ===== 占位(后续模块注入点) ===== */
-window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget,updateHUD,updateBossBar,waveSeq,parseSeq,useNuke,positionTowerInfo};
+window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget,updateHUD,updateBossBar,waveSeq,parseSeq,useNuke,positionTowerInfo,addMobAvatar,showMobInfo,hideMobInfo};
 
 })();
 </script>
