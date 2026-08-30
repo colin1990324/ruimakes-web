@@ -61,7 +61,7 @@
 <body>
 <canvas id="cv"></canvas>
 <div id="top">
-  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.1</span>
+  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.2</span>
   <span class="info"><b id="cntTxt">0</b> 个质数 · 点击质数查看数值 · 拖拽平移 · 滚轮缩放</span>
 </div>
 <div id="left">
@@ -180,51 +180,32 @@ function fit(){
 const off=document.createElement('canvas');
 const offCtx=off.getContext('2d');
 let baseReady=false;
+let baseOffX=0, baseOffY=0; // 底图渲染时的视图偏移(拖动时 drawImage 平移用)
 function renderBase(){
   const n=S.primes.length;
   off.width=W; off.height=H;
   const img=offCtx.createImageData(W,H);
   const buf=new Uint32Array(img.data.buffer);
-  const R=(S.mode==='polar')?34:16, G=185, B=129; // #10b981
-  const minX=0,maxX=W,minY=0,maxY=H;
+  // 极坐标亮青 #22d3ee / 乌拉姆亮绿 #34d399(提亮便于观看)
+  const R=(S.mode==='polar')?238:153, G=211, B=(S.mode==='polar')?34:52;
+  const c=0xFF000000|(B<<16)|(G<<8)|R;
+  const minX=0,maxX=W-1,minY=0,maxY=H-1;
   for(let i=0;i<n;i++){
     const sx=(S.wx[i*2]*S.scale+S.offX)|0;
     const sy=(S.wx[i*2+1]*S.scale+S.offY)|0;
     if(sx<minX||sx>=maxX||sy<minY||sy>=maxY) continue;
-    buf[sy*W+sx]=0xFF000000|(B<<16)|(G<<8)|R;
+    // 2x2 像素点(更容易看到/点到)
+    const base=sy*W+sx;
+    buf[base]=c; buf[base+1]=c; buf[base+W]=c; buf[base+W+1]=c;
   }
   offCtx.putImageData(img,0,0);
-  // 参考线(极坐标阿基米德螺旋)
-  if(S.mode==='polar') drawPolarGuide();
+  baseOffX=S.offX; baseOffY=S.offY;
   baseReady=true;
   display();
 }
-function drawPolarGuide(){
-  // 阿基米德螺旋 r=θ 灰线:质数点的"轨道"参照
-  const maxP=S.primes[S.primes.length-1];
-  offCtx.strokeStyle='rgba(113,113,122,0.22)';
-  offCtx.lineWidth=1;
-  offCtx.beginPath();
-  const step=0.02;
-  for(let t=0;t<=maxP*1.02;t+=step){
-    const x=t*Math.cos(t), y=t*Math.sin(t);
-    const sx=x*S.scale+S.offX, sy=y*S.scale+S.offY;
-    if(t===0) offCtx.moveTo(sx,sy); else offCtx.lineTo(sx,sy);
-  }
-  offCtx.stroke();
-  // 整数圈刻度(每 2π 一个)
-  offCtx.fillStyle='rgba(245,158,11,0.5)';
-  offCtx.font=Math.max(10,Math.min(16,12*S.scale*0.02+8))+'px Courier New';
-  for(let k=0;k*2*Math.PI<=maxP;k++){
-    const t=k*2*Math.PI;
-    const x=t*Math.cos(t), y=t*Math.sin(t);
-    const sx=x*S.scale+S.offX, sy=y*S.scale+S.offY;
-    offCtx.fillText(String(k),sx+3,sy-3);
-  }
-}
 function display(){
   ctx.clearRect(0,0,W,H);
-  if(baseReady) ctx.drawImage(off,0,0);
+  if(baseReady) ctx.drawImage(off,S.offX-baseOffX,S.offY-baseOffY);
   // 高亮:悬停 + 选中
   const hl=(S.hoverIdx>=0?S.hoverIdx:S.pickIdx);
   if(hl>=0){
@@ -232,11 +213,11 @@ function display(){
     ctx.strokeStyle='#f59e0b';
     ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.arc(x,y,7,0,Math.PI*2);
+    ctx.arc(x,y,10,0,Math.PI*2);
     ctx.stroke();
     ctx.strokeStyle='rgba(245,158,11,0.35)';
     ctx.beginPath();
-    ctx.arc(x,y,12,0,Math.PI*2);
+    ctx.arc(x,y,16,0,Math.PI*2);
     ctx.stroke();
   }
 }
@@ -263,7 +244,7 @@ function pick(mx,my){
   if(!S.wx) return -1;
   const gx=(mx/CELL)|0, gy=(my/CELL)|0;
   let best=-1,bestD=1e18;
-  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
     const x=gx+dx, y=gy+dy;
     if(x<0||y<0||x>=gridW||y>=gridH) continue;
     const i=gridMap[y*gridW+x];
@@ -272,7 +253,7 @@ function pick(mx,my){
     const d=(sx-mx)*(sx-mx)+(sy-my)*(sy-my);
     if(d<bestD){bestD=d;best=i;}
   }
-  return bestD<196?best:-1; // 14px
+  return bestD<900?best:-1; // 30px 模糊匹配,更容易点到
 }
 
 /* ---------- 信息框 ---------- */
@@ -336,15 +317,18 @@ function updateButtons(){
 }
 
 /* ---------- 交互 ---------- */
-let dragging=false,lastX=0,lastY=0;
-cv.addEventListener('mousedown',e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
-window.addEventListener('mouseup',()=>{ dragging=false; });
+let dragging=false,lastX=0,lastY=0,dragDist=0;
+cv.addEventListener('mousedown',e=>{ dragging=true; dragDist=0; lastX=e.clientX; lastY=e.clientY; });
+window.addEventListener('mouseup',()=>{
+  if(dragging){ dragging=false; renderBase(); } // 拖动结束重建底图补齐边缘
+});
 cv.addEventListener('mousemove',e=>{
   const mx=e.clientX, my=e.clientY;
   if(dragging){
+    dragDist+=Math.abs(mx-lastX)+Math.abs(my-lastY);
     S.offX+=mx-lastX; S.offY+=my-lastY;
     lastX=mx; lastY=my;
-    display();
+    display(); // drawImage 即时平移(流畅)
     return;
   }
   const idx=pick(mx,my);
@@ -355,6 +339,7 @@ cv.addEventListener('mousemove',e=>{
 });
 cv.addEventListener('mouseleave',()=>{ S.hoverIdx=-1; if(S.pickIdx<0) pv.style.display='none'; display(); });
 cv.addEventListener('click',e=>{
+  if(dragDist>8) return; // 拖动后不触发拾取
   const idx=pick(e.clientX,e.clientY);
   S.pickIdx=idx;
   if(idx>=0) showInfo(idx,e.clientX,e.clientY);
@@ -392,7 +377,7 @@ cv.addEventListener('touchmove',e=>{
     touch0={d};
   }
 },{passive:false});
-cv.addEventListener('touchend',e=>{ dragging=false; touch0=null; });
+cv.addEventListener('touchend',e=>{ if(dragging){ dragging=false; renderBase(); } touch0=null; });
 
 // 按钮
 document.getElementById('mPolar').onclick=()=>switchMode('polar');
