@@ -129,7 +129,7 @@ const ENEMY={
  tank:{hp:120,score:80,reach:25},
  heli:{hp:80,score:100},
  jet:{hp:60,score:150},
- boss:{hp:300,score:1000}
+ boss:{hp:500,score:1000}
 };
 
 /* ================= Three.js 场景 ================= */
@@ -634,7 +634,7 @@ function spawnEnemy(type){
  }else if(type==='heli'){
   mesh.position.set(clamp(x,-18,18),7,z*0.6);
   scene.add(mesh);
-  e={type,mesh,hp:ENEMY.heli.hp,spd:2.4+g.wave*0.06,hitR:1.6,dead:false,t:rnd(1,3),state:'hover',dir:Math.random()<0.5?-1:1};
+  e={type,mesh,hp:ENEMY.heli.hp,spd:2.4+g.wave*0.06,hitR:1.6,dead:false,t:rnd(1,3),state:'approach',dir:Math.random()<0.5?-1:1,phase:'approach'};
  }else if(type==='jet'){
   mesh.position.set(-95,14,z);
   mesh.rotation.y=Math.PI/2;
@@ -789,13 +789,21 @@ function updateEnemies(dt){
    if(e.t<=0){e.t=3.2;tankShell(p);}
    if(Math.abs(p.z-BASE_TARGET.z)<2.6){baseHit(ENEMY.tank.reach,p.clone());killEnemy(e);}
   }else if(e.type==='heli'){
-   e.t-=dt;
-   p.x+=e.dir*e.spd*dt;
-   if(p.x>20)p.dir=-1;if(p.x<-20)p.dir=1;
-   p.z+=0.4*dt;p.y=6.5+Math.sin(g.frame*0.05)*0.6;
+   if(e.phase==='approach'){
+    /* 快速飞近玩家基地上空 */
+    const dz=BASE_TARGET.z-p.z;
+    p.z+=Math.sign(dz)*e.spd*1.5*dt;
+    if(p.z>BASE_TARGET.z-6){e.phase='attack';e.t=2;}
+   }else{
+    /* 悬停攻击:小幅横移+扫射基地 */
+    p.x+=e.dir*e.spd*0.4*dt;
+    if(p.x>18)e.dir=-1;
+    if(p.x<-18)e.dir=1;
+    e.t-=dt;
+    if(e.t<=0){e.t=2.0;baseHit(2);tracerFrom(p);} /* 扫射光点(1发1点) */
+   }
+   p.y=6.5+Math.sin(g.frame*0.05)*0.6;
    if(e.mesh.rotor)e.mesh.rotor.rotation.y+=dt*30;
-   if(e.t<=0&&p.z<-2){e.t=2.0;baseHit(2);tracerFrom(p);} /* 扫射光点(1发1点) */
-   if(p.z>9){baseHit(20);killEnemy(e);}
   }else if(e.type==='jet'){
    p.x+=e.spd*dt;
    e.t-=dt;
