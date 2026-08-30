@@ -1210,11 +1210,16 @@ function showTowerInfo(t){
   G.sel=t;
   const def=TOWER_DEFS[t.lv-1];
   const next=TOWER_DEFS[t.lv];
+  const mulD=G.dmgMul||1, mulR=G.rateMul||1, mulG=G.rangeMul||1;
+  const hasBonus=(mulD>1.001||mulR>1.001||mulG>1.001);
   const el=$('towerInfo');
-  let html='<div class="row"><span>Lv'+t.lv+' '+def.name+'</span><b>'+def.dmg+' 伤</b></div>';
-  html+='<div class="row"><span>射速</span><b>'+def.rate+'/s</b></div>';
-  html+='<div class="row"><span>射程</span><b>'+def.range+'</b></div>';
+  let html='<div class="row"><span>Lv'+t.lv+' '+def.name+'</span><b>'+Math.round(def.dmg*mulD)+' 伤</b></div>';
+  html+='<div class="row"><span>射速</span><b>'+(def.rate*mulR).toFixed(1)+'/s</b></div>';
+  html+='<div class="row"><span>射程</span><b>'+(def.range*mulG).toFixed(1)+'</b></div>';
   html+='<div class="row"><span>出售</span><b>'+Math.round(t.invest*SELL_RATIO)+'¤</b></div>';
+  if(hasBonus){
+    html+='<div class="tip" style="color:var(--gold)">含波间奖励:伤×'+mulD.toFixed(2)+' 速×'+mulR.toFixed(2)+' 程×'+mulG.toFixed(2)+'</div>';
+  }
   if(next){
     html+='<div class="btnRow"><button class="up" id="btnUpg">升级→'+next.name+' ('+next.cost+'¤)</button><button class="sell" id="btnSell">出售</button></div>';
     html+='<div class="tip">'+next.tip+'</div>';
@@ -1332,7 +1337,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.9'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.10'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
