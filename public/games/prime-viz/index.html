@@ -61,7 +61,7 @@
 <body>
 <canvas id="cv"></canvas>
 <div id="top">
-  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.2</span>
+  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.3</span>
   <span class="info"><b id="cntTxt">0</b> 个质数 · 点击质数查看数值 · 拖拽平移 · 滚轮缩放</span>
 </div>
 <div id="left">
@@ -201,6 +201,7 @@ function renderBase(){
   offCtx.putImageData(img,0,0);
   baseOffX=S.offX; baseOffY=S.offY;
   baseReady=true;
+  buildGrid(); // 网格索引必须随视图刷新,否则 pick 基于旧坐标(点击/悬停失效)
   display();
 }
 function display(){
@@ -394,7 +395,7 @@ computeWorld();
 resize();
 buildGrid();
 updateButtons();
-window.__PV__={S,PRIMES_1E4,spiralPos,computeWorld,buildGrid,pick,loadTag,switchMode};
+window.__PV__={S,PRIMES_1E4,spiralPos,computeWorld,buildGrid,pick,loadTag,switchMode,renderBase,zoomAt};
 })();
 </script>
 </body>
