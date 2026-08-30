@@ -121,7 +121,7 @@ const G={
  ammo:{cannon:12,missile:6},upg:{rate:1,dmg:1},
  spawnQ:[],spawnT:0,enemies:[],bullets:[],fx:[],smokes:[],
  weapon:0,mgHeat:0,mgCd:0,canCd:0,msCd:0,waveClearT:0,
- muted:false,touchAim:false,lastPX:0,lastPY:0,yaw:Math.PI,pitch:-0.15,view:'fp'
+ muted:false,touchAim:false,lastPX:0,lastPY:0,yaw:Math.PI,pitch:-0.15,view:'fp',mgLock:0
 };
 const ENEMY={
  soldier:{hp:2,score:10,reach:8},
@@ -939,11 +939,12 @@ function applyUpg(i){
 function fire(){
  if(G.st!=='play')return;
  if(G.weapon===0){
-  if(G.mgHeat>=1||G.mgCd>0)return;
+  if(G.mgHeat>=1||G.mgCd>0||G.mgLock>0)return;
   fireMG();
   muzzleFlash();
   G.mgCd=0.09/G.upg.rate;
   G.mgHeat+=0.026;
+  if(G.mgHeat>=1)G.mgLock=2; /* 过热锁定 2 秒 */
   sfx('mg');
  }else if(G.weapon===1){
   if(G.canCd>0||G.ammo.cannon<=0)return;
@@ -1035,7 +1036,9 @@ function updateWeapons(dt){
  if(G.mgCd>0)G.mgCd-=dt;
  if(G.canCd>0)G.canCd-=dt;
  if(G.msCd>0)G.msCd-=dt;
- if(G.mgHeat>0)G.mgHeat=Math.max(0,G.mgHeat-dt*(G.mgHeat>=1?0.24:0.11));
+ if(G.mgLock>0)G.mgLock-=dt; /* 过热冷却锁(2秒) */
+ const hot=G.mgHeat>=1||G.mgLock>0; /* 过热/冷却期快速降温 */
+ if(G.mgHeat>0)G.mgHeat=Math.max(0,G.mgHeat-dt*(hot?0.5:0.11));
  document.getElementById('heat').firstElementChild.style.width=(G.mgHeat*100)+'%';
 }
 function updateFx(dt){
@@ -1126,7 +1129,7 @@ function startGame(){
  G.wave=1;G.score=0;G.baseHP=G.baseMax;G.combo=0;
  G.upg.rate=1;G.upg.dmg=1;
  G.ammo.cannon=12;G.ammo.missile=6;
- G.mgRange=35;G.shield=0;
+ G.mgRange=35;G.shield=0;G.mgLock=0;G.mgHeat=0;
  clearEnemies();
  startWave();
 }
