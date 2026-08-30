@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>质数螺旋 · Prime Spiral · ruimakes</title>
+<style>
+  :root{ --bg:#09090b; --fg:#e4e4e7; --dim:#71717a; --acc:#10b981; --gold:#f59e0b; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--fg);
+    font-family:"Courier New", monospace; -webkit-user-select:none; user-select:none; touch-action:none; }
+  canvas{ display:block; width:100%; height:100%; cursor:crosshair; }
+  /* ===== 顶栏 ===== */
+  #top{ position:absolute; top:10px; left:10px; z-index:5; display:flex; align-items:center; gap:12px; pointer-events:none; }
+  #top h1{ font-size:17px; letter-spacing:3px; color:var(--acc); text-shadow:0 1px 3px #000; }
+  #top .ver{ font-size:12px; color:var(--dim); letter-spacing:1px; }
+  #top .info{ font-size:12px; color:var(--dim); background:rgba(0,0,0,.55); border:1px solid #27272a;
+    border-radius:6px; padding:3px 10px; }
+  #top .info b{ color:var(--gold); }
+  /* ===== 左侧:螺旋模式 ===== */
+  #left{ position:absolute; left:10px; top:50%; transform:translateY(-50%); z-index:5; width:150px;
+    background:rgba(0,0,0,.72); border:1px solid #27272a; border-radius:10px; padding:10px; }
+  #left .tt{ font-size:11px; color:var(--dim); letter-spacing:2px; margin-bottom:8px; }
+  #left button{ display:block; width:100%; font-family:inherit; font-size:13px; letter-spacing:1px; padding:9px 10px;
+    margin-bottom:6px; background:#18181b; color:var(--fg); border:1px solid #3f3f46; border-radius:7px; cursor:pointer; text-align:left; }
+  #left button .sub{ display:block; font-size:10px; color:var(--dim); margin-top:2px; letter-spacing:0; }
+  #left button.cur{ background:rgba(16,185,129,.15); border-color:var(--acc); color:var(--acc); }
+  #left button.cur .sub{ color:#6ee7b7; }
+  /* ===== 右侧:数据规模 + 缩放 ===== */
+  #right{ position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:5; width:150px;
+    background:rgba(0,0,0,.72); border:1px solid #27272a; border-radius:10px; padding:10px; }
+  #right .tt{ font-size:11px; color:var(--dim); letter-spacing:2px; margin:4px 0 8px; }
+  #right .tt:first-child{ margin-top:0; }
+  #right button{ display:block; width:100%; font-family:inherit; font-size:12px; letter-spacing:1px; padding:7px 10px;
+    margin-bottom:5px; background:#18181b; color:var(--fg); border:1px solid #3f3f46; border-radius:6px; cursor:pointer; text-align:left; }
+  #right button .cnt{ float:right; color:var(--dim); font-size:10px; }
+  #right button.cur{ background:rgba(245,158,11,.12); border-color:var(--gold); color:var(--gold); }
+  #right button.cur .cnt{ color:#fbbf24; }
+  #zoomRow{ display:flex; gap:5px; }
+  #zoomRow button{ text-align:center; padding:6px 0; margin-bottom:0; }
+  #zoomRow button:last-child{ margin-right:0; }
+  #hint{ position:absolute; bottom:10px; left:10px; z-index:5; font-size:11px; color:var(--dim); pointer-events:none;
+    background:rgba(0,0,0,.5); border:1px solid #27272a; border-radius:6px; padding:4px 10px; }
+  /* ===== 质数信息框 ===== */
+  #pv{ position:absolute; z-index:6; display:none; min-width:170px; background:rgba(0,0,0,.85);
+    border:1px solid var(--acc); border-radius:9px; padding:10px 14px; font-size:13px; pointer-events:none; }
+  #pv .pv-num{ font-size:22px; color:var(--acc); letter-spacing:2px; font-weight:bold; }
+  #pv .pv-row{ display:flex; justify-content:space-between; gap:14px; margin:3px 0; color:var(--dim); font-size:12px; }
+  #pv .pv-row b{ color:var(--fg); }
+  #pv .pv-pos{ color:var(--gold); font-size:11px; margin-top:4px; }
+  #loading{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:8;
+    background:rgba(9,9,11,.75); color:var(--acc); font-size:16px; letter-spacing:3px; }
+  @media (max-width:700px){
+    #left,#right{ width:110px; }
+    #left button,#right button{ font-size:11px; padding:7px 6px; }
+    #top h1{ font-size:14px; }
+    #top .info{ display:none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="top">
+  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.1</span>
+  <span class="info"><b id="cntTxt">0</b> 个质数 · 点击质数查看数值 · 拖拽平移 · 滚轮缩放</span>
+</div>
+<div id="left">
+  <div class="tt">螺旋模式</div>
+  <button id="mPolar" class="cur">极坐标 (p,p)<span class="sub">r=p · θ=p 弧度</span></button>
+  <button id="mUlam">乌拉姆螺旋<span class="sub">方形螺旋 · 质数涂色</span></button>
+</div>
+<div id="right">
+  <div class="tt">数据规模</div>
+  <button data-tag="1e4" class="cur">1 万<span class="cnt">1229</span></button>
+  <button data-tag="1e5">10 万<span class="cnt">9592</span></button>
+  <button data-tag="1e6">100 万<span class="cnt">78498</span></button>
+  <button data-tag="1e7">1000 万<span class="cnt">664579</span></button>
+  <div class="tt">缩放</div>
+  <div id="zoomRow">
+    <button id="zIn">＋</button>
+    <button id="zOut">－</button>
+    <button id="zFit">适应</button>
+  </div>
+</div>
+<div id="pv"></div>
+<div id="hint">两种螺旋展示质数分布规律 · 切换模式/规模自动重载缩放</div>
+<div id="loading">加载质数表…</div>
+<script>
+(()=>{
+'use strict';
+/* ============================================================
+ * 质数螺旋 Prime Spiral — (p,p) 极坐标 & 乌拉姆螺旋可视化
+ * ============================================================ */
+
+/* ---------- 1万以内质数(内嵌,零加载) ---------- */
+const PRIMES_1E4=[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269,271,277,281,283,293,307,311,313,317,331,337,347,349,353,359,367,373,379,383,389,397,401,409,419,421,431,433,439,443,449,457,461,463,467,479,487,491,499,503,509,521,523,541,547,557,563,569,571,577,587,593,599,601,607,613,617,619,631,641,643,647,653,659,661,673,677,683,691,701,709,719,727,733,739,743,751,757,761,769,773,787,797,809,811,821,823,827,829,839,853,857,859,863,877,881,883,887,907,911,919,929,937,941,947,953,967,971,977,983,991,997,1009,1013,1019,1021,1031,1033,1039,1049,1051,1061,1063,1069,1087,1091,1093,1097,1103,1109,1117,1123,1129,1151,1153,1163,1171,1181,1187,1193,1201,1213,1217,1223,1229,1231,1237,1249,1259,1277,1279,1283,1289,1291,1297,1301,1303,1307,1319,1321,1327,1361,1367,1373,1381,1399,1409,1423,1427,1429,1433,1439,1447,1451,1453,1459,1471,1481,1483,1487,1489,1493,1499,1511,1523,1531,1543,1549,1553,1559,1567,1571,1579,1583,1597,1601,1607,1609,1613,1619,1621,1627,1637,1657,1663,1667,1669,1693,1697,1699,1709,1721,1723,1733,1741,1747,1753,1759,1777,1783,1787,1789,1801,1811,1823,1831,1847,1861,1867,1871,1873,1877,1879,1889,1901,1907,1913,1931,1933,1949,1951,1973,1979,1987,1993,1997,1999,2003,2011,2017,2027,2029,2039,2053,2063,2069,2081,2083,2087,2089,2099,2111,2113,2129,2131,2137,2141,2143,2153,2161,2179,2203,2207,2213,2221,2237,2239,2243,2251,2267,2269,2273,2281,2287,2293,2297,2309,2311,2333,2339,2341,2347,2351,2357,2371,2377,2381,2383,2389,2393,2399,2411,2417,2423,2437,2441,2447,2459,2467,2473,2477,2503,2521,2531,2539,2543,2549,2551,2557,2579,2591,2593,2609,2617,2621,2633,2647,2657,2659,2663,2671,2677,2683,2687,2689,2693,2699,2707,2711,2713,2719,2729,2731,2741,2749,2753,2767,2777,2789,2791,2797,2801,2803,2819,2833,2837,2843,2851,2857,2861,2879,2887,2897,2903,2909,2917,2927,2939,2953,2957,2963,2969,2971,2999,3001,3011,3019,3023,3037,3041,3049,3061,3067,3079,3083,3089,3109,3119,3121,3137,3163,3167,3169,3181,3187,3191,3203,3209,3217,3221,3229,3251,3253,3257,3259,3271,3299,3301,3307,3313,3319,3323,3329,3331,3343,3347,3359,3361,3371,3373,3389,3391,3407,3413,3433,3449,3457,3461,3463,3467,3469,3491,3499,3511,3517,3527,3529,3533,3539,3541,3547,3557,3559,3571,3581,3583,3593,3607,3613,3617,3623,3631,3637,3643,3659,3671,3673,3677,3691,3697,3701,3709,3719,3727,3733,3739,3761,3767,3769,3779,3793,3797,3803,3821,3823,3833,3847,3851,3853,3863,3877,3881,3889,3907,3911,3917,3919,3923,3929,3931,3943,3947,3967,3989,4001,4003,4007,4013,4019,4021,4027,4049,4051,4057,4073,4079,4091,4093,4099,4111,4127,4129,4133,4139,4153,4157,4159,4177,4201,4211,4217,4219,4229,4231,4241,4243,4253,4259,4261,4271,4273,4283,4289,4297,4327,4337,4339,4349,4357,4363,4373,4391,4397,4409,4421,4423,4441,4447,4451,4457,4463,4481,4483,4493,4507,4513,4517,4519,4523,4547,4549,4561,4567,4583,4591,4597,4603,4621,4637,4639,4643,4649,4651,4657,4663,4673,4679,4691,4703,4721,4723,4729,4733,4751,4759,4783,4787,4789,4793,4799,4801,4813,4817,4831,4861,4871,4877,4889,4903,4909,4919,4931,4933,4937,4943,4951,4957,4967,4969,4973,4987,4993,4999,5003,5009,5011,5021,5023,5039,5051,5059,5077,5081,5087,5099,5101,5107,5113,5119,5147,5153,5167,5171,5179,5189,5197,5209,5227,5231,5233,5237,5261,5273,5279,5281,5297,5303,5309,5323,5333,5347,5351,5381,5387,5393,5399,5407,5413,5417,5419,5431,5437,5441,5443,5449,5471,5477,5479,5483,5501,5503,5507,5519,5521,5527,5531,5557,5563,5569,5573,5581,5591,5623,5639,5641,5647,5651,5653,5657,5659,5669,5683,5689,5693,5701,5711,5717,5737,5741,5743,5749,5779,5783,5791,5801,5807,5813,5821,5827,5839,5843,5849,5851,5857,5861,5867,5869,5879,5881,5897,5903,5923,5927,5939,5953,5981,5987,6007,6011,6029,6037,6043,6047,6053,6067,6073,6079,6089,6091,6101,6113,6121,6131,6133,6143,6151,6163,6173,6197,6199,6203,6211,6217,6221,6229,6247,6257,6263,6269,6271,6277,6287,6299,6301,6311,6317,6323,6329,6337,6343,6353,6359,6361,6367,6373,6379,6389,6397,6421,6427,6449,6451,6469,6473,6481,6491,6521,6529,6547,6551,6553,6563,6569,6571,6577,6581,6599,6607,6619,6637,6653,6659,6661,6673,6679,6689,6691,6701,6703,6709,6719,6733,6737,6761,6763,6779,6781,6791,6793,6803,6823,6827,6829,6833,6841,6857,6863,6869,6871,6883,6899,6907,6911,6917,6947,6949,6959,6961,6967,6971,6977,6983,6991,6997,7001,7013,7019,7027,7039,7043,7057,7069,7079,7103,7109,7121,7127,7129,7151,7159,7177,7187,7193,7207,7211,7213,7219,7229,7237,7243,7247,7253,7283,7297,7307,7309,7321,7331,7333,7349,7351,7369,7393,7411,7417,7433,7451,7457,7459,7477,7481,7487,7489,7499,7507,7517,7523,7529,7537,7541,7547,7549,7559,7561,7573,7577,7583,7589,7591,7603,7607,7621,7639,7643,7649,7669,7673,7681,7687,7691,7699,7703,7717,7723,7727,7741,7753,7757,7759,7789,7793,7817,7823,7829,7841,7853,7867,7873,7877,7879,7883,7901,7907,7919,7927,7933,7937,7949,7951,7963,7993,8009,8011,8017,8039,8053,8059,8069,8081,8087,8089,8093,8101,8111,8117,8123,8147,8161,8167,8171,8179,8191,8209,8219,8221,8231,8233,8237,8243,8263,8269,8273,8287,8291,8293,8297,8311,8317,8329,8353,8363,8369,8377,8387,8389,8419,8423,8429,8431,8443,8447,8461,8467,8501,8513,8521,8527,8537,8539,8543,8563,8573,8581,8597,8599,8609,8623,8627,8629,8641,8647,8663,8669,8677,8681,8689,8693,8699,8707,8713,8719,8731,8737,8741,8747,8753,8761,8779,8783,8803,8807,8819,8821,8831,8837,8839,8849,8861,8863,8867,8887,8893,8923,8929,8933,8941,8951,8963,8969,8971,8999,9001,9007,9011,9013,9029,9041,9043,9049,9059,9067,9091,9103,9109,9127,9133,9137,9151,9157,9161,9173,9181,9187,9199,9203,9209,9221,9227,9239,9241,9257,9277,9281,9283,9293,9311,9319,9323,9337,9341,9343,9349,9371,9377,9391,9397,9403,9413,9419,9421,9431,9433,9437,9439,9461,9463,9467,9473,9479,9491,9497,9511,9521,9533,9539,9547,9551,9587,9601,9613,9619,9623,9629,9631,9643,9649,9661,9677,9679,9689,9697,9719,9721,9733,9739,9743,9749,9767,9769,9781,9787,9791,9803,9811,9817,9829,9833,9839,9851,9857,9859,9871,9883,9887,9901,9907,9923,9929,9931,9941,9949,9967,9973];
+
+/* ---------- 状态 ---------- */
+const S={
+  mode:'polar',      // polar | ulam
+  tag:'1e4',
+  primes:PRIMES_1E4,
+  wx:null,           // 世界坐标 Float32Array(x 交错)
+  scale:1, offX:0, offY:0,
+  hoverIdx:-1, pickIdx:-1,
+  loading:false,
+};
+const DATA={
+  '1e4':{file:null,count:PRIMES_1E4.length},
+  '1e5':{file:'data/primes_1e5.bin',count:9592},
+  '1e6':{file:'data/primes_1e6.bin',count:78498},
+  '1e7':{file:'data/primes_1e7.bin',count:664579},
+};
+
+/* ---------- Canvas ---------- */
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let W=0,H=0;
+function resize(){
+  W=cv.width=window.innerWidth*devicePixelRatio;
+  H=cv.height=window.innerHeight*devicePixelRatio;
+  cv.style.width=window.innerWidth+'px';
+  cv.style.height=window.innerHeight+'px';
+  fit();
+}
+window.addEventListener('resize',resize);
+
+/* ---------- 世界坐标计算 ---------- */
+// 乌拉姆螺旋:1 在 (0,0),逆时针扩展;返回 n 的整数坐标
+function spiralPos(n){
+  if(n===1) return [0,0];
+  const k=Math.ceil((Math.sqrt(n)-1)/2);
+  const side=2*k+1, max=side*side, off=max-n;
+  if(off<side-1) return [k-off, -k];
+  if(off<2*side-2) return [-k, -k+(off-(side-1))];
+  if(off<3*side-3) return [-k+(off-(2*side-2)), k];
+  return [k, k-(off-(3*side-3))];
+}
+function computeWorld(){
+  const n=S.primes.length;
+  const arr=new Float32Array(n*2);
+  if(S.mode==='polar'){
+    for(let i=0;i<n;i++){
+      const p=S.primes[i];
+      arr[i*2]=p*Math.cos(p);
+      arr[i*2+1]=p*Math.sin(p);
+    }
+  } else {
+    for(let i=0;i<n;i++){
+      const sp=spiralPos(S.primes[i]);
+      arr[i*2]=sp[0];
+      arr[i*2+1]=sp[1];
+    }
+  }
+  S.wx=arr;
+}
+
+/* ---------- 视图适配 ---------- */
+function bounds(){
+  const n=S.primes.length, wx=S.wx;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  for(let i=0;i<n;i++){
+    const x=wx[i*2], y=wx[i*2+1];
+    if(x<minX)minX=x; if(x>maxX)maxX=x;
+    if(y<minY)minY=y; if(y>maxY)maxY=y;
+  }
+  return [minX,maxX,minY,maxY];
+}
+function fit(){
+  if(!S.wx) return;
+  const [minX,maxX,minY,maxY]=bounds();
+  const rw=Math.max(1,maxX-minX), rh=Math.max(1,maxY-minY);
+  S.scale=Math.min(W/rw,H/rh)*0.93;
+  S.offX=(W-(minX+maxX)*S.scale)/2;
+  S.offY=(H-(minY+maxY)*S.scale)/2;
+  renderBase();
+}
+
+/* ---------- 渲染(离屏底图 ImageData + 高亮叠加) ---------- */
+const off=document.createElement('canvas');
+const offCtx=off.getContext('2d');
+let baseReady=false;
+function renderBase(){
+  const n=S.primes.length;
+  off.width=W; off.height=H;
+  const img=offCtx.createImageData(W,H);
+  const buf=new Uint32Array(img.data.buffer);
+  const R=(S.mode==='polar')?34:16, G=185, B=129; // #10b981
+  const minX=0,maxX=W,minY=0,maxY=H;
+  for(let i=0;i<n;i++){
+    const sx=(S.wx[i*2]*S.scale+S.offX)|0;
+    const sy=(S.wx[i*2+1]*S.scale+S.offY)|0;
+    if(sx<minX||sx>=maxX||sy<minY||sy>=maxY) continue;
+    buf[sy*W+sx]=0xFF000000|(B<<16)|(G<<8)|R;
+  }
+  offCtx.putImageData(img,0,0);
+  // 参考线(极坐标阿基米德螺旋)
+  if(S.mode==='polar') drawPolarGuide();
+  baseReady=true;
+  display();
+}
+function drawPolarGuide(){
+  // 阿基米德螺旋 r=θ 灰线:质数点的"轨道"参照
+  const maxP=S.primes[S.primes.length-1];
+  offCtx.strokeStyle='rgba(113,113,122,0.22)';
+  offCtx.lineWidth=1;
+  offCtx.beginPath();
+  const step=0.02;
+  for(let t=0;t<=maxP*1.02;t+=step){
+    const x=t*Math.cos(t), y=t*Math.sin(t);
+    const sx=x*S.scale+S.offX, sy=y*S.scale+S.offY;
+    if(t===0) offCtx.moveTo(sx,sy); else offCtx.lineTo(sx,sy);
+  }
+  offCtx.stroke();
+  // 整数圈刻度(每 2π 一个)
+  offCtx.fillStyle='rgba(245,158,11,0.5)';
+  offCtx.font=Math.max(10,Math.min(16,12*S.scale*0.02+8))+'px Courier New';
+  for(let k=0;k*2*Math.PI<=maxP;k++){
+    const t=k*2*Math.PI;
+    const x=t*Math.cos(t), y=t*Math.sin(t);
+    const sx=x*S.scale+S.offX, sy=y*S.scale+S.offY;
+    offCtx.fillText(String(k),sx+3,sy-3);
+  }
+}
+function display(){
+  ctx.clearRect(0,0,W,H);
+  if(baseReady) ctx.drawImage(off,0,0);
+  // 高亮:悬停 + 选中
+  const hl=(S.hoverIdx>=0?S.hoverIdx:S.pickIdx);
+  if(hl>=0){
+    const x=S.wx[hl*2]*S.scale+S.offX, y=S.wx[hl*2+1]*S.scale+S.offY;
+    ctx.strokeStyle='#f59e0b';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(x,y,7,0,Math.PI*2);
+    ctx.stroke();
+    ctx.strokeStyle='rgba(245,158,11,0.35)';
+    ctx.beginPath();
+    ctx.arc(x,y,12,0,Math.PI*2);
+    ctx.stroke();
+  }
+}
+function render(){
+  renderBase();
+}
+
+/* ---------- 点击拾取(网格索引) ---------- */
+let gridW=0,gridH=0,gridMap=null;
+const CELL=4;
+function buildGrid(){
+  gridW=Math.ceil(W/CELL); gridH=Math.ceil(H/CELL);
+  gridMap=new Uint32Array(gridW*gridH);
+  gridMap.fill(0xFFFFFFFF);
+  const n=S.primes.length;
+  for(let i=0;i<n;i++){
+    const sx=(S.wx[i*2]*S.scale+S.offX)|0, sy=(S.wx[i*2+1]*S.scale+S.offY)|0;
+    if(sx<0||sy<0||sx>=W||sy>=H) continue;
+    const gi=((sy>>2)*gridW+(sx>>2));
+    if(gridMap[gi]===0xFFFFFFFF) gridMap[gi]=i;
+  }
+}
+function pick(mx,my){
+  if(!S.wx) return -1;
+  const gx=(mx/CELL)|0, gy=(my/CELL)|0;
+  let best=-1,bestD=1e18;
+  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+    const x=gx+dx, y=gy+dy;
+    if(x<0||y<0||x>=gridW||y>=gridH) continue;
+    const i=gridMap[y*gridW+x];
+    if(i===0xFFFFFFFF) continue;
+    const sx=S.wx[i*2]*S.scale+S.offX, sy=S.wx[i*2+1]*S.scale+S.offY;
+    const d=(sx-mx)*(sx-mx)+(sy-my)*(sy-my);
+    if(d<bestD){bestD=d;best=i;}
+  }
+  return bestD<196?best:-1; // 14px
+}
+
+/* ---------- 信息框 ---------- */
+const pv=document.getElementById('pv');
+function showInfo(idx,mx,my){
+  if(idx<0){ pv.style.display='none'; return; }
+  const p=S.primes[idx];
+  const x=S.wx[idx*2], y=S.wx[idx*2+1];
+  pv.innerHTML='<div class="pv-num">'+p+'</div>'+
+    '<div class="pv-row"><span>表中序号</span><b>#'+(idx+1)+'</b></div>'+
+    '<div class="pv-row"><span>相邻质数</span><b>'+(idx>0?S.primes[idx-1]:'-')+' / '+(idx<S.primes.length-1?S.primes[idx+1]:'-')+'</b></div>'+
+    '<div class="pv-pos">'+(S.mode==='polar'?'极坐标 (r='+p+', θ='+p+' rad ≈ '+Math.round(p*180/Math.PI)+'°)':'螺旋坐标 ('+x+', '+y+')')+'</div>';
+  pv.style.display='block';
+  const Wp=pv.offsetWidth||190, Hp=pv.offsetHeight||120;
+  let px=Math.round(mx+16), py=Math.round(my+16);
+  if(px+Wp>window.innerWidth) px=mx-Wp-16;
+  if(py+Hp>window.innerHeight) py=my-Hp-16;
+  if(px<6)px=6; if(py<6)py=6;
+  pv.style.left=px+'px';
+  pv.style.top=py+'px';
+}
+
+/* ---------- 数据加载 ---------- */
+async function loadTag(tag){
+  if(S.tag===tag&&S.primes.length===DATA[tag].count) return;
+  S.tag=tag;
+  document.getElementById('loading').style.display='flex';
+  try{
+    if(tag==='1e4'){ S.primes=PRIMES_1E4; }
+    else{
+      const res=await fetch(DATA[tag].file);
+      const buf=await res.arrayBuffer();
+      const dv=new DataView(buf);
+      const n=buf.byteLength/4;
+      const arr=new Uint32Array(n);
+      for(let i=0;i<n;i++) arr[i]=dv.getUint32(i*4,true);
+      S.primes=arr;
+    }
+    computeWorld();
+    fit();
+    updateButtons();
+  }catch(e){
+    alert('加载质数表失败: '+e.message);
+  }
+  document.getElementById('loading').style.display='none';
+}
+function switchMode(mode){
+  if(S.mode===mode) return;
+  S.mode=mode;
+  S.hoverIdx=-1; S.pickIdx=-1; pv.style.display='none';
+  document.getElementById('mPolar').classList.toggle('cur',mode==='polar');
+  document.getElementById('mUlam').classList.toggle('cur',mode==='ulam');
+  computeWorld();
+  fit();
+}
+function updateButtons(){
+  document.getElementById('cntTxt').textContent=S.primes.length.toLocaleString();
+  document.querySelectorAll('#right button[data-tag]').forEach(b=>{
+    b.classList.toggle('cur',b.dataset.tag===S.tag);
+  });
+}
+
+/* ---------- 交互 ---------- */
+let dragging=false,lastX=0,lastY=0;
+cv.addEventListener('mousedown',e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
+window.addEventListener('mouseup',()=>{ dragging=false; });
+cv.addEventListener('mousemove',e=>{
+  const mx=e.clientX, my=e.clientY;
+  if(dragging){
+    S.offX+=mx-lastX; S.offY+=my-lastY;
+    lastX=mx; lastY=my;
+    display();
+    return;
+  }
+  const idx=pick(mx,my);
+  S.hoverIdx=idx;
+  if(idx>=0) showInfo(idx,mx,my);
+  else if(S.pickIdx<0) pv.style.display='none';
+  display();
+});
+cv.addEventListener('mouseleave',()=>{ S.hoverIdx=-1; if(S.pickIdx<0) pv.style.display='none'; display(); });
+cv.addEventListener('click',e=>{
+  const idx=pick(e.clientX,e.clientY);
+  S.pickIdx=idx;
+  if(idx>=0) showInfo(idx,e.clientX,e.clientY);
+  else { pv.style.display='none'; }
+  display();
+});
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=e.deltaY<0?1.4:1/1.4;
+  zoomAt(f,e.clientX,e.clientY);
+},{passive:false});
+function zoomAt(f,mx,my){
+  const ns=S.scale*f;
+  S.offX=mx-(mx-S.offX)*(ns/S.scale);
+  S.offY=my-(my-S.offY)*(ns/S.scale);
+  S.scale=ns;
+  renderBase();
+}
+// 触屏
+let touch0=null;
+cv.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){ dragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+}, {passive:true});
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===1&&dragging){
+    const mx=e.touches[0].clientX, my=e.touches[0].clientY;
+    S.offX+=mx-lastX; S.offY+=my-lastY;
+    lastX=mx; lastY=my;
+    display();
+  } else if(e.touches.length===2){
+    const t=e.touches;
+    const d=Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+    if(touch0){ const f=d/touch0.d; zoomAt(f,(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2); }
+    touch0={d};
+  }
+},{passive:false});
+cv.addEventListener('touchend',e=>{ dragging=false; touch0=null; });
+
+// 按钮
+document.getElementById('mPolar').onclick=()=>switchMode('polar');
+document.getElementById('mUlam').onclick=()=>switchMode('ulam');
+document.querySelectorAll('#right button[data-tag]').forEach(b=>{
+  b.onclick=()=>loadTag(b.dataset.tag);
+});
+document.getElementById('zIn').onclick=()=>zoomAt(1.5,W/2,H/2);
+document.getElementById('zOut').onclick=()=>zoomAt(1/1.5,W/2,H/2);
+document.getElementById('zFit').onclick=()=>fit();
+
+/* ---------- 启动 ---------- */
+computeWorld();
+resize();
+buildGrid();
+updateButtons();
+window.__PV__={S,PRIMES_1E4,spiralPos,computeWorld,buildGrid,pick,loadTag,switchMode};
+})();
+</script>
+</body>
+</html>
