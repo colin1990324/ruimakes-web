@@ -67,7 +67,7 @@
 <body>
 <canvas id="cv"></canvas>
 <div id="top">
-  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.6</span>
+  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.7</span>
   <span class="info"><b id="cntTxt">0</b> 个质数 · 点击查看数值 · 拖拽平移 · 滚轮缩放</span>
 </div>
 <div id="modRow">
@@ -234,9 +234,8 @@ function renderBase(){
   display();
 }
 function display(){
-  ctx.clearRect(0,0,W,H);
   if(S.mode==='mod'){
-    // 模时钟:底图(点阵+表盘)仅在 dirty 时重建,悬停只画高亮(不卡)
+    // 模时钟:不 clearRect(底图保留在 canvas 上),底图仅 dirty 时重建,悬停只画高亮
     if(modDirty){ renderModBase(); modDirty=false; }
     const hl=(S.hoverIdx>=0?S.hoverIdx:S.pickIdx);
     if(hl>=0){
@@ -250,6 +249,7 @@ function display(){
     }
     return;
   }
+  ctx.clearRect(0,0,W,H);
   if(baseReady) ctx.drawImage(off,S.offX-baseOffX,S.offY-baseOffY);
   // 高亮:悬停 + 选中
   const hl=(S.hoverIdx>=0?S.hoverIdx:S.pickIdx);
@@ -296,41 +296,29 @@ function renderModBase(){
     buf[base]=pc; buf[base+1]=pc; buf[base+W]=pc; buf[base+W+1]=pc;
   }
   ctx.putImageData(img,0,0);
-  // 2. 矢量底:外圆 / 刻度线 / 红色计数条 / 数字 / 中心信息
+  // 2. 矢量底:外圆 / 刻度线 / 数字 / 中心信息
   ctx.strokeStyle='rgba(113,113,122,0.5)';
   ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+  // 刻度线:有质数落点的刻度金色加长(高亮),其余灰色
   for(let i=0;i<M;i++){
     const a=-Math.PI/2+i/M*Math.PI*2;
-    const cop=gcd(i,M)===1;
-    const len=cop?12:6;
-    ctx.strokeStyle=cop?'rgba(245,158,11,0.85)':'rgba(113,113,122,0.3)';
-    ctx.lineWidth=cop?1.6:1;
+    const hasPrime=cnt[i]>0;
+    const len=hasPrime?13:6;
+    ctx.strokeStyle=hasPrime?'rgba(245,158,11,0.9)':'rgba(113,113,122,0.3)';
+    ctx.lineWidth=hasPrime?2:1;
     ctx.beginPath();
     ctx.moveTo(cx+Math.cos(a)*(R-len), cy+Math.sin(a)*(R-len));
     ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
     ctx.stroke();
   }
-  const max=S.modMax||1;
-  for(let i=0;i<M;i++){
-    const c=cnt[i];
-    if(!c) continue;
-    const a=-Math.PI/2+i/M*Math.PI*2;
-    const len=R*0.88*(c/max);
-    ctx.strokeStyle='rgba(239,68,68,0.5)';
-    ctx.lineWidth=Math.max(2,W/700);
-    ctx.beginPath();
-    ctx.moveTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
-    ctx.lineTo(cx+Math.cos(a)*(R-len), cy+Math.sin(a)*(R-len));
-    ctx.stroke();
-  }
   if(M<=30){
-    ctx.fillStyle='rgba(161,161,170,0.7)';
-    ctx.font='11px Courier New';
+    ctx.fillStyle='rgba(212,212,216,0.85)';
+    ctx.font='15px Courier New';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     for(let i=0;i<M;i++){
       const a=-Math.PI/2+i/M*Math.PI*2;
-      const rr=R+14;
+      const rr=R+19;
       ctx.fillText(String(i),cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);
     }
   }
@@ -340,7 +328,7 @@ function renderModBase(){
   ctx.fillText('mod '+M, cx, cy-10);
   ctx.fillStyle='#71717a';
   ctx.font='12px Courier New';
-  ctx.fillText(S.primes.length.toLocaleString()+' 个质数 · 亮点=质数 · 红条=数量', cx, cy+10);
+  ctx.fillText(S.primes.length.toLocaleString()+' 个质数 · 亮点=质数 · 金刻度=质数所在刻度', cx, cy+10);
 }
 /* ---------- 模时钟拾取:点击角度 → 最近刻度 ---------- */
 function pickMod(mx,my){
