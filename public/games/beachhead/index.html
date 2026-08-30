@@ -639,10 +639,10 @@ function applyUpg(i){
 function fire(){
  if(G.st!=='play')return;
  if(G.weapon===0){
-  if(G.mgHeat>=1)return;
+  if(G.mgHeat>=1||G.mgCd>0)return;
   fireMG();
-  G.mgCd=0.075/G.upg.rate;
-  G.mgHeat+=0.045;
+  G.mgCd=0.09/G.upg.rate;
+  G.mgHeat+=0.026;
   sfx('mg');
  }else if(G.weapon===1){
   if(G.canCd>0||G.ammo.cannon<=0)return;
@@ -667,24 +667,9 @@ function switchWeapon(i){
 }
 
 /* ================= 瞄准 ================= */
-const raycaster=new THREE.Raycaster();
-const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-const ndc=new THREE.Vector2();
-const hitPt=new THREE.Vector3();
-function updateAimFromPointer(e){
- const r=CV.getBoundingClientRect();
- ndc.x=((e.clientX-r.left)/r.width)*2-1;
- ndc.y=-((e.clientY-r.top)/r.height)*2+1;
- raycaster.setFromCamera(ndc,camera);
- if(raycaster.ray.intersectPlane(aimPlane,hitPt)){
-  setAim(hitPt);
- }
-}
-function setAim(pt){
- const d=new THREE.Vector3(pt.x-muzzlePos.x,pt.y-muzzlePos.y,pt.z-muzzlePos.z);
- const horiz=Math.hypot(d.x,d.z);
- G.yaw=Math.atan2(d.x,d.z);
- G.pitch=clamp(Math.atan2(d.y,horiz),-0.35,1.2);
+function applyAim(dyaw,dpitch){
+ G.yaw=clamp(G.yaw+dyaw,Math.PI-1.2,Math.PI+1.2);
+ G.pitch=clamp(G.pitch+dpitch,-0.32,1.15);
  aimDir.set(Math.sin(G.yaw)*Math.cos(G.pitch),Math.sin(G.pitch),Math.cos(G.yaw)*Math.cos(G.pitch));
 }
 function updateTurret(){
@@ -722,7 +707,7 @@ function updateWeapons(dt){
  if(G.mgCd>0)G.mgCd-=dt;
  if(G.canCd>0)G.canCd-=dt;
  if(G.msCd>0)G.msCd-=dt;
- if(G.mgHeat>0)G.mgHeat=Math.max(0,G.mgHeat-dt*0.09);
+ if(G.mgHeat>0)G.mgHeat=Math.max(0,G.mgHeat-dt*(G.mgHeat>=1?0.24:0.11));
  document.getElementById('heat').firstElementChild.style.width=(G.mgHeat*100)+'%';
 }
 function updateFx(dt){
@@ -769,12 +754,18 @@ function animateSea(dt){
 function updateHUDcross(){
  const el=document.getElementById('cross');
  if(G.st==='play'){
-  /* 准星跟随瞄准点投影 */
-  const v=new THREE.Vector3(muzzlePos.x+aimDir.x*40,muzzlePos.y+aimDir.y*40,muzzlePos.z+aimDir.z*40);
-  v.project(camera);
+  /* 准星锚定子弹实际落点:枪口射线与地面(y=0)交点;朝天时投影固定距离点 */
+  let pt;
+  if(aimDir.y<-0.01){
+   const t=-muzzlePos.y/aimDir.y;
+   pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t,0,muzzlePos.z+aimDir.z*t);
+  }else{
+   pt=new THREE.Vector3(muzzlePos.x+aimDir.x*50,muzzlePos.y+aimDir.y*50,muzzlePos.z+aimDir.z*50);
+  }
+  pt.project(camera);
   el.style.display='block';
-  el.style.left=((v.x*0.5+0.5)*innerWidth)+'px';
-  el.style.top=((-v.y*0.5+0.5)*innerHeight)+'px';
+  el.style.left=((pt.x*0.5+0.5)*innerWidth)+'px';
+  el.style.top=((-pt.y*0.5+0.5)*innerHeight)+'px';
  }else el.style.display='none';
 }
 function updateHUD(){
@@ -860,10 +851,19 @@ function sfx(n){
 
 /* ================= 输入 ================= */
 let mouseHeld=false,touchHeld=false;
-CV.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')updateAimFromPointer(e);});
+CV.addEventListener('pointermove',e=>{
+ if(e.pointerType==='mouse'){
+  const dx=e.movementX||0,dy=e.movementY||0;
+  if(dx||dy)applyAim(-dx*0.0028,-dy*0.0028);
+ }else if(G.touchAim){
+  const dx=e.clientX-G.lastPX,dy=e.clientY-G.lastPY;
+  G.lastPX=e.clientX;G.lastPY=e.clientY;
+  applyAim(dx*0.005,dy*0.004);
+ }
+});
 CV.addEventListener('pointerdown',e=>{
  ac();
- if(e.pointerType==='mouse'){mouseHeld=true;updateAimFromPointer(e);fire();}
+ if(e.pointerType==='mouse'){mouseHeld=true;fire();}
  else{
   G.touchAim=true;G.lastPX=e.clientX;G.lastPY=e.clientY;
  }
@@ -871,15 +871,6 @@ CV.addEventListener('pointerdown',e=>{
 addEventListener('pointerup',e=>{
  if(e.pointerType==='mouse')mouseHeld=false;
  else G.touchAim=false;
-});
-CV.addEventListener('pointermove',e=>{
- if(e.pointerType!=='mouse'&&G.touchAim){
-  const dx=e.clientX-G.lastPX,dy=e.clientY-G.lastPY;
-  G.lastPX=e.clientX;G.lastPY=e.clientY;
-  G.yaw=clamp(G.yaw+dx*0.005,Math.PI-1.05,Math.PI+1.05);
-  G.pitch=clamp(G.pitch+dy*0.004,-0.3,1.1);
-  aimDir.set(Math.sin(G.yaw)*Math.cos(G.pitch),Math.sin(G.pitch),Math.cos(G.yaw)*Math.cos(G.pitch));
- }
 });
 addEventListener('keydown',e=>{
  if(e.code==='Digit1')switchWeapon(0);
