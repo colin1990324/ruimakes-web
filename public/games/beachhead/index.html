@@ -486,6 +486,7 @@ function updateBullets(dt){
   const ddx=b.p.x-ox,ddy=b.p.y-oy,ddz=b.p.z-oz;
   const l2=ddx*ddx+ddy*ddy+ddz*ddz;
   for(const e of G.enemies){
+   if(!e)continue; /* 防御:过滤期间残留 */
    if(e.dead)continue;
    const hr=e.hitR||1.2;
    const ex=e.mesh.position.x-ox,ey=e.mesh.position.y-oy,ez=e.mesh.position.z-oz;
@@ -523,6 +524,7 @@ function updateBullets(dt){
 }
 function splashArea(pos,r,dmg){
  for(const e of G.enemies){
+  if(!e)continue;
   if(e.dead)continue;
   const d=e.mesh.position.distanceTo(pos);
   if(d<r)damageEnemy(e,dmg*(1-d/r*0.6),pos);
@@ -664,16 +666,20 @@ function damageEnemy(e,dmg,from,mode){
 }
 function killEnemy(e,mode){
  e.dead=true;
- if(mode==='mg'){
+ const fly=(e.type==='heli'||e.type==='jet'); /* 飞机无爆炸特效(性能,用户要求取消) */
+ if(fly){
+  scene.remove(e.mesh);
+  G.enemies=G.enemies.filter(x=>x!==e);
+ }else if(mode==='mg'){
   e.dying=5; /* 机枪击杀:敌人倒下,5秒后消失(无爆炸) */
  }else{
   explode(e.mesh.position,true);
   scene.remove(e.mesh);
+  G.enemies=G.enemies.filter(x=>x!==e);
  }
  G.score+=ENEMY[e.type].score;
  addCombo();
  updateHUD();
- if(mode!=='mg')G.enemies=G.enemies.filter(x=>x!==e);
  checkWave();
 }
 function addCombo(){
@@ -786,8 +792,8 @@ function updateEnemies(dt){
    if(p.x>20)p.dir=-1;if(p.x<-20)p.dir=1;
    p.z+=0.4*dt;p.y=6.5+Math.sin(g.frame*0.05)*0.6;
    if(e.mesh.rotor)e.mesh.rotor.rotation.y+=dt*30;
-   if(e.t<=0&&p.z<-2){e.t=2.0;baseHit(2,new THREE.Vector3(p.x,1,BASE_TARGET.z));tracerFrom(p);}
-   if(p.z>9){baseHit(20,p.clone());killEnemy(e);}
+   if(e.t<=0&&p.z<-2){e.t=2.0;baseHit(2);} /* 直升机扫射:无爆炸无曳光(性能) */
+   if(p.z>9){baseHit(20);killEnemy(e);}
   }else if(e.type==='jet'){
    p.x+=e.spd*dt;
    e.t-=dt;
@@ -844,7 +850,7 @@ function tracerFrom(from){
 /* ================= 波次系统 ================= */
 function buildWave(n){
  const q=[];
- if(n%5===0)q.push('boss');
+ if(n%5===0)q.push({type:'boss'}); /* 必须对象,否则 item.type 为 undefined 崩 */
  const groups=Math.min(7,2+Math.floor(n/2));
  /* 步兵全部由登陆艇运载(不再直接从海里冒出来) */
  const boats=Math.max(2,Math.min(6,Math.ceil(groups*3/4)));
