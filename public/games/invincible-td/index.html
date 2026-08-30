@@ -216,7 +216,7 @@ const PATH_LEN=(()=>{let L=0;for(let i=1;i<PATH.length;i++){const a=PATH[i-1],b=
 const MON_DEFS=[
   {key:'g',  name:'格兰玛雅', hp:45,  spd:1.15, gold:5,  dmg:1, color:0x84cc16, r:0.42, desc:'基础小怪,成群出现'},
   {key:'bat',name:'蝙蝠怪',   hp:27,  spd:1.9,  gold:6,  dmg:1, color:0xa78bfa, r:0.34, dodge:0.3, desc:'高速,30% 闪避攻击'},
-  {key:'b',  name:'布鲁',     hp:113, spd:0.95, gold:10, dmg:2, color:0x38bdf8, r:0.5,  desc:'精英,皮糙肉厚'},
+  {key:'b',  name:'布鲁',     hp:200, spd:0.95, gold:10, dmg:2, color:0x38bdf8, r:0.5,  desc:'精英,皮糙肉厚'},
   {key:'a',  name:'装甲兽',   hp:143, spd:0.7,  gold:14, dmg:2, color:0x94a3b8, r:0.52, armor:0.3, desc:'30% 减伤,导弹激光无视'},
   {key:'s',  name:'分裂怪',   hp:63,  spd:1.05, gold:10, dmg:1, color:0xf472b6, r:0.4,  split:true, desc:'死亡分裂为 3 只小怪'},
   {key:'boss',name:'哥斯拉',  hp:6000,spd:0.42, gold:150,dmg:5, color:0xdc2626, r:0.9,  boss:true, desc:'每 5 波降临,血越少越狂暴'},
@@ -532,7 +532,7 @@ function monModel(def,mini){
   return grp;
 }
 
-function spawnMonster(key,hpMul,mini){
+function spawnMonster(key,hpMul,mini,pos){
   const def=MON_BY[key];
   const hp=(mini?def.hp*0.5:def.hp)*(mini?1:hpMul);
   const m={
@@ -540,7 +540,7 @@ function spawnMonster(key,hpMul,mini){
     hp,maxHp:hp,
     spd:def.spd*(1+Math.min(0.8,(G.wave-1)*0.025)),
     gold:def.gold,
-    seg:0,pos:[PATH[0][0],0,PATH[0][2]],
+    seg:0,pos:pos?[pos[0],0,pos[2]]:[PATH[0][0],0,PATH[0][2]],
     done:false,dead:false,flash:0,sprint:0,sprintCd:0,slowT:0,slowF:1,
     hitCd:0,
   };
@@ -623,7 +623,11 @@ function killMonster(m,opt){
     else toast('哥斯拉被击败!',0xdc2626);
   }
   if(m.def.split&&!m.mini&&!opt.noSplit){
-    for(let i=0;i<3;i++){ spawnMonster('s',1,true); }
+    // 从死亡位置就地分裂(不重新走出生点,威胁才真实)
+    for(let i=0;i<3;i++){
+      const nm=spawnMonster('s',1,true,[m.pos[0]+rnd(-0.35,0.35),0,m.pos[2]+rnd(-0.35,0.35)]);
+      nm.seg=m.seg; // 继承父怪所在路径段
+    }
   }
 }
 
@@ -1390,7 +1394,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.11'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.12'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
