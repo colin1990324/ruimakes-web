@@ -79,9 +79,10 @@ footer{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#3f3f
   <div class="t2">BEACH HEAD</div>
   <div class="desc">
     守住滩头阵地,击退每一波登陆!<br>
-    <b>鼠标</b> 瞄准 · <b>左键/空格</b> 射击 · <b>1/2/3</b> 切换武器<br>
+    <b>鼠标</b> 瞄准(点击画面锁定,ESC释放) · <b>左键/空格</b> 射击<br>
+    <b>方向键/WASD</b> 也可控制炮口 · <b>1/2/3</b> 切换武器<br>
     机枪扫步兵,加农炮轰坦克,导弹打直升机<br>
-    <span style="color:#f87171">⚠ 敌人冲进掩体 = 阵地失守!</span>
+    <span style="color:#f87171">⚠ 敌人冲进滩头 = 阵地失守!</span>
   </div>
   <button id="btnStart" class="btn">▶ 开始战斗</button>
 </div>
@@ -117,7 +118,7 @@ const G={
  ammo:{cannon:12,missile:6},upg:{rate:1,dmg:1},
  spawnQ:[],spawnT:0,enemies:[],bullets:[],fx:[],smokes:[],
  weapon:0,mgHeat:0,mgCd:0,canCd:0,msCd:0,waveClearT:0,
- muted:false,touchAim:false,lastPX:0,lastPY:0,yaw:Math.PI,pitch:0.12
+ muted:false,touchAim:false,lastPX:0,lastPY:0,yaw:Math.PI,pitch:-0.15
 };
 const ENEMY={
  soldier:{hp:2,score:10,reach:8},
@@ -133,8 +134,8 @@ const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x87ceeb);
 scene.fog=new THREE.Fog(0x9fd4ef,60,220);
 const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.1,400);
-camera.position.set(0,3.2,11);
-camera.lookAt(0,1,-40);
+camera.position.set(0,8.0,15.5);
+camera.lookAt(0,0.5,-42);
 const renderer=new THREE.WebGLRenderer({canvas:CV,antialias:true});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
 renderer.setSize(innerWidth,innerHeight);
@@ -166,12 +167,21 @@ const seaPos=sea.geometry.attributes.position;
 
 /* ---- 沙滩 ---- */
 const beach=new THREE.Mesh(
- new THREE.PlaneGeometry(140,26,1,1),
+ new THREE.PlaneGeometry(140,18,1,1),
  new THREE.MeshLambertMaterial({color:0xe8d29a,flatShading:true})
 );
 beach.rotation.x=-Math.PI/2;
-beach.position.set(0,0.02,8);
+beach.position.set(0,0.02,3);
 scene.add(beach);
+
+/* ---- 悬崖高地(玩家在制高点,海面在下方) ---- */
+const cliffMat=new THREE.MeshLambertMaterial({color:0xc4a86a,flatShading:true});
+const cliff=new THREE.Mesh(new THREE.BoxGeometry(50,6.6,1.6),cliffMat);
+cliff.position.set(0,3.3,8.8);
+scene.add(cliff);
+const top=new THREE.Mesh(new THREE.BoxGeometry(56,0.5,5),cliffMat);
+top.position.set(0,6.35,12.5);
+scene.add(top);
 
 /* ---- 远处沙丘 ---- */
 const dune=new THREE.Mesh(
@@ -179,21 +189,23 @@ const dune=new THREE.Mesh(
  new THREE.MeshLambertMaterial({color:0xd9c287,flatShading:true})
 );
 dune.rotation.x=-Math.PI/2;
-dune.position.set(0,0.04,22);
+dune.position.set(0,0.04,24);
 scene.add(dune);
 
 /* ---- 阵地掩体(沙袋) ---- */
-const BASE_POS=new THREE.Vector3(0,0,10);
+const GUN_POS=new THREE.Vector3(0,6.6,12);
+const BASE_TARGET=new THREE.Vector3(0,0,5); // 敌人冲击点:悬崖脚下的滩头
+const groundY=(x,z)=>z>=8?6.6:0;             // 地形高度:悬崖面以上6.6,海/滩0
 const bagMat=new THREE.MeshLambertMaterial({color:0x8a7a52,flatShading:true});
 for(let i=0;i<7;i++){
  const a=(i/7)*Math.PI*2;
  const bag=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.5,1.1,7),bagMat);
- bag.position.set(BASE_POS.x+Math.cos(a)*1.15,0.55,BASE_POS.z+Math.sin(a)*1.15);
+ bag.position.set(GUN_POS.x+Math.cos(a)*1.15,GUN_POS.y+0.35,GUN_POS.z+Math.sin(a)*1.15);
  scene.add(bag);
 }
 /* 沙袋圈底部平台 */
 const plat=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.7,0.4,10),bagMat);
-plat.position.set(BASE_POS.x,0.2,BASE_POS.z);
+plat.position.set(GUN_POS.x,GUN_POS.y+0.1,GUN_POS.z);
 scene.add(plat);
 
 /* ---- 炮台 ---- */
@@ -212,11 +224,11 @@ const shield=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.45,0.3),new THREE.MeshLa
 shield.position.z=0.55;barrelGrp.add(shield);
 barrelGrp.position.y=1.25;
 turret.add(barrelGrp);
-turret.position.set(BASE_POS.x,0,BASE_POS.z);
+turret.position.set(GUN_POS.x,GUN_POS.y,GUN_POS.z);
 scene.add(turret);
 
 /* 枪口世界位置(每帧更新) */
-const muzzlePos=new THREE.Vector3(BASE_POS.x,1.6,BASE_POS.z);
+const muzzlePos=new THREE.Vector3(GUN_POS.x,7.9,GUN_POS.z);
 const aimDir=new THREE.Vector3(0,0,-1);
 
 /* ================= 粒子系统 ================= */
@@ -278,10 +290,15 @@ function muzzleWorld(){
   muzzlePos.z+f.z*2.6
  );
 }
+function muzzleFlash(){
+ const f=new THREE.Mesh(new THREE.SphereGeometry(0.4,6,4),new THREE.MeshBasicMaterial({color:0xffe08a,transparent:true}));
+ f.position.copy(muzzleWorld());scene.add(f);
+ G.fx.push({m:f,t:0,life:0.07,type:'flash'});
+}
 function fireMG(){
- const p=muzzleWorld(),f=aimDir;
- const len=1.4;
- const m=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,len),
+ const p=muzzleWorld(),f=aimDir.clone().add(new THREE.Vector3(rnd(-0.012,0.012),rnd(-0.012,0.012),rnd(-0.012,0.012))).normalize();
+ const len=2.6;
+ const m=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.05,len),
   new THREE.MeshBasicMaterial({color:0xfff3b0}));
  m.position.copy(p).addScaledVector(f,len/2);
  m.lookAt(p.x+f.x*5,p.y+f.y*5,p.z+f.z*5);
@@ -314,7 +331,10 @@ function findAirTarget(){
 function updateBullets(dt){
  for(const b of G.bullets){
   b.life-=dt;
-  if(b.kind==='shell'){b.v.y-=b.grav*dt;b.p.addScaledVector(b.v,dt);}
+  if(b.kind==='shell'){
+   b.v.y-=b.grav*dt;b.p.addScaledVector(b.v,dt);
+   if(Math.random()<0.6)spawnPart(b.p.x,b.p.y,b.p.z,rnd(-0.4,0.4),rnd(0.3,0.8),rnd(-0.4,0.4),0.5,0xbbbbbb,1.1);
+  }
   else if(b.kind==='missile'){
    b.age+=dt;
    if(b.target&&b.target.dead){b.target=findAirTarget();}
@@ -323,9 +343,10 @@ function updateBullets(dt){
     b.v.lerp(tv,dt*3).normalize().multiplyScalar(70);
    }
    b.p.addScaledVector(b.v,dt);
-  }else{
-   b.p.addScaledVector(b.v,dt);
+   spawnPart(b.p.x,b.p.y,b.p.z,-b.v.x*0.15+rnd(-0.3,0.3),-b.v.y*0.15+rnd(-0.3,0.3),-b.v.z*0.15+rnd(-0.3,0.3),0.3,0xff8c2a,1.4);
   }
+  else if(b.kind==='bomb'){b.v.y-=b.grav*dt;b.p.addScaledVector(b.v,dt);}
+  else{b.p.addScaledVector(b.v,dt);}
   b.m.position.copy(b.p);
   if(b.kind==='missile')b.m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.v.clone().normalize());
   /* 命中判定 */
@@ -341,10 +362,21 @@ function updateBullets(dt){
    else damageEnemy(hit,b.dmg*G.upg.dmg,b.p);
    b.dead=true;continue;
   }
-  /* 落地 */
-  if(b.kind==='shell'&&b.p.y<0.05){explode(b.p,true);splashArea(b.p,4.5,b.dmg);b.dead=true;continue;}
-  if(b.kind==='missile'&&b.p.y<0.05){explode(b.p,true);splashArea(b.p,6,b.dmg);b.dead=true;continue;}
-  if(b.kind==='mg'&&(b.p.y<0.03||b.p.z>11||b.p.z<-130||Math.abs(b.p.x)>90)){splash(b.p);b.dead=true;continue;}
+  /* 落地(含悬崖高度) */
+  const gy=groundY(b.p.x,b.p.z);
+  if((b.kind==='shell'||b.kind==='bomb')&&b.p.y<gy){
+   const gp=new THREE.Vector3(b.p.x,gy,b.p.z);
+   explode(gp,true);
+   splashArea(gp,b.kind==='shell'?4.5:6,b.dmg);
+   if(b.kind==='bomb'&&gp.distanceTo(BASE_TARGET)<7)baseHit(10,gp);
+   b.dead=true;continue;
+  }
+  if(b.kind==='missile'&&b.p.y<gy){
+   const gp=new THREE.Vector3(b.p.x,gy,b.p.z);
+   explode(gp,true);splashArea(gp,6,b.dmg);
+   b.dead=true;continue;
+  }
+  if(b.kind==='mg'&&(b.p.y<gy||b.p.z>GUN_POS.z+2||Math.abs(b.p.x)>90)){splash(new THREE.Vector3(b.p.x,gy,b.p.z));b.dead=true;continue;}
   if(b.life<=0)b.dead=true;
  }
  G.bullets=G.bullets.filter(b=>{if(b.dead)scene.remove(b.m);return !b.dead;});
@@ -417,7 +449,6 @@ function makeBoss(){
  return g;
 }
 
-const BASE_TARGET=new THREE.Vector3(BASE_POS.x,1,BASE_POS.z);
 function spawnEnemy(type){
  const g=G;const mesh=make(type);
  const x=rnd(-22,22),z=rnd(-95,-70);
@@ -533,7 +564,7 @@ function updateEnemies(dt){
    if(p.x>20)p.dir=-1;if(p.x<-20)p.dir=1;
    p.z+=0.4*dt;p.y=6.5+Math.sin(g.frame*0.05)*0.6;
    if(e.mesh.rotor)e.mesh.rotor.rotation.y+=dt*30;
-   if(e.t<=0&&p.z<-2){e.t=1.6;baseHit(2,new THREE.Vector3(p.x,1,BASE_POS.z));tracerFrom(p);}
+   if(e.t<=0&&p.z<-2){e.t=1.6;baseHit(2,new THREE.Vector3(p.x,1,BASE_TARGET.z));tracerFrom(p);}
    if(p.z>9){baseHit(20,p.clone());killEnemy(e);}
   }else if(e.type==='jet'){
    p.x+=e.spd*dt;
@@ -549,29 +580,38 @@ function updateEnemies(dt){
  /* 敌人炮弹落地 */
  for(const s of [...G.bullets]){
   if(s.kind!=='eshell')continue;
-  s.p.y-=s.grav*dt;
+  s.life-=dt;
+  s.v.y-=s.grav*dt;
+  s.p.addScaledVector(s.v,dt);
   s.m.position.copy(s.p);
-  if(s.p.y<0.4){explode(s.p,false);if(s.p.distanceTo(BASE_POS)<6)baseHit(6,s.p);s.dead=true;}
+  if(s.p.y<groundY(s.p.x,s.p.z)||s.life<=0){
+   const gp=new THREE.Vector3(s.p.x,groundY(s.p.x,s.p.z),s.p.z);
+   explode(gp,false);
+   if(gp.distanceTo(BASE_TARGET)<6)baseHit(s.dmg||6,gp);
+   s.dead=true;
+  }
  }
  G.bullets=G.bullets.filter(b=>{if(b.dead)scene.remove(b.m);return !b.dead;});
 }
 function tankShell(from){
+ const dir=new THREE.Vector3(BASE_TARGET.x-from.x,0,BASE_TARGET.z-from.z).normalize();
  const m=new THREE.Mesh(new THREE.SphereGeometry(0.22,6,5),new THREE.MeshBasicMaterial({color:0xff8c2a}));
  m.position.copy(from).add(new THREE.Vector3(0,0.8,0));
  scene.add(m);
- G.bullets.push({kind:'eshell',m,p:m.position.clone(),v:new THREE.Vector3(0,0,0),grav:16,life:5,dead:false});
+ G.bullets.push({kind:'eshell',m,p:m.position.clone(),v:dir.clone().multiplyScalar(13).add(new THREE.Vector3(0,5,0)),grav:9,life:6,dead:false,dmg:12});
 }
 function bossShell(from){
+ const dir=new THREE.Vector3(BASE_TARGET.x-from.x,0,BASE_TARGET.z-from.z).normalize();
  const m=new THREE.Mesh(new THREE.SphereGeometry(0.4,8,6),new THREE.MeshBasicMaterial({color:0xff6b1a}));
  m.position.copy(from).add(new THREE.Vector3(0,1.4,0));
  scene.add(m);
- G.bullets.push({kind:'eshell',m,p:m.position.clone(),v:new THREE.Vector3(0,0,0),grav:12,life:8,dead:false});
+ G.bullets.push({kind:'eshell',m,p:m.position.clone(),v:dir.clone().multiplyScalar(11).add(new THREE.Vector3(0,8,0)),grav:7,life:9,dead:false,dmg:6});
 }
 function dropBomb(from){
  const m=new THREE.Mesh(new THREE.SphereGeometry(0.3,6,5),new THREE.MeshBasicMaterial({color:0x333333}));
  m.position.copy(from).add(new THREE.Vector3(0,-0.5,0));
  scene.add(m);
- G.bullets.push({kind:'bomb',m,p:m.position.clone(),v:new THREE.Vector3(0,-1,0),grav:20,life:6,dead:false});
+ G.bullets.push({kind:'bomb',m,p:m.position.clone(),v:new THREE.Vector3(30,-1,0),grav:20,life:6,dead:false});
 }
 function tracerFrom(from){
  for(let i=0;i<3;i++){
@@ -641,6 +681,7 @@ function fire(){
  if(G.weapon===0){
   if(G.mgHeat>=1||G.mgCd>0)return;
   fireMG();
+  muzzleFlash();
   G.mgCd=0.09/G.upg.rate;
   G.mgHeat+=0.026;
   sfx('mg');
@@ -649,12 +690,14 @@ function fire(){
   G.canCd=1.1;
   G.ammo.cannon--;
   fireCannon();
+  muzzleFlash();
   sfx('cannon');
  }else{
   if(G.msCd>0||G.ammo.missile<=0)return;
   G.msCd=0.9;
   G.ammo.missile--;
   fireMissile();
+  muzzleFlash();
   sfx('missile');
  }
  updateHUD();
@@ -669,7 +712,7 @@ function switchWeapon(i){
 /* ================= 瞄准 ================= */
 function applyAim(dyaw,dpitch){
  G.yaw=clamp(G.yaw+dyaw,Math.PI-1.2,Math.PI+1.2);
- G.pitch=clamp(G.pitch+dpitch,-0.32,1.15);
+ G.pitch=clamp(G.pitch+dpitch,-1.05,0.9);
  aimDir.set(Math.sin(G.yaw)*Math.cos(G.pitch),Math.sin(G.pitch),Math.cos(G.yaw)*Math.cos(G.pitch));
 }
 function updateTurret(){
@@ -689,6 +732,10 @@ function loop(ts){
  G.frame=(G.frame||0)+1;
  if(G.st==='play'){
   if(mouseHeld||touchHeld)fire();
+  if(keys.l)applyAim(-1.2*dt,0);
+  if(keys.r)applyAim(1.2*dt,0);
+  if(keys.u)applyAim(0,1.2*dt);
+  if(keys.d)applyAim(0,-1.2*dt);
   updateSpawning(dt);
   updateEnemies(dt);
   updateBullets(dt);
@@ -754,11 +801,22 @@ function animateSea(dt){
 function updateHUDcross(){
  const el=document.getElementById('cross');
  if(G.st==='play'){
-  /* 准星锚定子弹实际落点:枪口射线与地面(y=0)交点;朝天时投影固定距离点 */
+  /* 准星锚定子弹实际落点:枪口射线与地形交点(悬崖感知);朝天时投影固定距离点 */
   let pt;
   if(aimDir.y<-0.01){
-   const t=-muzzlePos.y/aimDir.y;
-   pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t,0,muzzlePos.z+aimDir.z*t);
+   const t0=-muzzlePos.y/aimDir.y;
+   const z0=muzzlePos.z+aimDir.z*t0;
+   if(z0<8){
+    const t8=(8-muzzlePos.z)/aimDir.z;
+    const y8=muzzlePos.y+aimDir.y*t8;
+    if(y8<6.6){
+     pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t8,y8,8);
+    }else{
+     pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t0,0,z0);
+    }
+   }else{
+    pt=new THREE.Vector3(muzzlePos.x+aimDir.x*t0,0,z0);
+   }
   }else{
    pt=new THREE.Vector3(muzzlePos.x+aimDir.x*50,muzzlePos.y+aimDir.y*50,muzzlePos.z+aimDir.z*50);
   }
@@ -851,10 +909,11 @@ function sfx(n){
 
 /* ================= 输入 ================= */
 let mouseHeld=false,touchHeld=false;
+const keys={l:false,r:false,u:false,d:false};
 CV.addEventListener('pointermove',e=>{
  if(e.pointerType==='mouse'){
   const dx=e.movementX||0,dy=e.movementY||0;
-  if(dx||dy)applyAim(-dx*0.0028,-dy*0.0028);
+  if(dx||dy)applyAim(-dx*0.0035,-dy*0.0035);
  }else if(G.touchAim){
   const dx=e.clientX-G.lastPX,dy=e.clientY-G.lastPY;
   G.lastPX=e.clientX;G.lastPY=e.clientY;
@@ -872,16 +931,30 @@ addEventListener('pointerup',e=>{
  if(e.pointerType==='mouse')mouseHeld=false;
  else G.touchAim=false;
 });
+CV.addEventListener('click',()=>{
+ if(CV.requestPointerLock&&document.pointerLockElement!==CV)CV.requestPointerLock();
+});
 addEventListener('keydown',e=>{
  if(e.code==='Digit1')switchWeapon(0);
  if(e.code==='Digit2')switchWeapon(1);
  if(e.code==='Digit3')switchWeapon(2);
  if(e.code==='Space')fire();
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();
+ if(e.code==='ArrowLeft'||e.code==='KeyA')keys.l=true;
+ if(e.code==='ArrowRight'||e.code==='KeyD')keys.r=true;
+ if(e.code==='ArrowUp'||e.code==='KeyW')keys.u=true;
+ if(e.code==='ArrowDown'||e.code==='KeyS')keys.d=true;
  if(e.code==='KeyM'){G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';}
  if(e.code==='Enter'){
   if(G.st==='menu')startGame();
   else if(G.st==='over'){G.st='menu';resetScene();showOv('ovMenu');}
  }
+});
+addEventListener('keyup',e=>{
+ if(e.code==='ArrowLeft'||e.code==='KeyA')keys.l=false;
+ if(e.code==='ArrowRight'||e.code==='KeyD')keys.r=false;
+ if(e.code==='ArrowUp'||e.code==='KeyW')keys.u=false;
+ if(e.code==='ArrowDown'||e.code==='KeyS')keys.d=false;
 });
 addEventListener('wheel',e=>{switchWeapon((G.weapon+(e.deltaY>0?1:-1)+3)%3);});
 addEventListener('resize',()=>{
