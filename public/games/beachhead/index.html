@@ -252,6 +252,20 @@ for(const [rx,rs,rz] of ROCK_SPOTS){
  rock.rotation.set(rnd(0,3),rnd(0,3),rnd(0,3));
  scene.add(rock);
 }
+/* 岩石碰撞圆(敌人不可穿越的障碍) */
+const ROCK_COLLIDERS=ROCK_SPOTS.map(([x,r,z])=>({x,z,r:r*0.9}));
+function avoidRocks(px,pz,radius){
+ for(const rc of ROCK_COLLIDERS){
+  const dx=px-rc.x,dz=pz-rc.z;
+  const d=Math.hypot(dx,dz);
+  const min=rc.r+radius;
+  if(d<min&&d>0.001){
+   const push=(min-d)/d;
+   px+=dx*push;pz+=dz*push;
+  }
+ }
+ return [px,pz];
+}
 
 /* ---- 海滩细节:弹坑/沙丘/散落残骸 ---- */
 const craterMat=new THREE.MeshLambertMaterial({color:0x9a8a68,flatShading:true});
@@ -669,6 +683,7 @@ function updateEnemies(dt){
    const nx=dx/d,nz=dz/d;
    p.x+=(nx-nz*sway)*e.spd*dt;
    p.z+=(nz+nx*sway)*e.spd*dt;
+   const [ax2,az2]=avoidRocks(p.x,p.z,0.3);p.x=ax2;p.z=az2; /* 岩石碰撞,沿法线滑移 */
    e.mesh.rotation.y=Math.atan2(tx-p.x,tz-p.z);
    if(d<2.3){baseHit(ENEMY.soldier.reach,p.clone());killEnemy(e);}
   }else if(e.type==='boat'){
@@ -708,6 +723,7 @@ function updateEnemies(dt){
    const nx=dx/d,nz=dz/d;
    p.x+=(nx-nz*sway)*e.spd*dt;
    p.z+=(nz+nx*sway)*e.spd*dt;
+   const [ax2,az2]=avoidRocks(p.x,p.z,0.7);p.x=ax2;p.z=az2; /* 岩石碰撞 */
    e.mesh.rotation.y=Math.atan2(dx,dz);
    e.t-=dt;
    if(e.t<=0){e.t=3.2;tankShell(p);}
