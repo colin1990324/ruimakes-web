@@ -80,7 +80,7 @@
 <div id="hud">
   <div class="stat red">♥ <b id="hLives">20</b></div>
   <div class="stat gold">¤ <b id="hGold">150</b></div>
-  <div class="stat">WAVE <b id="hWave">0</b>/20</div>
+  <div class="stat">WAVE <b id="hWave">0</b></div>
   <div class="stat">👾 <b id="hCount">0</b></div>
   <div class="sp">[1]建塔 [2]升级 [3]出售 [ESC]取消 [空格]2× [M]静音</div>
   <div class="stat" id="verStat">v<b id="verTxt">0.1</b></div>
@@ -96,6 +96,7 @@
   <h1>无敌塔防<span class="ver" id="verMenu">v0.1</span></h1>
   <p>INVINCIBLE TOWER DEFENSE</p>
   <p>怪物从左上角涌入,沿路径冲向基地。在空地建塔拦截它们!</p>
+  <p><b style="color:#f59e0b">无尽模式</b>:波次无限加强,看你能守到第几波!</p>
   <p>塔可连续升级:<b style="color:#fff">箭塔 → 飞刀 → 机枪塔 → 导弹塔 → 激光塔</b></p>
   <div id="monsterKey"></div>
   <button class="btn" id="btnStart">开 始</button>
@@ -115,13 +116,6 @@
   <p>你守住了 <b id="overWave">0</b> 波</p>
   <p>最高纪录 <b id="overBest" style="color:var(--gold)">-</b></p>
   <button class="btn" id="btnRetry">再来一局</button>
-</div>
-
-<!-- 胜利 -->
-<div class="ov hide" id="winOv">
-  <h2 style="color:var(--gold)">胜 利!</h2>
-  <p>20 波全部击破,基地屹立不倒。</p>
-  <button class="btn" id="btnAgain">再来一局</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -199,7 +193,7 @@ const MON_DEFS=[
   {key:'b',  name:'布鲁',     hp:75,  spd:0.95, gold:10, dmg:2, color:0x38bdf8, r:0.5,  desc:'精英,皮糙肉厚'},
   {key:'a',  name:'装甲兽',   hp:95,  spd:0.7,  gold:14, dmg:2, color:0x94a3b8, r:0.52, armor:0.3, desc:'30% 减伤,导弹激光无视'},
   {key:'s',  name:'分裂怪',   hp:42,  spd:1.05, gold:10, dmg:1, color:0xf472b6, r:0.4,  split:true, desc:'死亡分裂为 2 只小怪'},
-  {key:'boss',name:'哥斯拉',  hp:1500,spd:0.42, gold:150,dmg:5, color:0xdc2626, r:0.9,  boss:true, desc:'每 5 波降临,血越少越狂暴'},
+  {key:'boss',name:'哥斯拉',  hp:3000,spd:0.42, gold:150,dmg:5, color:0xdc2626, r:0.9,  boss:true, desc:'每 5 波降临,血越少越狂暴'},
 ];
 const MON_BY={}; MON_DEFS.forEach((d,i)=>MON_BY[d.key]=d);
 
@@ -213,29 +207,44 @@ const TOWER_DEFS=[
 ];
 const SELL_RATIO=0.7;
 
-/* ---------- 波次表(20波) ---------- */
+/* ---------- 波次表(前20波手工设计,20波后 waveSeq 程序化无限生成) ---------- */
 const WAVES=[
-  {boss:false, seq:'g6'},
-  {boss:false, seq:'g9'},
-  {boss:false, seq:'g6 bat4'},
-  {boss:false, seq:'g10 bat6'},
-  {boss:true,  seq:'g8 boss1'},
-  {boss:false, seq:'b5 g8'},
-  {boss:false, seq:'g12 bat8 a3'},
-  {boss:false, seq:'b8 s4'},
-  {boss:false, seq:'g15 a5 bat6'},
-  {boss:true,  seq:'s6 a4 boss1'},
-  {boss:false, seq:'b10 s6'},
-  {boss:false, seq:'a8 s8 bat8'},
-  {boss:false, seq:'b12 g10 a4'},
-  {boss:false, seq:'s10 a8 b8'},
-  {boss:true,  seq:'a6 s8 b6 boss1'},
-  {boss:false, seq:'b12 s10 a6 bat8'},
-  {boss:false, seq:'a10 s12 b10'},
-  {boss:false, seq:'b14 s12 a8 g12'},
-  {boss:false, seq:'s14 a12 b12 bat10'},
-  {boss:true,  seq:'b10 s10 a10 bat8 boss1'},
+  {boss:false, seq:'g8'},
+  {boss:false, seq:'g12'},
+  {boss:false, seq:'g8 bat5'},
+  {boss:false, seq:'g13 bat8'},
+  {boss:true,  seq:'g10 boss1'},
+  {boss:false, seq:'b6 g10'},
+  {boss:false, seq:'g15 bat10 a4'},
+  {boss:false, seq:'b10 s5'},
+  {boss:false, seq:'g19 a6 bat8'},
+  {boss:true,  seq:'s8 a5 boss1'},
+  {boss:false, seq:'b13 s8'},
+  {boss:false, seq:'a10 s10 bat10'},
+  {boss:false, seq:'b15 g13 a5'},
+  {boss:false, seq:'s13 a10 b10'},
+  {boss:true,  seq:'a8 s10 b8 boss1'},
+  {boss:false, seq:'b15 s13 a8 bat10'},
+  {boss:false, seq:'a13 s15 b13'},
+  {boss:false, seq:'b18 s15 a10 g15'},
+  {boss:false, seq:'s18 a15 b15 bat13'},
+  {boss:true,  seq:'b13 s13 a13 bat10 boss1'},
 ];
+// 无限波次生成:20 波后每波按比例加强(每 5 波一个难度档,数量递增)
+function waveSeq(n){
+  if(n<=WAVES.length) return WAVES[n-1].seq;
+  const k=n-WAVES.length;      // 21 起 k=1
+  const m=Math.floor((k-1)/5); // 难度档(每 5 波 +1)
+  const sub=(k-1)%5;
+  if(sub===4){
+    // Boss 波:杂兵随档位递增
+    const g=10+m*3, s=6+m*3, a=6+m*3, b=7+m*3, bat=8+m*3;
+    return 'g'+g+' s'+s+' a'+a+' b'+b+' bat'+bat+' boss1';
+  } else {
+    const g=12+m*4+sub*2, s=5+m*3+sub*2, a=5+m*3+sub, b=6+m*3+sub, bat=7+m*3+sub;
+    return 'g'+g+' s'+s+' a'+a+' b'+b+' bat'+bat;
+  }
+}
 
 /* ---------- Three 场景 ---------- */
 const canvas=$('cv');
@@ -522,7 +531,7 @@ function moveMonsters(dt){
     if(m.hitCd>0) m.hitCd-=dt;
     if(m.sprint>0) m.sprint-=dt;
     if(m.slowT>0){ m.slowT-=dt; if(m.slowT<=0) m.slowF=1; }
-    const spd=m.spd*m.slowF*(m.sprint>0?3:1);
+    const spd=m.spd*m.slowF*(m.sprint>0?3.5:1);
     let remain=spd*dt;
     while(remain>0&&m.seg<PATH.length-1){
       const a=PATH[m.seg], b=PATH[m.seg+1];
@@ -559,9 +568,9 @@ function hitMonster(m,dmg,opt){
   if(m.def.armor&&!opt.ignoreArmor) d*=1-m.def.armor;
   m.hp-=d;
   m.flash=0.1;
-  // 哥斯拉狂暴冲刺:每损 30% 血触发
+  // 哥斯拉狂暴冲刺:每损 30% 血触发(3.5 倍速 2.5 秒)
   if(m.def.boss&&m.sprintCd<=0&&m.hp<m.maxHp*0.7&&m.hp>0){
-    m.sprint=2; m.sprintCd=5;
+    m.sprint=2.5; m.sprintCd=5;
     dust(m.pos[0],m.pos[2],8);
     toast('哥斯拉狂暴冲刺!',0xef4444);
   }
@@ -599,7 +608,7 @@ function parseSeq(seq){
 }
 function startWave(n){
   G.wave=n;
-  G.spawnQ=parseSeq(WAVES[n-1].seq);
+  G.spawnQ=parseSeq(waveSeq(n));
   G.spawnT=0.8;
   G.monsters.forEach(m=>{m.done=true;});
   G.monsters=[]; // 清理残留(波间不会有残留,防御)
@@ -611,7 +620,7 @@ function updateSpawning(dt){
   G.spawnT-=dt;
   if(G.spawnT<=0){
     const key=G.spawnQ.shift();
-    const hpMul=1+0.12*(G.wave-1)+(key==='boss'?(G.wave-1)*0.05:0);
+    const hpMul=1+0.2*(G.wave-1)+(key==='boss'?(G.wave-1)*0.05:0);
     spawnMonster(key,hpMul);
     G.spawnT=Math.max(0.12,0.8-Math.min(0.4,(G.wave-1)*0.025));
   }
@@ -1065,7 +1074,7 @@ function waveTotalCount(seq){
 }
 function updateWaveBar(){
   if(G.wave<=0){ $('waveFill').style.width='0%'; return; }
-  const total=waveTotalCount(WAVES[G.wave-1].seq);
+  const total=waveTotalCount(waveSeq(G.wave));
   const left=G.spawnQ.length;
   $('waveFill').style.width=(100*(1-left/total)).toFixed(1)+'%';
 }
@@ -1098,7 +1107,6 @@ function showUpgrade(){
   });
 }
 function nextWaveOrWin(){
-  if(G.wave>=G.totalWaves){ winGame(); return; }
   startWave(G.wave+1);
   updateHUD();
 }
@@ -1119,13 +1127,7 @@ function gameOver(){
   $('overOv').classList.remove('hide');
   sfx('lose');
 }
-function winGame(){
-  G.st='win';
-  $('bossBar').style.display='none';
-  saveBest();
-  sfx('win');
-  $('winOv').classList.remove('hide');
-}
+function winGame(){} // 无尽模式无胜利,保留空壳防引用报错
 function startGame(){
   G.monsters.forEach(m=>scene.remove(m.grp)); G.monsters=[];
   G.towers.forEach(t=>scene.remove(t.grp)); G.towers=[];
@@ -1138,7 +1140,7 @@ function startGame(){
   G.speed=1;
   $('speedTag').style.display='none';
   $('menuOv').classList.add('hide'); $('upgOv').classList.add('hide');
-  $('overOv').classList.add('hide'); $('winOv').classList.add('hide');
+  $('overOv').classList.add('hide');
   hideTowerInfo();
   G.st='play';
   startWave(1);
@@ -1245,10 +1247,9 @@ function loop(now){
       }
     }
     G.monsters=G.monsters.filter(m=>!m.dead&&!m.done);
-    // 波次推进
+    // 波次推进(无尽模式:永远弹奖励进入下一波)
     if(G.st==='play'&&waveCleared()){
-      if(G.wave>=G.totalWaves){ winGame(); }
-      else showUpgrade();
+      showUpgrade();
     }
     updateHUD();
   }
@@ -1266,7 +1267,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.5'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.6'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
@@ -1284,7 +1285,6 @@ try{ G.best=JSON.parse(localStorage.getItem(BEST_KEY))||{wave:0,score:0}; }catch
 $('bestShow').textContent=G.best.wave>0?('第 '+G.best.wave+' 波 · '+G.best.score+' 分'):'无';
 $('btnStart').onclick=startGame;
 $('btnRetry').onclick=startGame;
-$('btnAgain').onclick=startGame;
 canvas.addEventListener('click',handleClick);
 canvas.addEventListener('mousemove',e=>{
   if(G.st!=='play'){ G.hover=null; return; }
@@ -1299,7 +1299,7 @@ window.addEventListener('resize',()=>{
 requestAnimationFrame(loop);
 
 /* ===== 占位(后续模块注入点) ===== */
-window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget,updateHUD,updateBossBar};
+window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget,updateHUD,updateBossBar,waveSeq,parseSeq};
 
 })();
 </script>
