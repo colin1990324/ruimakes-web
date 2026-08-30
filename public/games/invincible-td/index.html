@@ -630,9 +630,10 @@ function moveMonsters(dt){
       else { const f=remain/segLen; m.pos[0]+=dx*f; m.pos[2]+=dz*f; remain=0; }
     }
     if(m.seg>=PATH.length-1){ m.done=true; continue; }
-    // 面向移动方向
+    // 面向移动方向(模型默认朝+z,rotation.y=atan2(dx,dz) 才正确——
+    // 写成 atan2(dz,dx) 会偏 90°,球状怪不明显但哥斯拉头尾会横着走)
     const a=PATH[m.seg], b=PATH[m.seg+1];
-    const ang=Math.atan2(b[2]-a[2],b[0]-a[0]);
+    const ang=Math.atan2(b[0]-a[0],b[2]-a[2]);
     m.grp.rotation.y=ang;
     // 模型位置 + 受伤闪白(模型内部从 y=0 贴地堆叠)
     const g=m.grp;
@@ -1458,7 +1459,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.17'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.18'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
