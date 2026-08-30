@@ -7,9 +7,9 @@
 <title>坦克大战 Battle City · ruimakes</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{height:100%;height:100dvh}
 body{background:#09090b;color:#e4e4e7;font-family:'Courier New',monospace;display:flex;justify-content:center;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
-.wrap{max-width:720px;width:100%;display:flex;flex-direction:column;align-items:center;padding:20px 16px 8px;gap:12px;transform-origin:top center}
+.wrap{max-width:720px;width:100%;display:flex;flex-direction:column;align-items:center;padding:20px 16px 8px;gap:12px;transform-origin:top center;align-self:flex-start}
 header{width:100%;display:flex;align-items:center;justify-content:space-between}
 h1{color:#facc15;font-size:33px;letter-spacing:4px;text-shadow:3px 3px 0 #7c2d12}
 h1 small{color:#a1a1aa;font-size:16px;letter-spacing:3px;margin-left:8px}
@@ -821,14 +821,29 @@ document.getElementById('mbtn').addEventListener('click',()=>{G.muted=!G.muted;d
 const cbtn=document.getElementById('cbtn');
 cbtn.addEventListener('click',()=>{G.crazy=!G.crazy;cbtn.classList.toggle('on',G.crazy);cbtn.textContent=G.crazy?'疯狂 ON':'疯狂';});
 
-/* ================= 移动端自适应:整体缩放,保证一屏完整显示 ================= */
+/* ================= 移动端自适应:整体缩放,保证一屏完整显示 =================
+   ⚠ 不要用 wrap 的 offsetWidth/offsetHeight 做比例基准:
+   - 手机下 offsetWidth 被视口宽度压缩(390/390=1,宽度约束失效)
+   - flex 拉伸时 offsetHeight 等于视口高度(比例恒 1,根本没缩放)
+   宽度固定用设计宽度 720,高度用 visualViewport(真实可见区域,不含浏览器地址栏) */
 const wrapEl=document.querySelector('.wrap');
+const DESIGN_W=720;
 function fit(){
- const s=Math.min(1,innerWidth/wrapEl.offsetWidth,innerHeight/wrapEl.offsetHeight);
+ const vv=window.visualViewport;
+ const vw=(vv&&vv.width)?vv.width:innerWidth;
+ const vh=(vv&&vv.height)?vv.height:innerHeight;
+ const s=Math.min(1,vw/DESIGN_W,(vh-8)/wrapEl.offsetHeight);
  wrapEl.style.transform='scale('+s+')';
 }
 addEventListener('resize',fit);
 addEventListener('orientationchange',fit);
+addEventListener('load',fit);
+if(window.visualViewport){
+ window.visualViewport.addEventListener('resize',fit);
+ window.visualViewport.addEventListener('scroll',fit);
+}
+setTimeout(fit,120);
+setTimeout(fit,600);
 fit();
 
 /* ================= 主循环 ================= */
