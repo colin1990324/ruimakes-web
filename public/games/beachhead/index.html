@@ -628,20 +628,32 @@ function updateEnemies(dt){
    e.mesh.rotation.y=Math.atan2(tx-p.x,tz-p.z);
    if(d<2.3){baseHit(ENEMY.soldier.reach,p.clone());killEnemy(e);}
   }else if(e.type==='boat'){
-   const dx=-p.x,dz=-30-p.z; /* 登陆艇冲到岸线浅滩搁浅 */
-   const d=Math.hypot(dx,dz);
-   p.x+=dx/d*e.spd*dt;p.z+=dz/d*e.spd*dt;
-   if(p.z<-29.5){
-    for(let i=0;i<e.soldiers;i++){
-     const s=spawnEnemy('soldier');
-     s.mesh.position.set(p.x+rnd(-3,3),0,p.z+2);
-     s.mesh.rotation.y=Math.PI;
-     s.state='run';
-     s.land=0.5+rnd(0,0.4);
-     s.ax=clamp(p.x+rnd(-6,6),-22,22); /* 同船士兵各自散开目标 */
-     s.az=BASE_TARGET.z+rnd(0,2);
+   if(e.landed){
+    /* 已冲滩:逐个放下士兵,船留在岸边当残骸(无爆炸) */
+    e.t-=dt;
+    if(e.t<=0){
+     if(e.dropped<e.soldiers){
+      const s=spawnEnemy('soldier');
+      s.mesh.position.set(p.x+rnd(-1,1),0,p.z+2.5);
+      s.mesh.rotation.y=Math.PI;
+      s.state='run';
+      s.land=0.3;
+      s.ax=clamp(p.x+rnd(-6,6),-22,22);
+      s.az=BASE_TARGET.z+rnd(0,2);
+      e.dropped++;
+      e.t=0.45;
+     }else{
+      /* 卸完:从敌人列表移除(不再攻击),空船留在岸边 */
+      e.dead=true;
+      G.enemies=G.enemies.filter(x=>x!==e);
+      checkWave();
+     }
     }
-    explode(p,false);killEnemy(e);
+   }else{
+    const dx=-p.x,dz=-30-p.z; /* 登陆艇冲向岸线浅滩 */
+    const d=Math.hypot(dx,dz);
+    p.x+=dx/d*e.spd*dt;p.z+=dz/d*e.spd*dt;
+    if(p.z<-29.5){e.landed=true;e.dropped=0;e.t=0.3;}
    }
   }else if(e.type==='tank'){
    const tx=e.ax!==undefined?e.ax:BASE_TARGET.x;
