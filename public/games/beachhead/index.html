@@ -742,11 +742,16 @@ function updateTurret(){
  const mp=muzzleWorld();
  muzzlePos.copy(mp);
 }
-/* 双视角:第一人称(炮手眼睛,视线随炮口,越过悬崖) / 第三人称(右侧后方俯瞰,悬崖不挡) */
+/* 双视角:第一人称(炮手眼睛,视线随炮口) / 第三人称(环绕跟随:绕炮台转到炮口后方,拉远俯瞰) */
 function updateCamera(){
  if(G.view==='tp'){
-  camera.position.set(4.8,8.2,10.8);
-  camera.lookAt(0,1,-35);
+  const off=0.6,dst=14,hgt=13.5;
+  camera.position.set(
+   GUN_POS.x+Math.sin(G.yaw-off)*dst,
+   hgt,
+   GUN_POS.z+Math.cos(G.yaw-off)*dst
+  );
+  camera.lookAt(muzzlePos.x+aimDir.x*40,muzzlePos.y+aimDir.y*40,muzzlePos.z+aimDir.z*40);
  }else{
   camera.position.set(0,GUN_POS.y+0.8,11.4);
   camera.lookAt(muzzlePos.x+aimDir.x*50,muzzlePos.y+aimDir.y*50,muzzlePos.z+aimDir.z*50);
@@ -858,12 +863,10 @@ function rayGroundHit(){
 function updateHUDcross(){
  const el=document.getElementById('cross');
  if(G.st==='play'){
-  /* 准星锚定子弹实际落点(枪口射线与地形交点,含悬崖感知) */
-  const pt=rayGroundHit();
-  pt.project(camera);
+  /* 准星固定在屏幕中心 = 炮口方向(不再锚定地形交点,避免平射时落点几百米外导致准星漂移/跳崖) */
   el.style.display='block';
-  el.style.left=((pt.x*0.5+0.5)*innerWidth)+'px';
-  el.style.top=((-pt.y*0.5+0.5)*innerHeight)+'px';
+  el.style.left=(innerWidth/2)+'px';
+  el.style.top=(innerHeight/2)+'px';
  }else el.style.display='none';
 }
 function updateHUD(){
