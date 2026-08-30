@@ -413,7 +413,7 @@ function ss(type){
     ls.appendChild(btn);}
   ls.querySelectorAll('button').forEach(b=>b.classList.toggle('cur',parseInt(b.dataset.l)===g.l));
   b.style.display='block';
-  if(type==='menu'){h2.textContent='🟡 吃豆人';h2.style.color='#10b981';
+  if(type==='menu'){h2.textContent='🟡 吃豆人 v0.1';h2.style.color='#10b981';
     p.innerHTML='← ↑ → ↓ 控制吃豆人吃掉所有豆子<br/>躲避幽灵，吃绿色能量豆可以反击！';
     b.textContent='开始游戏';b.onclick=()=>sg(0);}
   else if(type==='go'){h2.textContent='GAME OVER';h2.style.color='#ef4444';
