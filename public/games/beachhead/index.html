@@ -296,6 +296,11 @@ const GUN_POS=new THREE.Vector3(0,6.5,12);   // 炮台:海堤上的高塔堡垒
 const BASE_TARGET=new THREE.Vector3(0,0,5);  // 敌人冲击点:海堤脚下的滩头
 const CLIFF_Z=8,CLIFF_H=2.5;                 // 崖面位置/高度(矮海堤)
 const groundY=(x,z)=>z>=CLIFF_Z?CLIFF_H:0;   // 地形高度:堤上2.5,海/滩0
+/* 基地防线警示红线(敌人越过即扣血) */
+const lineMat=new THREE.MeshBasicMaterial({color:0xef4444,transparent:true,opacity:0.85});
+const defLine=new THREE.Mesh(new THREE.BoxGeometry(90,0.06,0.2),lineMat);
+defLine.position.set(0,0.09,BASE_TARGET.z);
+scene.add(defLine);
 /* 炮台高塔(暂不渲染) */
 const tower=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.6,4.1,10),cliffMat);
 tower.position.set(GUN_POS.x,CLIFF_H+2.05,GUN_POS.z);
@@ -336,6 +341,22 @@ const muzzlePos=new THREE.Vector3(GUN_POS.x,GUN_POS.y+1.25,GUN_POS.z);
 const aimDir=new THREE.Vector3(0,0,-1);
 
 /* ================= 粒子系统 ================= */
+/* 共享几何/材质(性能优化:子弹/炸弹/炮弹/爆炸频繁创建,复用避免每帧分配) */
+const GEO_MG=new THREE.BoxGeometry(0.08,0.08,4.2);
+const MAT_TRACER=new THREE.MeshBasicMaterial({color:0xffd400,transparent:true,opacity:0.95});
+const GEO_SHELL=new THREE.SphereGeometry(0.18,6,5);
+const MAT_SHELL=new THREE.MeshBasicMaterial({color:0x222222});
+const GEO_MISSILE=new THREE.ConeGeometry(0.14,0.7,6);
+const MAT_MISSILE=new THREE.MeshBasicMaterial({color:0xef4444});
+const GEO_BOMB=new THREE.SphereGeometry(0.3,6,5);
+const MAT_BOMB=new THREE.MeshBasicMaterial({color:0x333333});
+const GEO_ESHELL=new THREE.SphereGeometry(0.22,6,5);
+const MAT_ESHELL=new THREE.MeshBasicMaterial({color:0xff8c2a});
+const GEO_BOSSHELL=new THREE.SphereGeometry(0.4,8,6);
+const MAT_BOSSHELL=new THREE.MeshBasicMaterial({color:0xff6b1a});
+const GEO_FLASH=new THREE.SphereGeometry(0.6,8,6);
+const GEO_RING=new THREE.RingGeometry(0.4,0.55,20);
+const GEO_MUZZLE=new THREE.SphereGeometry(0.4,6,4);
 const MAXP=800;
 const pGeo=new THREE.BufferGeometry();
 const pPos=new Float32Array(MAXP*3);
@@ -372,12 +393,12 @@ function burst(x,y,z,n,speed,col,life){
 function explode(pos,big){
  sfx('boom');
  const p=pos;
- burst(p.x,p.y,p.z,big?36:16,big?16:9,0xff8c2a,0.7);
- burst(p.x,p.y,p.z,big?14:6,big?7:4,0x3f3f46,1.4); // 烟
- const f=new THREE.Mesh(new THREE.SphereGeometry(0.6,8,6),new THREE.MeshBasicMaterial({color:0xffd400,transparent:true}));
+ burst(p.x,p.y,p.z,big?26:10,big?13:7,0xff8c2a,0.7);
+ burst(p.x,p.y,p.z,big?10:4,big?6:3,0x3f3f46,1.4);
+ const f=new THREE.Mesh(GEO_FLASH,new THREE.MeshBasicMaterial({color:0xffd400,transparent:true}));
  f.position.copy(p);scene.add(f);
  G.fx.push({m:f,t:0,life:0.35,type:'flash'});
- const r=new THREE.Mesh(new THREE.RingGeometry(0.4,0.55,20),new THREE.MeshBasicMaterial({color:0xffb84d,transparent:true,side:THREE.DoubleSide}));
+ const r=new THREE.Mesh(GEO_RING,new THREE.MeshBasicMaterial({color:0xffb84d,transparent:true,side:THREE.DoubleSide}));
  r.rotation.x=-Math.PI/2;r.position.set(p.x,0.1,p.z);scene.add(r);
  G.fx.push({m:r,t:0,life:0.5,type:'ring'});
 }
@@ -395,32 +416,28 @@ function muzzleWorld(){
  );
 }
 function muzzleFlash(){
- const f=new THREE.Mesh(new THREE.SphereGeometry(0.4,6,4),new THREE.MeshBasicMaterial({color:0xffe08a,transparent:true}));
+ const f=new THREE.Mesh(GEO_MUZZLE,new THREE.MeshBasicMaterial({color:0xffe08a,transparent:true}));
  f.position.copy(muzzleWorld());scene.add(f);
  G.fx.push({m:f,t:0,life:0.07,type:'flash'});
 }
 function fireMG(){
  const p=muzzleWorld(),f=aimDir.clone().add(new THREE.Vector3(rnd(-0.012,0.012),rnd(-0.012,0.012),rnd(-0.012,0.012))).normalize();
- const len=4.2;
- const m=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,len),
-  new THREE.MeshBasicMaterial({color:0xffd400,transparent:true,opacity:0.95}));
- m.position.copy(p).addScaledVector(f,len/2);
+ const m=new THREE.Mesh(GEO_MG,MAT_TRACER);
+ m.position.copy(p).addScaledVector(f,2.1);
  m.lookAt(p.x+f.x*5,p.y+f.y*5,p.z+f.z*5);
  scene.add(m);
  G.bullets.push({kind:'mg',m,p:p.clone(),v:f.clone().multiplyScalar(120),spd:120,life:0.7,dmg:2,grav:45,origin:p.clone(),prev:p.clone()});
 }
 function fireCannon(){
  const p=muzzleWorld();
- const m=new THREE.Mesh(new THREE.SphereGeometry(0.18,6,5),
-  new THREE.MeshBasicMaterial({color:0x222222}));
+ const m=new THREE.Mesh(GEO_SHELL,MAT_SHELL);
  m.position.copy(p);scene.add(m);
  /* 真实弹道:沿炮口方向直射+重力下坠,玩家需自己抬高炮口补偿(不再自动解算到准星落点) */
  G.bullets.push({kind:'shell',m,p:p.clone(),v:aimDir.clone().multiplyScalar(65),spd:65,life:3,dmg:60,grav:45});
 }
 function fireMissile(){
  const p=muzzleWorld(),f=aimDir;
- const m=new THREE.Mesh(new THREE.ConeGeometry(0.14,0.7,6),
-  new THREE.MeshBasicMaterial({color:0xef4444}));
+ const m=new THREE.Mesh(GEO_MISSILE,MAT_MISSILE);
  m.rotation.x=Math.PI/2;m.position.copy(p);scene.add(m);
  G.bullets.push({kind:'missile',m,p:p.clone(),v:f.clone().multiplyScalar(70),spd:70,life:4,dmg:110,target:findAirTarget(),age:0});
 }
@@ -482,7 +499,7 @@ function updateBullets(dt){
   const gy=groundY(b.p.x,b.p.z);
   if((b.kind==='shell'||b.kind==='bomb')&&b.p.y<gy){
    const gp=new THREE.Vector3(b.p.x,gy,b.p.z);
-   explode(gp,true);
+   explode(gp,b.kind==='shell'); /* 炸弹落地用轻爆炸(性能+观感) */
    splashArea(gp,b.kind==='shell'?4.5:6,b.dmg);
    if(b.kind==='bomb'&&gp.distanceTo(BASE_TARGET)<7)baseHit(10,gp);
    b.dead=true;continue;
@@ -678,6 +695,7 @@ function baseHit(dmg,pos){
 function updateEnemies(dt){
  const g=G;
  for(const e of [...G.enemies]){
+  if(!e)continue; /* 防御:过滤期间残留 */
   if(e.dying>0){
    /* 机枪击杀的尸体:倒下动画,5秒后消失 */
    e.dying-=dt;
@@ -769,7 +787,7 @@ function updateEnemies(dt){
   }else if(e.type==='jet'){
    p.x+=e.spd*dt;
    e.t-=dt;
-   if(e.t<=0&&e.bombs>0){e.bombs--;e.t=0.55;dropBomb(p);}
+   if(e.t<=0&&e.bombs>0){e.bombs--;e.t=0.7;dropBomb(p);}
    if(p.x>100){e.dead=true;scene.remove(e.mesh);G.enemies=G.enemies.filter(x=>x!==e);checkWave();}
   }else if(e.type==='boss'){
    e.t-=dt;
@@ -795,20 +813,20 @@ function updateEnemies(dt){
 }
 function tankShell(from){
  const dir=new THREE.Vector3(BASE_TARGET.x-from.x,0,BASE_TARGET.z-from.z).normalize();
- const m=new THREE.Mesh(new THREE.SphereGeometry(0.22,6,5),new THREE.MeshBasicMaterial({color:0xff8c2a}));
+ const m=new THREE.Mesh(GEO_ESHELL,MAT_ESHELL);
  m.position.copy(from).add(new THREE.Vector3(0,0.8,0));
  scene.add(m);
  G.bullets.push({kind:'eshell',m,p:m.position.clone(),v:dir.clone().multiplyScalar(13).add(new THREE.Vector3(0,5,0)),grav:9,life:6,dead:false,dmg:12});
 }
 function bossShell(from){
  const dir=new THREE.Vector3(BASE_TARGET.x-from.x,0,BASE_TARGET.z-from.z).normalize();
- const m=new THREE.Mesh(new THREE.SphereGeometry(0.4,8,6),new THREE.MeshBasicMaterial({color:0xff6b1a}));
+ const m=new THREE.Mesh(GEO_BOSSHELL,MAT_BOSSHELL);
  m.position.copy(from).add(new THREE.Vector3(0,1.4,0));
  scene.add(m);
  G.bullets.push({kind:'eshell',m,p:m.position.clone(),v:dir.clone().multiplyScalar(11).add(new THREE.Vector3(0,8,0)),grav:7,life:9,dead:false,dmg:6});
 }
 function dropBomb(from){
- const m=new THREE.Mesh(new THREE.SphereGeometry(0.3,6,5),new THREE.MeshBasicMaterial({color:0x333333}));
+ const m=new THREE.Mesh(GEO_BOMB,MAT_BOMB);
  m.position.copy(from).add(new THREE.Vector3(0,-0.5,0));
  scene.add(m);
  G.bullets.push({kind:'bomb',m,p:m.position.clone(),v:new THREE.Vector3(30,-1,0),grav:20,life:6,dead:false});
