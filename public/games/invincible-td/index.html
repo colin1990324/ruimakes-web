@@ -1064,6 +1064,7 @@ function showUpgrade(){
   $('upgWave').textContent=G.wave;
   const box=$('upgBox');
   box.innerHTML='';
+  $('upgOv').classList.remove('hide'); // 必须显示奖励界面(踩过坑:漏这行=波间卡住无反应)
   const pool=[...UPGS];
   const picks=[];
   for(let i=0;i<3&&pool.length;i++){
@@ -1244,7 +1245,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.3'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.4'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
