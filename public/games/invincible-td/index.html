@@ -46,7 +46,7 @@
   #upgOv .upg .tt{ font-size:15px; color:var(--fg); margin:6px 0 4px; }
   #upgOv .upg .ds{ font-size:12px; color:var(--dim); line-height:1.5; }
   /* ===== 选中塔信息 ===== */
-  #towerInfo{ position:absolute; left:10px; bottom:24px; z-index:6; background:rgba(0,0,0,.7); border:1px solid #3f3f46;
+  #towerInfo{ position:absolute; z-index:6; background:rgba(0,0,0,.7); border:1px solid #3f3f46;
     border-radius:8px; padding:8px 12px; font-size:13px; display:none; min-width:200px; }
   #towerInfo .row{ display:flex; justify-content:space-between; gap:18px; margin:2px 0; }
   #towerInfo .row b{ color:var(--acc); }
@@ -71,6 +71,12 @@
   #bossBar .bb-track{ height:10px; background:rgba(0,0,0,.6); border:1px solid #7f1d1d; border-radius:5px; overflow:hidden; }
   #bossBar .bb-track i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,#f59e0b,#ef4444);
     transition:width .15s; border-radius:4px; }
+  /* 核弹按钮 */
+  #nukeBtn{ position:absolute; top:54px; right:10px; z-index:6; background:rgba(0,0,0,.55); color:var(--gold);
+    border:1px solid #7c5a10; border-radius:6px; padding:4px 12px; font-family:inherit; font-size:15px;
+    letter-spacing:1px; cursor:pointer; }
+  #nukeBtn:disabled{ opacity:.4; cursor:default; color:var(--dim); border-color:#3f3f46; }
+  #nukeBtn b{ margin-left:4px; }
   @media (max-width:700px){ .ov h1{ font-size:30px; } .ov p{ font-size:12px; } #hud{ font-size:12px; } }
 </style>
 </head>
@@ -78,16 +84,18 @@
 <div id="wrap"><canvas id="cv"></canvas></div>
 
 <div id="hud">
+  <div class="stat gold" title="最高纪录">🏆 <b id="hBest">0</b></div>
   <div class="stat red">♥ <b id="hLives">20</b></div>
   <div class="stat gold">¤ <b id="hGold">150</b></div>
   <div class="stat">WAVE <b id="hWave">0</b></div>
   <div class="stat">👾 <b id="hCount">0</b></div>
-  <div class="sp">[1]建塔 [2]升级 [3]出售 [ESC]取消 [空格]2× [M]静音</div>
+  <div class="sp">[1]建塔 [2]升级 [3]出售 [ESC]取消 [空格]速度 [M]静音 [N]核弹</div>
   <div class="stat" id="verStat">v<b id="verTxt">0.1</b></div>
 </div>
 <div id="waveBar"><i id="waveFill"></i></div>
 <div id="speedTag">2×</div>
 <div id="bossBar"><div class="bb-name">👹 哥斯拉</div><div class="bb-track"><i id="bossFill"></i></div></div>
+<button id="nukeBtn" title="核弹:消灭全图怪物 (N)" disabled>☢<b id="nukeCnt">0</b></button>
 <div id="towerInfo"></div>
 <div id="toast"></div>
 
@@ -578,7 +586,8 @@ function hitMonster(m,dmg,opt){
   return 'hit';
 }
 
-function killMonster(m){
+function killMonster(m,opt){
+  opt=opt||{};
   if(m.dead) return;
   m.dead=true;
   const i=G.monsters.indexOf(m);
@@ -592,7 +601,7 @@ function killMonster(m){
     if(n<=G.totalWaves){ toast('哥斯拉被击败!第 '+n+' 波再会',0xdc2626); }
     else toast('哥斯拉被击败!',0xdc2626);
   }
-  if(m.def.split&&!m.mini){
+  if(m.def.split&&!m.mini&&!opt.noSplit){
     for(let i=0;i<2;i++){ spawnMonster('s',1,true); }
   }
 }
@@ -1009,6 +1018,11 @@ function updateFx(dt){
     if(f.userData.flash){
       const s=0.3+0.5*(1-f.userData.life/f.userData.max);
       f.scale.set(s,s,s);
+    } else if(f.userData.ring){
+      const k=1-f.userData.life/f.userData.max;
+      const s=1+k*26;
+      f.scale.set(s,s*0.12,s);
+      f.material.opacity=0.85*(1-k);
     } else if(f.userData.fade&&f.material&&f.material.opacity!==undefined){
       f.material.opacity=Math.max(0,f.userData.life/f.userData.max*0.9);
     }
@@ -1063,9 +1077,12 @@ function updateBossBar(){
   fill.style.background=boss.hp<boss.maxHp*0.7?'#ef4444':'linear-gradient(90deg,#f59e0b,#ef4444)';
 }
 function updateHUD(){
+  $('hBest').textContent=Math.max(G.best.wave,G.wave);
   $('hLives').textContent=G.lives;
   $('hGold').textContent=G.gold;
   $('hCount').textContent=G.monsters.length+G.spawnQ.length;
+  $('nukeCnt').textContent=G.nukes;
+  $('nukeBtn').disabled=G.nukes<=0;
   updateWaveBar();
   updateBossBar();
 }
@@ -1106,6 +1123,32 @@ function showUpgrade(){
     box.appendChild(div);
   });
 }
+/* ---------- 核弹(每通过 20 关获得一枚,消灭全图怪物) ---------- */
+const NUKE_MAT=new THREE.MeshBasicMaterial({color:0xfff3c4,transparent:true,opacity:0.85});
+function nukeFx(){
+  // 冲击波环(水平圆盘膨胀淡出)+ 蘑菇云粒子(限流)
+  if(G.fx.length<28){
+    const ring=new THREE.Mesh(GEO_CYL,NUKE_MAT);
+    ring.rotation.x=Math.PI/2;
+    ring.scale.set(0.2,0.2,0.2);
+    ring.position.set(7.5,0.35,4.5);
+    ring.userData={life:0.7,max:0.7,ring:true};
+    scene.add(ring);
+    G.fx.push(ring);
+  }
+  burst(7.5,4.5,0xffb84d,14);
+  dust(7.5,4.5,12);
+}
+function useNuke(){
+  if(G.st!=='play'||G.nukes<=0) return;
+  G.nukes--;
+  const n=G.monsters.length;
+  for(const m of [...G.monsters]){ killMonster(m,{noSplit:true}); }
+  nukeFx();
+  sfx('boom');
+  toast('☢ 核弹!消灭 '+n+' 只怪物',0xf59e0b);
+  updateHUD();
+}
 function nextWaveOrWin(){
   startWave(G.wave+1);
   updateHUD();
@@ -1135,10 +1178,11 @@ function startGame(){
   G.fx.forEach(f=>scene.remove(f)); G.fx=[];
   G.parts.forEach(p=>scene.remove(p)); G.parts=[];
   G.spawnQ=[]; G.sel=null; G.hover=null;
-  G.gold=150; G.lives=20; G.score=0; G.wave=0;
+  G.gold=150; G.lives=20; G.score=0; G.wave=0; G.nukes=0;
   G.rateMul=1; G.dmgMul=1; G.rangeMul=1;
   G.speed=1;
   $('speedTag').style.display='none';
+  $('speedTag').textContent='2×';
   $('menuOv').classList.add('hide'); $('upgOv').classList.add('hide');
   $('overOv').classList.add('hide');
   hideTowerInfo();
@@ -1149,7 +1193,18 @@ function startGame(){
   if(document.activeElement) document.activeElement.blur();
 }
 
-/* ---------- 塔信息面板 ---------- */
+/* ---------- 塔信息面板(跟随选中塔下方显示) ---------- */
+function positionTowerInfo(t){
+  const el=$('towerInfo');
+  const v=new THREE.Vector3(t.x,1.2,t.z).project(cam);
+  const sx=(v.x*0.5+0.5)*window.innerWidth;
+  const sy=(-v.y*0.5+0.5)*window.innerHeight;
+  const W=el.offsetWidth||220, H=el.offsetHeight||170;
+  const x=clamp(Math.round(sx-W/2),8,window.innerWidth-W-8);
+  const y=clamp(Math.round(sy+26),8,window.innerHeight-H-8);
+  el.style.left=x+'px';
+  el.style.top=y+'px';
+}
 function showTowerInfo(t){
   G.sel=t;
   const def=TOWER_DEFS[t.lv-1];
@@ -1168,6 +1223,7 @@ function showTowerInfo(t){
   }
   el.innerHTML=html;
   el.style.display='block';
+  positionTowerInfo(t);
   const bUpg=$('btnUpg');
   if(bUpg) bUpg.onclick=()=>{ upgradeTower(t); updateHUD(); showTowerInfo(t); };
   $('btnSell').onclick=()=>{ sellTower(t); hideTowerInfo(); updateHUD(); };
@@ -1190,8 +1246,9 @@ function handleClick(e){
   }
 }
 function toggleSpeed(){
-  G.speed=G.speed===1?2:1;
-  $('speedTag').style.display=G.speed===2?'block':'none';
+  G.speed=G.speed>=8?1:G.speed*2; // 1→2→4→8→1 循环
+  $('speedTag').style.display=G.speed===1?'none':'block';
+  $('speedTag').textContent=G.speed+'×';
 }
 function toggleMute(){
   G.muted=!G.muted;
@@ -1218,6 +1275,7 @@ window.addEventListener('keydown',e=>{
     sellTower(G.sel); hideTowerInfo(); updateHUD();
   }
   else if(k==='Escape'){ hideTowerInfo(); }
+  else if(k==='n'||k==='N'){ useNuke(); }
 });
 
 /* ---------- 主循环 ---------- */
@@ -1247,8 +1305,14 @@ function loop(now){
       }
     }
     G.monsters=G.monsters.filter(m=>!m.dead&&!m.done);
-    // 波次推进(无尽模式:永远弹奖励进入下一波)
+    // 波次推进(无尽模式:永远弹奖励进入下一波;每 20 关奖励一枚核弹)
     if(G.st==='play'&&waveCleared()){
+      if(G.wave>0&&G.wave%20===0){
+        G.nukes++;
+        toast('☢ 获得核弹!按 N 或点按钮消灭全图',0xf59e0b);
+        sfx('upgrade');
+        updateHUD();
+      }
       showUpgrade();
     }
     updateHUD();
@@ -1267,7 +1331,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.6'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.7'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
@@ -1285,6 +1349,7 @@ try{ G.best=JSON.parse(localStorage.getItem(BEST_KEY))||{wave:0,score:0}; }catch
 $('bestShow').textContent=G.best.wave>0?('第 '+G.best.wave+' 波 · '+G.best.score+' 分'):'无';
 $('btnStart').onclick=startGame;
 $('btnRetry').onclick=startGame;
+$('nukeBtn').onclick=useNuke;
 canvas.addEventListener('click',handleClick);
 canvas.addEventListener('mousemove',e=>{
   if(G.st!=='play'){ G.hover=null; return; }
@@ -1295,11 +1360,12 @@ window.addEventListener('resize',()=>{
   cam.aspect=window.innerWidth/window.innerHeight;
   cam.updateProjectionMatrix();
   renderer.setSize(window.innerWidth,window.innerHeight);
+  if(G.sel) positionTowerInfo(G.sel);
 });
 requestAnimationFrame(loop);
 
 /* ===== 占位(后续模块注入点) ===== */
-window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget,updateHUD,updateBossBar,waveSeq,parseSeq};
+window.__TD__={G,MON_DEFS,TOWER_DEFS,WAVES,grid,PATH,WAYPOINTS,cellWorld,worldCell,canBuild,pickCell,scene,cam,renderer,ground,clamp,rnd,rndi,lerp,dist2,$,buildTower,upgradeTower,sellTower,removeTower,spawnMonster,killMonster,hitMonster,startWave,showUpgrade,nextWaveOrWin,waveCleared,startGame,gameOver,winGame,toggleMute,toggleSpeed,saveBest,showTowerInfo,hideTowerInfo,updateSpawning,moveMonsters,updateTowers,updateBullets,fireBullet,laserAttack,findTarget,updateHUD,updateBossBar,waveSeq,parseSeq,useNuke,positionTowerInfo};
 
 })();
 </script>
