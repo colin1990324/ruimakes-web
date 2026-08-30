@@ -912,10 +912,12 @@ function showUpgrade(){
  G.st='upg';
  /* 弹药不再自动补充——只能通过下面的奖励选择获得 */
  document.getElementById('upWave').textContent=G.wave+1;
- /* 从奖励池随机抽 3 个,1/2/3 直接选择 */
- const pool=UPGS.map((_,i)=>i);
- for(let k=pool.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[pool[k],pool[j]]=[pool[j],pool[k]];}
- upgChoices=pool.slice(0,3);
+ /* 弹药补给必出(索引3),其余两个从剩余奖励随机 */
+ const others=UPGS.map((_,i)=>i).filter(i=>i!==3);
+ for(let k=others.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[others[k],others[j]]=[others[j],others[k]];}
+ upgChoices=[3,others[0],others[1]];
+ /* 随机排列展示顺序(弹药不固定位置) */
+ for(let k=2;k>0;k--){const j=Math.floor(Math.random()*(k+1));[upgChoices[k],upgChoices[j]]=[upgChoices[j],upgChoices[k]];}
  renderUpg();
  showOv('ovUpg');
  updateHUD();
