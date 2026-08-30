@@ -318,21 +318,26 @@ const outer=new THREE.Mesh(
 outer.rotation.x=-Math.PI/2; outer.position.set(7.5,-0.02,4.5);
 scene.add(outer);
 
-// 路径带(深土色;注意 ShapeGeometry 旋转 rotation.x=-π/2 时局部 y 映射到世界 -z,
-// 非对称形状的坐标必须取负:shape 的 y 用 -(z±0.5),否则整条路径带镜像到 z 负方向,
-// 与怪物实际行走轨迹错位——玩家看到"路在屏幕上方,怪物在地上走")
+// 路径带(深土色;沿路径法线偏移生成带状,横向/竖向段全部正确覆盖——
+// 旧实现上/下边界统一 x+0.5,竖段带子整体右偏 0.5 格导致竖路没颜色;
+// ShapeGeometry rotation.x=-π/2 时局部 y 映射世界 -z,shape.y 取 -z)
 (function buildPathMesh(){
-  const shape=new THREE.Shape();
-  shape.moveTo(PATH[0][0]-0.5,-(PATH[0][2]-0.5));
+  // 每个路径点的左右边缘(法线偏移 ±0.5)
+  const L=[], R=[];
   for(let i=0;i<PATH.length;i++){
-    const p=PATH[i];
-    shape.lineTo(p[0]+0.5,-(p[2]-0.5));
+    const prev=PATH[Math.max(0,i-1)], next=PATH[Math.min(PATH.length-1,i+1)];
+    let dx=next[0]-prev[0], dz=next[2]-prev[2];
+    const len=Math.hypot(dx,dz)||1;
+    dx/=len; dz/=len;
+    const nx=-dz, nz=dx; // 左法线
+    L.push([PATH[i][0]+nx*0.5, PATH[i][2]+nz*0.5]);
+    R.push([PATH[i][0]-nx*0.5, PATH[i][2]-nz*0.5]);
   }
-  for(let i=PATH.length-1;i>=0;i--){
-    const p=PATH[i];
-    shape.lineTo(p[0]+0.5,-(p[2]+0.5));
-  }
-  shape.lineTo(PATH[0][0]-0.5,-(PATH[0][2]-0.5));
+  const shape=new THREE.Shape();
+  shape.moveTo(L[0][0],-L[0][1]);
+  for(let i=0;i<L.length;i++) shape.lineTo(L[i][0],-L[i][1]);
+  for(let i=R.length-1;i>=0;i--) shape.lineTo(R[i][0],-R[i][1]);
+  shape.lineTo(L[0][0],-L[0][1]);
   const pathMesh=new THREE.Mesh(
     new THREE.ShapeGeometry(shape),
     new THREE.MeshLambertMaterial({color:0x8a7355})
@@ -1396,7 +1401,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.14'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.15'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
