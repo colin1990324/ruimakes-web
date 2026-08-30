@@ -373,36 +373,118 @@ MON_DEFS.forEach(d=>{MON_MATS[d.key]=new THREE.MeshLambertMaterial({color:d.colo
 function monModel(def,mini){
   const grp=new THREE.Group();
   const r=def.r*(mini?0.6:1);
-  const body=new THREE.Mesh(GEO_SPHERE,MON_MATS[def.key]);
-  body.scale.set(r,r*0.85,r);
-  body.position.y=r*0.85;
-  body.castShadow=true;
-  grp.add(body);
-  // 眼睛(朝移动方向,默认 +z)
-  const ew=0.1*r, eh=0.12*r;
-  const eyeL=new THREE.Mesh(GEO_BOX,MAT_EYE); eyeL.scale.set(ew,eh,0.05); eyeL.position.set(-0.32*r,0.95*r,0.8*r);
-  const eyeR=new THREE.Mesh(GEO_BOX,MAT_EYE); eyeR.scale.set(ew,eh,0.05); eyeR.position.set(0.32*r,0.95*r,0.8*r);
-  const pupL=new THREE.Mesh(GEO_BOX,MAT_PUPIL); pupL.scale.set(0.5*ew,0.5*eh,0.06); pupL.position.set(-0.32*r,0.95*r,0.84*r);
-  const pupR=new THREE.Mesh(GEO_BOX,MAT_PUPIL); pupR.scale.set(0.5*ew,0.5*eh,0.06); pupR.position.set(0.32*r,0.95*r,0.84*r);
-  grp.add(eyeL,eyeR,pupL,pupR);
-  // 特征
-  if(def.boss){
-    for(let i=0;i<4;i++){
-      const spike=new THREE.Mesh(GEO_CONE,MON_MATS[def.key]);
-      spike.scale.set(0.22,0.9,0.22);
-      spike.position.set((i-1.5)*0.42*r,2.2*r,-0.2*r);
-      grp.add(spike);
+  const col=MON_MATS[def.key];
+  // 眼睛(朝移动方向 +z;调用方 rotation.y 转向移动方向)
+  const eye=(x,y,z,s)=>{
+    s=s||1;
+    const ew=0.1*r*s, eh=0.12*r*s;
+    const e=new THREE.Mesh(GEO_BOX,MAT_EYE); e.scale.set(ew,eh,0.05);
+    const p=new THREE.Mesh(GEO_BOX,MAT_PUPIL); p.scale.set(0.5*ew,0.5*eh,0.06);
+    e.position.set(x,y,z); p.position.set(x,y,z+0.03*r*s);
+    grp.add(e,p);
+  };
+  const key=def.key;
+  if(key==='g'){
+    // 格兰玛雅:圆耳小球怪
+    const body=new THREE.Mesh(GEO_SPHERE,col);
+    body.scale.set(r,r*0.9,r); body.position.y=r*0.85; body.castShadow=true;
+    grp.add(body);
+    for(const sx of [-1,1]){
+      const ear=new THREE.Mesh(GEO_CONE,col);
+      ear.scale.set(0.3*r,0.6*r,0.3*r);
+      ear.position.set(sx*0.62*r,1.55*r,0);
+      ear.rotation.z=sx*0.28;
+      grp.add(ear);
     }
-  } else if(def.key==='bat'){
-    const wingL=new THREE.Mesh(GEO_BOX,MON_MATS[def.key]);
-    wingL.scale.set(0.7,0.06,0.5); wingL.position.set(-0.95*r,1.15*r,0);
-    wingL.rotation.z=0.5;
-    const wingR=wingL.clone(); wingR.position.x=0.95*r; wingR.rotation.z=-0.5;
-    grp.add(wingL,wingR);
-  } else if(def.key==='s'){
-    const ant=new THREE.Mesh(GEO_CONE,MON_MATS[def.key]);
-    ant.scale.set(0.12,0.4,0.12); ant.position.set(0,1.55*r,0.2*r);
-    grp.add(ant);
+    eye(-0.33*r,0.98*r,0.82*r); eye(0.33*r,0.98*r,0.82*r);
+  } else if(key==='bat'){
+    // 蝙蝠怪:扁身 + 大翅膀 + 尖耳
+    const body=new THREE.Mesh(GEO_SPHERE,col);
+    body.scale.set(r*0.8,r*0.58,r*0.85); body.position.y=r*0.58; body.castShadow=true;
+    grp.add(body);
+    for(const sx of [-1,1]){
+      const wing=new THREE.Mesh(GEO_BOX,col);
+      wing.scale.set(0.8*r,0.05,0.45*r); wing.position.set(sx*0.85*r,0.72*r,0); wing.rotation.z=sx*0.4;
+      grp.add(wing);
+      const tip=new THREE.Mesh(GEO_CONE,col);
+      tip.scale.set(0.22*r,0.45*r,0.16*r); tip.rotation.z=sx*0.4; tip.position.set(sx*1.38*r,0.58*r,0);
+      grp.add(tip);
+      const ear=new THREE.Mesh(GEO_CONE,col);
+      ear.scale.set(0.16*r,0.42*r,0.16*r); ear.position.set(sx*0.28*r,1.18*r,0.1*r);
+      grp.add(ear);
+    }
+    eye(-0.22*r,0.66*r,0.72*r,0.7); eye(0.22*r,0.66*r,0.72*r,0.7);
+  } else if(key==='b'){
+    // 布鲁:盾形圆顶重甲(扁圆柱 + 半球顶)
+    const body=new THREE.Mesh(GEO_CYL,col);
+    body.scale.set(0.8*r,2.4*r/0.26,0.8*r); body.position.y=r*0.6;
+    body.castShadow=true;
+    grp.add(body);
+    const dome=new THREE.Mesh(GEO_SPHERE,col);
+    dome.scale.set(0.8*r,0.55*r,0.8*r); dome.position.y=r*1.2;
+    grp.add(dome);
+    for(const sx of [-1,1]){
+      const guard=new THREE.Mesh(GEO_BOX,MAT_BASE);
+      guard.scale.set(0.22*r,0.55*r,0.5*r); guard.position.set(sx*0.85*r,r*0.6,0);
+      grp.add(guard);
+    }
+    eye(-0.3*r,0.85*r,0.72*r,1.25); eye(0.3*r,0.85*r,0.72*r,1.25);
+  } else if(key==='a'){
+    // 装甲兽:方形装甲(方身 + 头顶板 + 背斜板)
+    const body=new THREE.Mesh(GEO_BOX,col);
+    body.scale.set(1.1*r,0.72*r,1.1*r); body.position.y=0.5*r; body.castShadow=true;
+    grp.add(body);
+    const plate=new THREE.Mesh(GEO_BOX,MAT_BASE);
+    plate.scale.set(1.18*r,0.14*r,1.18*r); plate.position.y=0.95*r;
+    grp.add(plate);
+    const back=new THREE.Mesh(GEO_BOX,MAT_BASE);
+    back.scale.set(0.85*r,0.16*r,0.55*r); back.position.set(0,0.72*r,-0.6*r); back.rotation.x=0.45;
+    grp.add(back);
+    const snout=new THREE.Mesh(GEO_BOX,col);
+    snout.scale.set(0.4*r,0.3*r,0.35*r); snout.position.set(0,0.4*r,0.75*r);
+    grp.add(snout);
+    eye(-0.3*r,0.62*r,0.72*r,0.8); eye(0.3*r,0.62*r,0.72*r,0.8);
+  } else if(key==='s'){
+    // 分裂怪:细胞分裂中(主球 + 正在分离的子球 + 顶部核)
+    const body=new THREE.Mesh(GEO_SPHERE,col);
+    body.scale.set(r,r*0.9,r); body.position.y=r*0.85; body.castShadow=true;
+    grp.add(body);
+    const baby=new THREE.Mesh(GEO_SPHERE,col);
+    baby.scale.set(0.52*r,0.46*r,0.5*r); baby.position.set(0.82*r,0.55*r,0.15*r);
+    grp.add(baby);
+    const babyEye=new THREE.Mesh(GEO_BOX,MAT_EYE); babyEye.scale.set(0.08*r,0.1*r,0.04); babyEye.position.set(0.82*r,0.62*r,0.55*r);
+    const babyPup=new THREE.Mesh(GEO_BOX,MAT_PUPIL); babyPup.scale.set(0.04*r,0.05*r,0.05); babyPup.position.set(0.82*r,0.62*r,0.59*r);
+    grp.add(babyEye,babyPup);
+    const core=new THREE.Mesh(GEO_CONE,col);
+    core.scale.set(0.22*r,0.34*r,0.22*r); core.position.y=1.52*r;
+    grp.add(core);
+    eye(-0.33*r,0.95*r,0.82*r); eye(0.33*r,0.95*r,0.82*r);
+  } else if(key==='boss'){
+    // 哥斯拉:横身恐龙(椭球身 + 头 + 尾 + 背鳍 + 腿)
+    const body=new THREE.Mesh(GEO_SPHERE,col);
+    body.scale.set(r*1.05,r*0.75,r*1.35); body.position.y=r*1.0; body.castShadow=true;
+    grp.add(body);
+    const head=new THREE.Mesh(GEO_SPHERE,col);
+    head.scale.set(0.5*r,0.42*r,0.5*r); head.position.set(0,r*1.4,r*1.1);
+    grp.add(head);
+    const tail=new THREE.Mesh(GEO_CONE,col);
+    tail.scale.set(0.22*r,1.1*r,0.22*r); tail.position.set(0,r*0.8,-r*1.45); tail.rotation.x=0.55;
+    grp.add(tail);
+    for(let i=0;i<4;i++){
+      const fin=new THREE.Mesh(GEO_CONE,col);
+      fin.scale.set(0.14*r,0.55*r,0.1*r);
+      fin.position.set((i-1.5)*0.48*r,r*1.5,-0.15*r);
+      grp.add(fin);
+    }
+    for(const sx of [-1,1]){
+      const leg=new THREE.Mesh(GEO_BOX,col);
+      leg.scale.set(0.3*r,0.6*r,0.45*r); leg.position.set(sx*0.5*r,0.3*r,0.4*r);
+      grp.add(leg);
+      const claw=new THREE.Mesh(GEO_BOX,MAT_BASE);
+      claw.scale.set(0.34*r,0.1*r,0.2*r); claw.position.set(sx*0.5*r,0.05*r,0.75*r);
+      grp.add(claw);
+    }
+    eye(-0.2*r,1.48*r,1.58*r); eye(0.2*r,1.48*r,1.58*r);
   }
   return grp;
 }
@@ -448,9 +530,9 @@ function moveMonsters(dt){
     const a=PATH[m.seg], b=PATH[m.seg+1];
     const ang=Math.atan2(b[2]-a[2],b[0]-a[0]);
     m.grp.rotation.y=ang;
-    // 模型位置 + 受伤闪白
+    // 模型位置 + 受伤闪白(模型内部从 y=0 贴地堆叠)
     const g=m.grp;
-    g.position.set(m.pos[0],m.def.r*(m.mini?0.6:1)*0.85,m.pos[2]);
+    g.position.set(m.pos[0],0,m.pos[2]);
     if(m.flash>0&&!m.flashOn){ m.flashOn=true; g.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive)o.material.emissive.set(0xffffff);}); }
     else if(m.flash<=0&&m.flashOn){ m.flashOn=false; g.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive)o.material.emissive.set(0x000000);}); }
     // 哥斯拉冲刺残留特效
@@ -584,6 +666,7 @@ function updateParts(dt){
 const GEO_CYL=new THREE.CylinderGeometry(0.38,0.46,0.26,8);
 const MAT_BASE=new THREE.MeshLambertMaterial({color:0x3f3f46});
 const MAT_BARREL=new THREE.MeshLambertMaterial({color:0x1c1917});
+const MAT_CRYSTAL=new THREE.MeshBasicMaterial({color:0xffd8d8});
 const TOWER_MATS=TOWER_DEFS.map(d=>new THREE.MeshLambertMaterial({color:d.color}));
 
 function towerModel(lv){
@@ -593,14 +676,80 @@ function towerModel(lv){
   grp.add(base);
   const turret=new THREE.Group();
   turret.position.y=0.34;
-  const body=new THREE.Mesh(GEO_BOX,TOWER_MATS[lv-1]);
-  body.scale.set(0.5,0.55,0.5);
-  body.position.y=0.18;
-  turret.add(body);
-  const barrel=new THREE.Mesh(GEO_BOX,MAT_BARREL);
-  barrel.scale.set(0.13,0.13,0.5);
-  barrel.position.set(0,0.32,0.35);
-  turret.add(barrel);
+  const col=TOWER_MATS[lv-1];
+  if(lv===1){
+    // 箭塔:细长塔身 + 锥顶 + 斜插箭矢
+    const body=new THREE.Mesh(GEO_CYL,col);
+    body.scale.set(0.5,1.7,0.5); body.position.y=0.4; body.castShadow=true;
+    turret.add(body);
+    const roof=new THREE.Mesh(GEO_CONE,col);
+    roof.scale.set(0.65,0.55,0.65); roof.position.y=1.02;
+    turret.add(roof);
+    const arrow=new THREE.Mesh(GEO_BOX,MAT_BARREL);
+    arrow.scale.set(0.07,0.07,0.55); arrow.position.set(0,0.5,0.4); arrow.rotation.x=0.3;
+    turret.add(arrow);
+    const head=new THREE.Mesh(GEO_CONE,MAT_BARREL);
+    head.scale.set(0.12,0.2,0.12); head.rotation.x=-Math.PI/2; head.position.set(0,0.47,0.85);
+    turret.add(head);
+  } else if(lv===2){
+    // 飞刀塔:短粗塔身 + 十字旋转飞刀
+    const body=new THREE.Mesh(GEO_CYL,col);
+    body.scale.set(0.85,0.95,0.85); body.position.y=0.2; body.castShadow=true;
+    turret.add(body);
+    const b1=new THREE.Mesh(GEO_BOX,col);
+    b1.scale.set(1.05,0.07,0.22); b1.position.y=0.52;
+    turret.add(b1);
+    const b2=new THREE.Mesh(GEO_BOX,col);
+    b2.scale.set(0.22,0.07,1.05); b2.position.y=0.52;
+    turret.add(b2);
+    const core=new THREE.Mesh(GEO_SPHERE,MAT_BARREL);
+    core.scale.set(0.14,0.14,0.14); core.position.y=0.52;
+    turret.add(core);
+  } else if(lv===3){
+    // 机枪塔:方机匣 + 双管 + 弹匣
+    const body=new THREE.Mesh(GEO_BOX,col);
+    body.scale.set(0.52,0.5,0.5); body.position.y=0.2; body.castShadow=true;
+    turret.add(body);
+    for(const sx of [-0.11,0.11]){
+      const tube=new THREE.Mesh(GEO_CYL,MAT_BARREL);
+      tube.scale.set(0.13,2.4,0.13); tube.rotation.x=Math.PI/2;
+      tube.position.set(sx,0.42,0.42);
+      turret.add(tube);
+    }
+    const mag=new THREE.Mesh(GEO_BOX,MAT_BARREL);
+    mag.scale.set(0.18,0.32,0.22); mag.position.set(0,0.42,0.05);
+    turret.add(mag);
+  } else if(lv===4){
+    // 导弹塔:低发射架 + 三枚斜置导弹(弹体+锥头)
+    const body=new THREE.Mesh(GEO_BOX,col);
+    body.scale.set(0.6,0.42,0.6); body.position.y=0.16; body.castShadow=true;
+    turret.add(body);
+    for(let i=0;i<3;i++){
+      const ox=(i-1)*0.22;
+      const msl=new THREE.Mesh(GEO_CYL,col);
+      msl.scale.set(0.17,1.9,0.17); msl.rotation.x=0.5;
+      msl.position.set(ox,0.42,0.28);
+      turret.add(msl);
+      const nose=new THREE.Mesh(GEO_CONE,col);
+      nose.scale.set(0.15,0.32,0.15); nose.rotation.x=0.5;
+      nose.position.set(ox,0.56,0.55);
+      turret.add(nose);
+    }
+  } else if(lv===5){
+    // 激光塔:高塔身 + 发射圆盘 + 发光水晶
+    const body=new THREE.Mesh(GEO_CYL,col);
+    body.scale.set(0.62,1.3,0.62); body.position.y=0.36; body.castShadow=true;
+    turret.add(body);
+    const disc=new THREE.Mesh(GEO_CYL,MAT_BARREL);
+    disc.scale.set(0.95,0.16,0.95); disc.position.y=0.75;
+    turret.add(disc);
+    const cry=new THREE.Mesh(GEO_CONE,MAT_CRYSTAL);
+    cry.scale.set(0.32,0.55,0.32); cry.position.y=1.0;
+    turret.add(cry);
+    const ring=new THREE.Mesh(GEO_CYL,col);
+    ring.scale.set(0.5,0.08,0.5); ring.position.y=0.66;
+    turret.add(ring);
+  }
   grp.add(turret);
   return {grp,turret};
 }
@@ -1095,7 +1244,7 @@ function loop(now){
 }
 
 /* ---------- 初始化 ---------- */
-const VERSION='0.2'; // 发布时递增此版本号,用户刷新可见
+const VERSION='0.3'; // 发布时递增此版本号,用户刷新可见
 const BEST_KEY='invincible_td_best';
 $('verTxt').textContent=VERSION;
 $('verMenu').textContent='v'+VERSION;
