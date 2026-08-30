@@ -24,7 +24,7 @@ body{font-family:'Courier New',monospace;color:#e4e4e7;touch-action:none;user-se
 .panel .v.g{color:#10b981}
 .panel .v.r{color:#f87171}
 #hudW{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:8px;pointer-events:none}
-.wslot{background:rgba(9,9,11,.72);border:1px solid #27272a;border-radius:4px;padding:6px 10px;text-align:center;min-width:86px;pointer-events:none}
+.wslot{background:rgba(9,9,11,.72);border:1px solid #27272a;border-radius:4px;padding:6px 10px;text-align:center;min-width:86px;pointer-events:auto;cursor:pointer}
 .wslot.cur{border-color:#10b981;box-shadow:0 0 8px rgba(16,185,129,.25)}
 .wslot .wn{font-size:11px;color:#a1a1aa}
 .wslot .wa{font-size:13px;font-weight:bold;color:#facc15}
@@ -82,8 +82,9 @@ footer{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#3f3f
   <div class="t2">BEACH HEAD</div>
   <div class="desc">
     守住滩头阵地,击退每一波登陆!<br>
-    <b>鼠标</b> 瞄准(点击画面锁定,ESC释放) · <b>左键/空格</b> 射击<br>
+    <b>鼠标</b> 移动瞄准 · <b>左键/空格</b> 射击<br>
     <b>方向键/WASD</b> 也可控制炮口 · <b>1/2/3</b> 切换武器 · <b>C</b> 切换视角<br>
+    触屏:拖拽瞄准,点下方武器槽切换,FIRE 射击
     机枪扫步兵,加农炮轰坦克,导弹打直升机<br>
     <span style="color:#f87171">⚠ 敌人冲进滩头 = 阵地失守!</span>
   </div>
@@ -91,11 +92,9 @@ footer{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#3f3f
 </div>
 <div id="ovUpg" class="ov">
   <div class="t2" style="font-size:20px">第 <span id="upWave" style="color:#facc15">2</span> 波来袭</div>
-  <div class="desc">弹药已补给 · 选择一项强化(<b>1/2/3</b> 翻页)</div>
-  <div id="upgPage" style="color:#71717a;font-size:13px;letter-spacing:2px">1/3</div>
+  <div class="desc">弹药已补给 · 选择一项强化(<b>1/2/3</b> 直接选择)</div>
   <div id="upgRow">
   </div>
-  <button id="upgNext" class="btn alt" style="padding:8px 24px;font-size:13px">下一页 →</button>
 </div>
 <div id="ovOver" class="ov">
   <div class="t1" style="font-size:30px;letter-spacing:6px">阵地失守</div>
@@ -473,7 +472,7 @@ function updateBullets(dt){
    b.v.y-=b.grav*dt; /* 机枪轻下坠(微弧曳光) */
    b.p.addScaledVector(b.v,dt);
    if(b.origin&&b.p.distanceTo(b.origin)>(G.mgRange||35)){b.dead=true;continue;} /* 有效射程(可升级),超出消失 */
-   for(let i=0;i<2;i++)spawnPart(b.p.x+rnd(-0.05,0.05),b.p.y+rnd(-0.05,0.05),b.p.z+rnd(-0.05,0.05),-b.v.x*0.4+rnd(-0.2,0.2),-b.v.y*0.4+rnd(-0.2,0.2),-b.v.z*0.4+rnd(-0.2,0.2),0.22,0xffd400,1.6);
+   spawnPart(b.p.x+rnd(-0.05,0.05),b.p.y+rnd(-0.05,0.05),b.p.z+rnd(-0.05,0.05),-b.v.x*0.4+rnd(-0.2,0.2),-b.v.y*0.4+rnd(-0.2,0.2),-b.v.z*0.4+rnd(-0.2,0.2),0.22,0xffd400,1.6);
   }
   b.m.position.copy(b.p);
   if(b.kind==='missile')b.m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.v.clone().normalize());
@@ -877,7 +876,7 @@ function checkWave(){
   G.waveClearT=1.4;
  }
 }
-let upgPage=0;
+let upgChoices=[]; /* 当前关卡 3 个奖励(UPGS 索引) */
 const UPGS=[
  ['⚡ 强化枪管','射速 +15%'],
  ['💥 高爆弹药','伤害 +20%'],
@@ -891,7 +890,10 @@ function showUpgrade(){
  G.ammo.cannon=12+Math.floor(G.wave/2);
  G.ammo.missile=6+Math.floor(G.wave/3);
  document.getElementById('upWave').textContent=G.wave+1;
- upgPage=0;
+ /* 从奖励池随机抽 3 个,1/2/3 直接选择 */
+ const pool=UPGS.map((_,i)=>i);
+ for(let k=pool.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[pool[k],pool[j]]=[pool[j],pool[k]];}
+ upgChoices=pool.slice(0,3);
  renderUpg();
  showOv('ovUpg');
  updateHUD();
@@ -899,15 +901,13 @@ function showUpgrade(){
 function renderUpg(){
  const row=document.getElementById('upgRow');
  row.innerHTML='';
- for(let k=0;k<2;k++){
-  const i=upgPage*2+k;
+ upgChoices.forEach((i)=>{
   const b=document.createElement('button');
   b.className='btn alt';
   b.innerHTML=UPGS[i][0]+'<br><small>'+UPGS[i][1]+'</small>';
   b.addEventListener('click',()=>applyUpg(i));
   row.appendChild(b);
- }
- document.getElementById('upgPage').textContent=(upgPage+1)+'/3';
+ });
 }
 function applyUpg(i){
  if(i===0)G.upg.rate=Math.min(2.5,G.upg.rate*1.15);
@@ -1180,14 +1180,20 @@ function sfx(n){
 /* ================= 输入 ================= */
 let mouseHeld=false,touchHeld=false;
 const keys={l:false,r:false,u:false,d:false};
+let lastMX=null,lastMY=null;
 CV.addEventListener('pointermove',e=>{
  if(e.pointerType==='mouse'){
+  /* 鼠标增量瞄准:优先 movementX(指针锁定),无锁定回退 clientX 增量——不依赖 ESC 锁定也能持续追踪 */
   const dx=e.movementX||0,dy=e.movementY||0;
-  if(dx||dy)applyAim(-dx*0.0035,-dy*0.0035);
+  let ax=-dx*0.0035,ay=-dy*0.0035;
+  if(!dx&&lastMX!==null)ax=-(e.clientX-lastMX)*0.0035;
+  if(!dy&&lastMY!==null)ay=-(e.clientY-lastMY)*0.0035;
+  if(ax||ay)applyAim(ax,ay);
+  lastMX=e.clientX;lastMY=e.clientY;
  }else if(G.touchAim){
   const dx=e.clientX-G.lastPX,dy=e.clientY-G.lastPY;
   G.lastPX=e.clientX;G.lastPY=e.clientY;
-  applyAim(dx*0.005,dy*0.004);
+  applyAim(-dx*0.005,-dy*0.004); /* 与鼠标同向:手指右滑准星右移 */
  }
 });
 CV.addEventListener('pointerdown',e=>{
@@ -1200,9 +1206,6 @@ CV.addEventListener('pointerdown',e=>{
 addEventListener('pointerup',e=>{
  if(e.pointerType==='mouse')mouseHeld=false;
  else G.touchAim=false;
-});
-CV.addEventListener('click',()=>{
- if(CV.requestPointerLock&&document.pointerLockElement!==CV)CV.requestPointerLock();
 });
 addEventListener('keydown',e=>{
  if(e.code==='Digit1')switchWeapon(0);
@@ -1217,7 +1220,8 @@ addEventListener('keydown',e=>{
  if(e.code==='KeyM'){G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';}
  if(e.code==='KeyC')toggleView();
  if(G.st==='upg'&&['Digit1','Digit2','Digit3'].includes(e.code)){
-  upgPage=+e.code.slice(5)-1;renderUpg();
+  const idx=+e.code.slice(5)-1;
+  if(upgChoices[idx]!==undefined)applyUpg(upgChoices[idx]);
  }
  if(e.code==='Enter'){
   if(G.st==='menu')startGame();
@@ -1241,8 +1245,8 @@ document.getElementById('fireBtn').addEventListener('pointercancel',e=>{touchHel
 document.getElementById('fireBtn').addEventListener('pointerleave',e=>{touchHeld=false;});
 document.getElementById('mbtn').addEventListener('click',()=>{G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';});
 document.getElementById('vbtn').addEventListener('click',toggleView);
+document.querySelectorAll('.wslot').forEach((s,k)=>s.addEventListener('click',()=>switchWeapon(k))); /* 触屏点武器槽切枪 */
 document.getElementById('btnStart').addEventListener('click',startGame);
-document.getElementById('upgNext').addEventListener('click',()=>{upgPage=(upgPage+1)%3;renderUpg();});
 document.getElementById('btnAgain').addEventListener('click',()=>{G.st='menu';resetScene();showOv('ovMenu');});
 function resetScene(){
  clearEnemies();
