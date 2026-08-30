@@ -67,7 +67,7 @@
 <body>
 <canvas id="cv"></canvas>
 <div id="top">
-  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.5</span>
+  <h1>质数螺旋</h1><span class="ver" id="verTxt">v0.6</span>
   <span class="info"><b id="cntTxt">0</b> 个质数 · 点击查看数值 · 拖拽平移 · 滚轮缩放</span>
 </div>
 <div id="modRow">
@@ -137,7 +137,8 @@ function resize(){
   H=cv.height=window.innerHeight*devicePixelRatio;
   cv.style.width=window.innerWidth+'px';
   cv.style.height=window.innerHeight+'px';
-  fit();
+  if(S.mode==='mod'){ markModDirty(); display(); }
+  else fit();
 }
 window.addEventListener('resize',resize);
 
@@ -235,8 +236,8 @@ function renderBase(){
 function display(){
   ctx.clearRect(0,0,W,H);
   if(S.mode==='mod'){
-    // 模时钟:直接矢量绘制(固定视图,无平移缩放)
-    renderMod();
+    // 模时钟:底图(点阵+表盘)仅在 dirty 时重建,悬停只画高亮(不卡)
+    if(modDirty){ renderModBase(); modDirty=false; }
     const hl=(S.hoverIdx>=0?S.hoverIdx:S.pickIdx);
     if(hl>=0){
       const a=-Math.PI/2+hl/S.modM*Math.PI*2;
@@ -266,19 +267,39 @@ function display(){
   }
 }
 function render(){
-  if(S.mode==='mod'){ computeCounts(); display(); return; }
+  if(S.mode==='mod'){ computeCounts(); markModDirty(); display(); return; }
   renderBase();
 }
-/* ---------- 模运算时钟表盘 ---------- */
-function renderMod(){
+/* ---------- 模运算时钟表盘(点阵 ImageData + 矢量底,一次性重建) ---------- */
+let modDirty=true;
+function markModDirty(){ modDirty=true; }
+function renderModBase(){
   const M=S.modM, cnt=S.modCnt||(S.modCnt=new Uint32Array(M));
   const cx=W/2, cy=H/2;
   const R=Math.min(W,H)*0.42;
-  // 外圆
+  // 1. 质数点阵:每个刻度上的质数沿径向从外向内均匀排列(亮青 #22d3ee)
+  const img=ctx.createImageData(W,H);
+  const buf=new Uint32Array(img.data.buffer);
+  const PR=238, PG=211, PB=34;
+  const pc=0xFF000000|(PB<<16)|(PG<<8)|PR;
+  const placed=new Float32Array(M);
+  const n=S.primes.length;
+  for(let i=0;i<n;i++){
+    const r=S.primes[i]%M;
+    const k=placed[r]++;
+    const frac=cnt[r]>1?k/(cnt[r]-1):0;
+    const rad=R - frac*R*0.88;
+    const a=-Math.PI/2+r/M*Math.PI*2;
+    const sx=(cx+Math.cos(a)*rad)|0, sy=(cy+Math.sin(a)*rad)|0;
+    if(sx<0||sx>=W-1||sy<0||sy>=H-1) continue;
+    const base=sy*W+sx;
+    buf[base]=pc; buf[base+1]=pc; buf[base+W]=pc; buf[base+W+1]=pc;
+  }
+  ctx.putImageData(img,0,0);
+  // 2. 矢量底:外圆 / 刻度线 / 红色计数条 / 数字 / 中心信息
   ctx.strokeStyle='rgba(113,113,122,0.5)';
   ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
-  // 刻度线:与 M 互质的刻度金色加长(质数候选),其余灰色
   for(let i=0;i<M;i++){
     const a=-Math.PI/2+i/M*Math.PI*2;
     const cop=gcd(i,M)===1;
@@ -290,21 +311,19 @@ function renderMod(){
     ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
     ctx.stroke();
   }
-  // 质数计数条:从圆周向圆心,长度 ∝ 该刻度质数数量
   const max=S.modMax||1;
   for(let i=0;i<M;i++){
     const c=cnt[i];
     if(!c) continue;
     const a=-Math.PI/2+i/M*Math.PI*2;
     const len=R*0.88*(c/max);
-    ctx.strokeStyle='rgba(239,68,68,0.85)';
+    ctx.strokeStyle='rgba(239,68,68,0.5)';
     ctx.lineWidth=Math.max(2,W/700);
     ctx.beginPath();
     ctx.moveTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
     ctx.lineTo(cx+Math.cos(a)*(R-len), cy+Math.sin(a)*(R-len));
     ctx.stroke();
   }
-  // 刻度数字(M<=30 时显示)
   if(M<=30){
     ctx.fillStyle='rgba(161,161,170,0.7)';
     ctx.font='11px Courier New';
@@ -315,14 +334,13 @@ function renderMod(){
       ctx.fillText(String(i),cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);
     }
   }
-  // 中心信息
   ctx.fillStyle='#a1a1aa';
   ctx.font='14px Courier New';
   ctx.textAlign='center';
   ctx.fillText('mod '+M, cx, cy-10);
   ctx.fillStyle='#71717a';
   ctx.font='12px Courier New';
-  ctx.fillText(S.primes.length.toLocaleString()+' 个质数 · 红色条=该刻度质数数量', cx, cy+10);
+  ctx.fillText(S.primes.length.toLocaleString()+' 个质数 · 亮点=质数 · 红条=数量', cx, cy+10);
 }
 /* ---------- 模时钟拾取:点击角度 → 最近刻度 ---------- */
 function pickMod(mx,my){
@@ -420,7 +438,7 @@ async function loadTag(tag){
       for(let i=0;i<n;i++) arr[i]=dv.getUint32(i*4,true);
       S.primes=arr;
     }
-    if(S.mode==='mod'){ computeCounts(); display(); }
+    if(S.mode==='mod'){ computeCounts(); markModDirty(); display(); }
     else { computeWorld(); fit(); }
     updateButtons();
   }catch(e){
@@ -436,7 +454,7 @@ function switchMode(mode){
   document.getElementById('mUlam').classList.toggle('cur',mode==='ulam');
   document.getElementById('mMod').classList.toggle('cur',mode==='mod');
   document.getElementById('modRow').style.display=(mode==='mod')?'flex':'none';
-  if(mode==='mod'){ computeCounts(); display(); }
+  if(mode==='mod'){ computeCounts(); markModDirty(); display(); }
   else { computeWorld(); fit(); }
 }
 function setModM(m){
@@ -444,7 +462,7 @@ function setModM(m){
   document.querySelectorAll('#modRow button[data-m]').forEach(b=>{
     b.classList.toggle('cur',+b.dataset.m===m);
   });
-  if(S.mode==='mod'){ S.hoverIdx=-1; S.pickIdx=-1; pv.style.display='none'; computeCounts(); display(); }
+  if(S.mode==='mod'){ S.hoverIdx=-1; S.pickIdx=-1; pv.style.display='none'; computeCounts(); markModDirty(); display(); }
 }
 function updateButtons(){
   document.getElementById('cntTxt').textContent=S.primes.length.toLocaleString();
@@ -538,7 +556,7 @@ computeWorld();
 resize();
 buildGrid();
 updateButtons();
-window.__PV__={S,PRIMES_1E4,spiralPos,computeWorld,computeCounts,buildGrid,pick,pickMod,loadTag,switchMode,setModM,renderBase,renderMod,zoomAt,gcd};
+window.__PV__={S,PRIMES_1E4,spiralPos,computeWorld,computeCounts,buildGrid,pick,pickMod,loadTag,switchMode,setModM,renderBase,renderModBase,markModDirty,zoomAt,gcd};
 })();
 </script>
 </body>
