@@ -48,6 +48,8 @@ body{font-family:'Courier New',monospace;color:#e4e4e7;touch-action:none;user-se
 #fireBtn{position:fixed;right:18px;bottom:22px;width:84px;height:84px;border-radius:50%;background:rgba(220,38,38,.85);border:3px solid #7f1d1d;color:#fff;font-size:15px;font-weight:bold;letter-spacing:1px;cursor:pointer;z-index:7;display:none;touch-action:none;font-family:inherit}
 #fireBtn:active{background:#ef4444;transform:scale(.95)}
 #mbtn{position:fixed;top:12px;right:14px;z-index:8;background:rgba(9,9,11,.72);border:1px solid #27272a;color:#e4e4e7;width:34px;height:34px;border-radius:4px;font-size:16px;cursor:pointer}
+#vbtn{position:fixed;top:54px;right:14px;z-index:8;background:rgba(9,9,11,.72);border:1px solid #27272a;color:#10b981;height:34px;padding:0 10px;border-radius:4px;font-size:11px;font-weight:bold;letter-spacing:1px;cursor:pointer;font-family:inherit}
+#vbtn:hover{border-color:#10b981}
 footer{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#3f3f46;font-size:9px;letter-spacing:2px;text-transform:uppercase;z-index:2;pointer-events:none}
 @media (pointer:coarse){#fireBtn{display:block}.wslot{min-width:70px;padding:4px 8px}}
 </style>
@@ -73,6 +75,7 @@ footer{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#3f3f
 </div>
 <div id="combo"></div>
 <button id="mbtn" title="静音(M)">🔊</button>
+<button id="vbtn" title="切换视角(C)">第一视角</button>
 <button id="fireBtn">FIRE</button>
 <div id="ovMenu" class="ov show">
   <div class="t1">抢滩登陆</div>
@@ -80,7 +83,7 @@ footer{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#3f3f
   <div class="desc">
     守住滩头阵地,击退每一波登陆!<br>
     <b>鼠标</b> 瞄准(点击画面锁定,ESC释放) · <b>左键/空格</b> 射击<br>
-    <b>方向键/WASD</b> 也可控制炮口 · <b>1/2/3</b> 切换武器<br>
+    <b>方向键/WASD</b> 也可控制炮口 · <b>1/2/3</b> 切换武器 · <b>C</b> 切换视角<br>
     机枪扫步兵,加农炮轰坦克,导弹打直升机<br>
     <span style="color:#f87171">⚠ 敌人冲进滩头 = 阵地失守!</span>
   </div>
@@ -118,7 +121,7 @@ const G={
  ammo:{cannon:12,missile:6},upg:{rate:1,dmg:1},
  spawnQ:[],spawnT:0,enemies:[],bullets:[],fx:[],smokes:[],
  weapon:0,mgHeat:0,mgCd:0,canCd:0,msCd:0,waveClearT:0,
- muted:false,touchAim:false,lastPX:0,lastPY:0,yaw:Math.PI,pitch:-0.15
+ muted:false,touchAim:false,lastPX:0,lastPY:0,yaw:Math.PI,pitch:-0.15,view:'fp'
 };
 const ENEMY={
  soldier:{hp:2,score:10,reach:8},
@@ -722,6 +725,20 @@ function updateTurret(){
  const mp=muzzleWorld();
  muzzlePos.copy(mp);
 }
+/* 双视角:第一人称(炮手眼睛,视线随炮口,越过悬崖) / 第三人称(右侧后方俯瞰,悬崖不挡) */
+function updateCamera(){
+ if(G.view==='tp'){
+  camera.position.set(4.8,8.6,10.8);
+  camera.lookAt(0,1,-35);
+ }else{
+  camera.position.set(0,8.0,11.4);
+  camera.lookAt(muzzlePos.x+aimDir.x*50,muzzlePos.y+aimDir.y*50,muzzlePos.z+aimDir.z*50);
+ }
+}
+function toggleView(){
+ G.view=G.view==='fp'?'tp':'fp';
+ document.getElementById('vbtn').textContent=G.view==='fp'?'第一视角':'第三视角';
+}
 
 /* ================= 主循环 ================= */
 let last=performance.now();
@@ -747,6 +764,7 @@ function loop(ts){
  updateFx(dt);
  animateSea(dt);
  updateTurret();
+ updateCamera();
  updateHUDcross();
  renderer.render(scene,camera);
 }
@@ -945,6 +963,7 @@ addEventListener('keydown',e=>{
  if(e.code==='ArrowUp'||e.code==='KeyW')keys.u=true;
  if(e.code==='ArrowDown'||e.code==='KeyS')keys.d=true;
  if(e.code==='KeyM'){G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';}
+ if(e.code==='KeyC')toggleView();
  if(e.code==='Enter'){
   if(G.st==='menu')startGame();
   else if(G.st==='over'){G.st='menu';resetScene();showOv('ovMenu');}
@@ -966,6 +985,7 @@ document.getElementById('fireBtn').addEventListener('pointerup',e=>{touchHeld=fa
 document.getElementById('fireBtn').addEventListener('pointercancel',e=>{touchHeld=false;});
 document.getElementById('fireBtn').addEventListener('pointerleave',e=>{touchHeld=false;});
 document.getElementById('mbtn').addEventListener('click',()=>{G.muted=!G.muted;document.getElementById('mbtn').textContent=G.muted?'🔇':'🔊';});
+document.getElementById('vbtn').addEventListener('click',toggleView);
 document.getElementById('btnStart').addEventListener('click',startGame);
 document.getElementById('btnAgain').addEventListener('click',()=>{G.st='menu';resetScene();showOv('ovMenu');});
 document.querySelectorAll('#upgRow .btn').forEach(b=>{
