@@ -205,7 +205,8 @@ const BUILD_TYPES=[
   {key:'pasture', name:'牧场',   cost:150, w:2,h:3, lv:4, color:0x6ecb63, desc:'养牛羊,挤奶剪毛'},
 ];
 const HOUSE={key:'house', name:'小木屋', w:2,h:2, color:0xa06a3b};
-const UPGRADE_COST=[0,70,500,1200,3000]; // lv1→2,2→3,3→4,4→5
+const UPGRADE_COST=[0,70,100,140,190,230,290]; // 第1~6次升级费(lv1→2=70 ... lv6→7=290)
+function upgradeCost(lv){ return lv<UPGRADE_COST.length?UPGRADE_COST[lv]:290+(lv-6)*60; } // 之后每次 +60
 
 /* ---------- Three 场景 ---------- */
 const canvas=$('cv');
@@ -598,16 +599,12 @@ function renderInfo(){
   infoEl.style.display='block';
   let html='<div class="t">'+(b.type==='house'?'🏡 小木屋':'🏗 '+BUILD_TYPES.find(t=>t.key===b.type).name)+'</div>';
   if(b.type==='house'){
-    const cost=UPGRADE_COST[G.lv];
+    const cost=upgradeCost(G.lv);
     html+='<div class="row"><span>等级</span><b>Lv'+G.lv+'</b></div>';
-    if(G.lv<5){
-      html+='<div class="row"><span>下次升级</span><b class="gold" style="color:var(--gold)">'+cost+' 金</b></div>';
-      html+='<div class="row"><span>解锁</span><b>'+(G.lv+1)+'级场地 + 扩大区域</b></div>';
-      const can=G.money>=cost;
-      html+='<button class="'+(can?'act':'')+'" id="ibUpgrade"'+(can?'':' disabled style="opacity:.4"')+'>升级</button>';
-    } else {
-      html+='<div class="row"><span>已满级</span><b>Lv5</b></div>';
-    }
+    html+='<div class="row"><span>下次升级</span><b class="gold" style="color:var(--gold)">'+cost+' 金</b></div>';
+    html+='<div class="row"><span>解锁</span><b>'+(G.lv<5?(G.lv+1)+'级场地 + 扩大区域':'区域已全开,继续升级')+'</b></div>';
+    const can=G.money>=cost;
+    html+='<button class="'+(can?'act':'')+'" id="ibUpgrade"'+(can?'':' disabled style="opacity:.4"')+'>升级</button>';
     html+='<div class="row"><span>驯服伙伴</span><b>'+Object.values(G.petsByType).reduce((a,c)=>a+c,0)+' 只</b></div>';
   } else {
     const def=BUILD_TYPES.find(t=>t.key===b.type);
@@ -704,8 +701,7 @@ function renderBag(){
 
 /* ---------- 房屋升级 ---------- */
 function upgradeHouse(){
-  if(G.lv>=5) return;
-  const cost=UPGRADE_COST[G.lv];
+  const cost=upgradeCost(G.lv);
   if(G.money<cost){ toast('金币不足!需要 '+cost,0xef4444); return; }
   G.money-=cost;
   G.lv++;
@@ -762,7 +758,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.7';
+$('verTxt').textContent='0.8';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1333,7 +1329,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,UPGRADE_COST,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects};
 
 })();
 </script>
