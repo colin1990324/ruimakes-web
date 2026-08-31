@@ -471,6 +471,7 @@ function loop(now){
   } else if(preview.visible) preview.visible=false;
   renderer.render(scene,cam);
 }
+requestAnimationFrame(loop);
 
 /* ---------- 物品定义 ---------- */
 const STAR_MULT=[1,1.6,2.4]; // 1★/2★/3★
@@ -727,7 +728,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.1';
+$('verTxt').textContent='0.2';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
