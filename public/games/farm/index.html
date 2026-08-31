@@ -123,7 +123,7 @@
 <div id="bag"></div>
 <div id="pestBar"></div>
 <div id="toast"></div>
-<div id="merchant"></div>
+<div id="merchant"><div class="box"></div></div>
 
 <div class="ov" id="menuOv">
   <h1>开心农场</h1>
@@ -762,7 +762,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.6';
+$('verTxt').textContent='0.7';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
