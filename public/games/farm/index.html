@@ -345,6 +345,7 @@ function buildBuilding(type,c,r){
   scene.add(b.grp);
   for(let dc=0;dc<def.w;dc++) for(let dr=0;dr<def.h;dr++) grid[r+dr][c+dc]=b;
   G.buildings.push(b);
+  G.buildMode=null;               // 建完自动退出建造模式,否则点建筑只会提示"已被占用"
   sfx('build');
   return b;
 }
@@ -583,7 +584,7 @@ function renderInfo(){
     html+='<div class="row"><span>建造价</span><b>'+def.cost+'</b></div>';
     html+='<div class="row"><span>说明</span><b style="font-size:11px">'+def.desc+'</b></div>';
     if(b.type==='farm'){
-      const crops=G.crops.filter(c=>c.bid===b.id);
+      const crops=G.crops.filter(c=>c.b===b);
       if(crops.length){
         html+='<div class="sel">';
         crops.forEach(c=>{
@@ -728,7 +729,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.2';
+$('verTxt').textContent='0.3';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -747,9 +748,10 @@ canvas.addEventListener('pointerdown',e=>{
   if(G.buildMode){
     const def=BUILD_TYPES.find(b=>b.key===G.buildMode);
     if(canPlace(G.buildMode,c,r)&&G.money>=def.cost){
-      buildBuilding(G.buildMode,c,r);
+      const nb=buildBuilding(G.buildMode,c,r);  // buildBuilding 内部已清 G.buildMode
       buildMenuHighlight();
       renderBag();
+      if(nb){ G.sel=nb; showInfo(nb); }  // 建好直接弹信息面板(农田可直接选种子)
     } else if(grid[r][c]!==null&&grid[r][c]!=='locked'){
       toast('这块地已被占用',0xef4444);
     } else {
