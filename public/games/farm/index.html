@@ -661,7 +661,15 @@ function renderInfo(){
   bind('#ibHarvest',()=>harvestFarm(b));
   bind('#ibSell',()=>{ removeBuilding(b); hideInfo(); toast('场地已出售'); });
   bind('#ibBuyFeed',()=>buyFeed());
-  bind('#ibSellWood',()=>{ if(G.wood>0){ sellItem('wood',G.wood); } toast(G.wood>0?'':'没有木材'); });
+  bind('#ibSellWood',()=>{
+    if(G.wood<=0){ toast('没有木材',0xef4444); return; }
+    const gain=itemPrice('wood')*G.wood;   // 木材存在 G.wood 不在背包,不能走 sellItem(bag)
+    G.wood=0;
+    G.money+=gain;
+    sfx('sale');
+    toast('卖出木材 +'+gain+' 金币',0xf59e0b);
+    renderInfo(); renderBag(); updateHUD();
+  });
   bind('#ibSellFish',()=>{ if(G.bag.fish) sellItem('fish',G.bag.fish); else toast('没有鱼'); });
   bind('#ibFert',()=>fertilizeFarm(b));
   bind('#ibSellPig',()=>sellPig(b));
@@ -758,7 +766,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.8';
+$('verTxt').textContent='0.9';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
