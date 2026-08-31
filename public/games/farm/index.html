@@ -28,7 +28,11 @@
     background:rgba(0,0,0,.65); border:1px solid #7c5a10; border-radius:6px; padding:4px 12px; display:none; letter-spacing:1px; }
   /* ===== 建造菜单(左) ===== */
   #buildMenu{ position:absolute; left:10px; top:50%; transform:translateY(-50%); z-index:6; width:128px;
-    background:rgba(0,0,0,.75); border:1px solid #27272a; border-radius:10px; padding:9px; }
+    background:rgba(0,0,0,.75); border:1px solid #27272a; border-radius:10px; padding:9px; display:none; }
+  #buildToggle{ position:absolute; left:10px; top:50%; transform:translateY(-50%); z-index:6; width:70px;
+    background:rgba(16,185,129,.14); color:var(--acc); border:1px solid var(--acc); border-radius:10px;
+    padding:10px 0; font-family:inherit; font-size:13px; letter-spacing:2px; cursor:pointer; }
+  #buildToggle:hover{ background:rgba(16,185,129,.28); }
   #buildMenu .tt{ font-size:11px; color:var(--dim); letter-spacing:2px; margin-bottom:7px; }
   #buildMenu button{ display:block; width:100%; font-family:inherit; font-size:12px; letter-spacing:1px; padding:7px 8px;
     margin-bottom:5px; background:#18181b; color:var(--fg); border:1px solid #3f3f46; border-radius:6px; cursor:pointer; text-align:left; }
@@ -114,6 +118,7 @@
 <div id="buildMenu">
   <div class="tt">建造</div>
 </div>
+<button id="buildToggle">🏗 建造</button>
 <div id="info"></div>
 <div id="bag"></div>
 <div id="pestBar"></div>
@@ -172,6 +177,10 @@ const G={
 
 /* ---------- 地图 ---------- */
 const COLS=14, ROWS=10, CX=6.5, CZ=4.5; // 中心(小木屋)
+// 数据格(c,r) → 世界坐标:格子 c 中心在 world x=c(与地面/网格线/pickCell 对齐)
+// 踩过坑:原代码用 c-CX+0.5(=c-6) 偏移 6 格/4 行,建筑画在格子西南,点击永远选不中
+function wx(c,w){ return c+((w==null)?1:w)/2-0.5; }
+function wz(r,h){ return r+((h==null)?1:h)/2-0.5; }
 const grid=[]; // grid[r][c]: null 空地 | 'locked' 未解锁 | 建筑对象
 for(let r=0;r<ROWS;r++){ grid[r]=[]; for(let c=0;c<COLS;c++) grid[r][c]='locked'; }
 function unlockRadius(){ return 2+G.lv; } // Lv1=3 → 7×7 中心区域
@@ -250,7 +259,7 @@ function refreshLockVisual(){
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
     if(grid[r][c]==='locked'){
       const m=new THREE.Mesh(GEO_CELL,lockMat);
-      m.position.set(c-CX+0.5,0.03,r-CZ+0.5);
+      m.position.set(wx(c),0.03,wz(r));
       scene.add(m); lockMeshs.push(m);
     }
   }
@@ -341,7 +350,7 @@ function buildBuilding(type,c,r){
   const b={type,key:type,c,r,w:def.w,h:def.h,grp:null};
   b.id=++G.bidSeq;
   b.grp=buildModel(type);
-  b.grp.position.set(c-CX+def.w/2,0,r-CZ+def.h/2);
+  b.grp.position.set(wx(c,def.w),0,wz(r,def.h));
   scene.add(b.grp);
   for(let dc=0;dc<def.w;dc++) for(let dr=0;dr<def.h;dr++) grid[r+dr][c+dc]=b;
   G.buildings.push(b);
@@ -363,7 +372,7 @@ const house={type:'house',c:Math.round(CX-1),r:Math.round(CZ-1),w:2,h:2};
 (function(){
   for(let dc=0;dc<2;dc++) for(let dr=0;dr<2;dr++) grid[house.r+dr][house.c+dc]=house;
   house.grp=buildModel('house');
-  house.grp.position.set(house.c-CX+1,0,house.r-CZ+1);
+  house.grp.position.set(wx(house.c,2),0,wz(house.r,2));
   scene.add(house.grp);
 })();
 
@@ -452,7 +461,7 @@ function loop(now){
       const def=BUILD_TYPES.find(b=>b.key===G.buildMode);
       const ok=canPlace(G.buildMode,c,r);
       preview.visible=true;
-      preview.position.set(c-CX+def.w/2,0,r-CZ+def.h/2);
+      preview.position.set(wx(c,def.w),0,wz(r,def.h));
       preview.children.forEach(m=>{});
       if(!preview.userData.mesh){
         preview.userData.mesh=buildModel(G.buildMode);
@@ -467,7 +476,7 @@ function loop(now){
     } else {
       preview.visible=false;
       hoverMesh.visible=grid[r][c]===null;
-      if(hoverMesh.visible) hoverMesh.position.set(c-CX+0.5,0.05,r-CZ+0.5);
+      if(hoverMesh.visible) hoverMesh.position.set(wx(c),0.05,wz(r));
     }
   } else if(preview.visible) preview.visible=false;
   renderer.render(scene,cam);
@@ -520,6 +529,12 @@ function sellAll(){
 }
 
 /* ---------- 建造菜单 UI ---------- */
+// 建造菜单默认收起(否则左中菜单盖住地图西南格,点不到以前建的农田)
+function setBuildMenuOpen(open){
+  $('buildMenu').style.display=open?'block':'none';
+  $('buildToggle').style.display=open?'none':'block';
+}
+$('buildToggle').onclick=()=>{ setBuildMenuOpen(true); sfx('click'); };
 function buildMenu(){
   const el=$('buildMenu');
   el.innerHTML='<div class="tt">建造</div>';
@@ -551,6 +566,11 @@ function buildMenu(){
   houseBtn.innerHTML='🏡 升级房屋';
   houseBtn.onclick=()=>{ G.buildMode=null; G.sel=house; showInfo(house); buildMenu(); };
   el.appendChild(houseBtn);
+  const closeBtn=document.createElement('button');
+  closeBtn.innerHTML='✕ 收起';
+  closeBtn.style.cssText='text-align:center;color:var(--dim);';
+  closeBtn.onclick=()=>setBuildMenuOpen(false);
+  el.appendChild(closeBtn);
 }
 function buildMenuHighlight(){
   const el=$('buildMenu');
@@ -570,6 +590,7 @@ function hideInfo(){ infoEl.style.display='none'; G.sel=null; }
 function hidePreview(){
   G.buildMode=null; preview.visible=false; hoverMesh.visible=false;
   buildMenuHighlight();
+  setBuildMenuOpen(false);   // 退出建造/选中场地时收起菜单,避免挡住地图点击
 }
 function renderInfo(){
   const b=G.sel;
@@ -695,7 +716,7 @@ function upgradeHouse(){
   // 重建房屋模型表现(随等级变化:更大更亮)
   scene.remove(house.grp);
   house.grp=buildModel('house');
-  house.grp.position.set(house.c-CX+1,0,house.r-CZ+1);
+  house.grp.position.set(wx(house.c,2),0,wz(house.r,2));
   scene.add(house.grp);
   buildMenu();
   renderInfo();
@@ -732,7 +753,7 @@ function startGame(){
   refreshLockVisual();
   scene.remove(house.grp);
   house.grp=buildModel('house');
-  house.grp.position.set(house.c-CX+1,0,house.r-CZ+1);
+  house.grp.position.set(wx(house.c,2),0,wz(house.r,2));
   scene.add(house.grp);
   buildMenu();
   renderBag();
@@ -741,7 +762,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.4';
+$('verTxt').textContent='0.5';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -754,6 +775,7 @@ canvas.addEventListener('pointermove',e=>{
 canvas.addEventListener('pointerleave',()=>{ G.hover=null; });
 canvas.addEventListener('pointerdown',e=>{
   if(G.st!=='play') return;
+  if(!G.buildMode) setBuildMenuOpen(false);   // 非建造状态下点地图 = 收起建造菜单
   const cell=pickCell(e.clientX,e.clientY);
   if(!cell) return;
   const [c,r]=cell;
@@ -796,6 +818,7 @@ window.addEventListener('keydown',e=>{
       if(G.lv<b.lv){ toast('需要小木屋 Lv'+b.lv,0xef4444); return; }
       G.buildMode=G.buildMode===b.key?null:b.key;
       G.sel=null; hideInfo(); sfx('click'); buildMenuHighlight();
+      setBuildMenuOpen(!!G.buildMode);   // 键盘选建造时展开菜单,取消时收起
       // 键盘选择也显示放置指引
       if(G.buildMode){
         infoEl.innerHTML='<div class="t">🏗 '+b.name+'</div>'+
@@ -827,7 +850,7 @@ const CROPS=[
 function cropDef(key){ return CROPS.find(x=>x.key===key); }
 function tilePos(b,slot){
   const c=b.c+slot%b.w, r=b.r+Math.floor(slot/b.w);
-  return [c-CX+0.5, r-CZ+0.5];
+  return [wx(c), wz(r)];
 }
 function buildCropVisual(cr){
   const g=new THREE.Group();
@@ -959,8 +982,8 @@ function buyAnimal(b,key){
   if(G.money<def.buy){ toast('金币不足',0xef4444); return; }
   G.money-=def.buy;
   const a={key,b,grp:null,fedDays:0};
-  a.x=b.c-CX+rnd(0.4,b.w-0.4);
-  a.z=b.r-CZ+rnd(0.4,b.h-0.4);
+  a.x=b.c-0.5+rnd(0.4,b.w-0.4);
+  a.z=b.r-0.5+rnd(0.4,b.h-0.4);
   a.grp=buildAnimalVisual(key);
   a.grp.position.set(a.x,0.05,a.z);
   scene.add(a.grp);
@@ -1052,7 +1075,7 @@ function tamePest(i){
   G.petsByType[def.key]=(G.petsByType[def.key]||0)+1;
   const pet={key:def.key,grp:buildPestVisual(def.key)};
   const pc=Object.values(G.petsByType).reduce((a,c)=>a+c,0);
-  pet.grp.position.set(house.c-CX+1.7,0.05,house.r-CZ-1.7+(pc%3)*0.5);
+  pet.grp.position.set(house.c+0.5+1.7,0.05,house.r+0.5-1.7+(pc%3)*0.5);
   scene.add(pet.grp);
   G.pets.push(pet);
   sfx('level');
@@ -1258,13 +1281,13 @@ function loadGame(){
     const b={type:bd.type,key:bd.type,c:bd.c,r:bd.r,w:def.w,h:def.h,grp:null};
     b.id=++G.bidSeq;
     b.grp=buildModel(bd.type);
-    b.grp.position.set(bd.c-CX+def.w/2,0,bd.r-CZ+def.h/2);
+    b.grp.position.set(wx(bd.c,def.w),0,wz(bd.r,def.h));
     scene.add(b.grp);
     for(let dc=0;dc<def.w;dc++) for(let dr=0;dr<def.h;dr++) grid[bd.r+dr][bd.c+dc]=b;
     G.buildings.push(b);
   });
   house.grp=buildModel('house');
-  house.grp.position.set(house.c-CX+1,0,house.r-CZ+1);
+  house.grp.position.set(wx(house.c,2),0,wz(house.r,2));
   scene.add(house.grp);
   data.crops.forEach(cd=>{
     const b=G.buildings[cd.b];
@@ -1280,8 +1303,9 @@ function loadGame(){
     const b=G.buildings[ad.b];
     if(!b) return;
     const a={key:ad.key,b,grp:buildAnimalVisual(ad.key),fedDays:ad.fedDays||0};
-    a.x=ad.x!==undefined?ad.x:b.c-CX+rnd(0.4,b.w-0.4);
-    a.z=ad.z!==undefined?ad.z:b.r-CZ+rnd(0.4,b.h-0.4);
+    // 旧存档动物坐标是修复前的旧世界坐标(偏移-6/-4),超出建筑范围则重置(迁移)
+    a.x=ad.x!==undefined&&Math.abs(ad.x-(b.c-0.5))<b.w+0.5?ad.x:b.c-0.5+rnd(0.4,b.w-0.4);
+    a.z=ad.z!==undefined&&Math.abs(ad.z-(b.r-0.5))<b.h+0.5?ad.z:b.r-0.5+rnd(0.4,b.h-0.4);
     a.grp.position.set(a.x,0.05,a.z);
     scene.add(a.grp);
     G.animals.push(a);
@@ -1290,7 +1314,7 @@ function loadGame(){
   for(const t of Object.keys(G.petsByType)){
     for(let i=0;i<G.petsByType[t];i++){
       const pet={key:t,grp:buildPestVisual(t)};
-      pet.grp.position.set(house.c-CX+1.7,0.05,house.r-CZ-1.7+(pc%3)*0.5);
+      pet.grp.position.set(house.c+0.5+1.7,0.05,house.r+0.5-1.7+(pc%3)*0.5);
       scene.add(pet.grp);
       G.pets.push(pet); pc++;
     }
@@ -1309,7 +1333,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,UPGRADE_COST,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,grid,COLS,ROWS,CX,CZ,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects};
+window.__FARM__={G,BUILD_TYPES,HOUSE,UPGRADE_COST,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects};
 
 })();
 </script>
