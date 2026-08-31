@@ -281,9 +281,9 @@ function buildModel(type){
   const def=type==='house'?HOUSE:(BUILD_TYPES.find(b=>b.key===type));
   const w=def.w, h=def.h, col=def.color;
   if(type==='farm'){
-    const base=new THREE.Mesh(GEO_BOX,mat(0x7a5a2e)); base.scale.set(w*0.9,0.12,h*0.9); base.position.y=0.06; grp.add(base);
+    const base=new THREE.Mesh(GEO_BOX,mat(0x7a5a2e)); base.scale.set(w*0.9,0.2,h*0.9); base.position.y=0.1; grp.add(base);
     for(let i=0;i<3;i++){
-      const row=new THREE.Mesh(GEO_BOX,mat(col)); row.scale.set(0.8,0.06,0.18); row.position.set(0,0.14,(i-1)*0.25); grp.add(row);
+      const row=new THREE.Mesh(GEO_BOX,mat(col)); row.scale.set(0.8,0.08,0.18); row.position.set(0,0.22,(i-1)*0.25); grp.add(row);
     }
   } else if(type==='house'){
     const base=new THREE.Mesh(GEO_BOX,mat(col)); base.scale.set(1.6,0.9,1.6); base.position.y=0.45; grp.add(base);
@@ -534,6 +534,16 @@ function buildMenu(){
       else{ G.buildMode=b.key; G.sel=null; hideInfo(); sfx('click'); }
       buildMenu();
       renderBag();
+      // 点建造按钮立即在右侧显示该建筑说明+放置指引
+      if(G.buildMode){
+        G.sel=null;
+        infoEl.innerHTML='<div class="t">🏗 '+b.name+'</div>'+
+          '<div class="row"><span>造价</span><b>'+b.cost+' 金</b></div>'+
+          '<div class="row"><span>占地</span><b>'+b.w+'×'+b.h+'</b></div>'+
+          '<div class="row"><span>说明</span><b style="font-size:11px">'+b.desc+'</b></div>'+
+          '<div class="row"><span>放置</span><b style="color:var(--gold)">点击地图上高亮的位置</b></div>';
+        infoEl.style.display='block';
+      }
     };
     el.appendChild(btn);
   });
@@ -653,8 +663,10 @@ function renderBag(){
   const keys=Object.keys(G.bag);
   if(!keys.length){
     el.innerHTML='<span class="empty">背包空 — 收获物会出现在这里,点击出售</span>';
+    el.style.pointerEvents='none';   // 空背包不挡地图点击(否则底部格子点不到,面板弹不出)
     return;
   }
+  el.style.pointerEvents='auto';
   let html='';
   keys.forEach(k=>{
     const hot=G.hotItems.includes(k.replace(/_\d$/,''))?' <span style="color:var(--red)">↗</span>':'';
@@ -729,7 +741,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.3';
+$('verTxt').textContent='0.4';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -784,6 +796,15 @@ window.addEventListener('keydown',e=>{
       if(G.lv<b.lv){ toast('需要小木屋 Lv'+b.lv,0xef4444); return; }
       G.buildMode=G.buildMode===b.key?null:b.key;
       G.sel=null; hideInfo(); sfx('click'); buildMenuHighlight();
+      // 键盘选择也显示放置指引
+      if(G.buildMode){
+        infoEl.innerHTML='<div class="t">🏗 '+b.name+'</div>'+
+          '<div class="row"><span>造价</span><b>'+b.cost+' 金</b></div>'+
+          '<div class="row"><span>占地</span><b>'+b.w+'×'+b.h+'</b></div>'+
+          '<div class="row"><span>说明</span><b style="font-size:11px">'+b.desc+'</b></div>'+
+          '<div class="row"><span>放置</span><b style="color:var(--gold)">点击地图上高亮的位置</b></div>';
+        infoEl.style.display='block';
+      }
     }
   }
 });
