@@ -205,7 +205,7 @@ const BUILD_TYPES=[
   {key:'pasture', name:'牧场',   cost:150, w:2,h:3, lv:4, color:0x6ecb63, desc:'养牛羊,挤奶剪毛'},
 ];
 const HOUSE={key:'house', name:'小木屋', w:2,h:2, color:0xa06a3b};
-const UPGRADE_COST=[0,200,500,1200,3000]; // lv1→2,2→3,3→4,4→5
+const UPGRADE_COST=[0,70,500,1200,3000]; // lv1→2,2→3,3→4,4→5
 
 /* ---------- Three 场景 ---------- */
 const canvas=$('cv');
@@ -762,7 +762,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='0.5';
+$('verTxt').textContent='0.6';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
