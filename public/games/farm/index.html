@@ -454,6 +454,7 @@ function loop(now){
   if(G.st==='play'||G.st==='merchant'){
     updateTime(dt*G.speed);
     updateCrops();
+    updateCropPctUI();
   }
   // hover 预览
   if(G.st==='play'&&G.hover){
@@ -615,13 +616,13 @@ function renderInfo(){
       const crops=G.crops.filter(c=>c.b===b);
       if(crops.length){
         html+='<div class="sel">';
-        crops.forEach(c=>{
+        crops.forEach((c,i)=>{
           const cr=CROPS.find(x=>x.key===c.key);
           const age=G.day-c.plantDay;
           const grow=cr.grow;
           const pct=clamp(age/grow,0,1);
           const st=age>=grow?'<span style="color:var(--gold)">可收获 ★'+c.star+'</span>':'<span style="color:var(--dim)">'+Math.floor(pct*100)+'%</span>';
-          html+='<div class="row"><span>'+cr.name+'</span><b>'+st+'</b></div>';
+          html+='<div class="row"><span>'+cr.name+'</span><b id="cri'+i+'">'+st+'</b></div>';
         });
         html+='</div>';
         html+='<button class="act" id="ibHarvest">收获</button>';
@@ -767,7 +768,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.0';
+$('verTxt').textContent='1.1';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -853,26 +854,39 @@ const CROPS=[
   {key:'mandrake',name:'蔓德拉草',lv:5,cost:60,grow:12,color:0xc084fc},
 ];
 function cropDef(key){ return CROPS.find(x=>x.key===key); }
+// 作物成熟度外观:叶色 绿→中间色→成熟色 三阶段 + 果实从 40% 开始长出
+const CROP_GREEN=0x3a9b4e;
+function mixHex(c1,c2,t){
+  const r=Math.round(((c1>>16)&255)*(1-t)+((c2>>16)&255)*t);
+  const g=Math.round(((c1>>8)&255)*(1-t)+((c2>>8)&255)*t);
+  const b=Math.round((c1&255)*(1-t)+(c2&255)*t);
+  return (r<<16)|(g<<8)|b;
+}
+function cropStageMats(cr){ return [mat(CROP_GREEN), mat(mixHex(CROP_GREEN,cr.color,0.6)), mat(cr.color)]; }
 function tilePos(b,slot){
   const c=b.c+slot%b.w, r=b.r+Math.floor(slot/b.w);
   return [wx(c), wz(r)];
 }
 function buildCropVisual(cr){
   const g=new THREE.Group();
+  const stageMats=cropStageMats(cr);
   const blades=[];
   for(let i=0;i<3;i++){
-    const bl=new THREE.Mesh(GEO_BOX,mat(cr.color));
+    const bl=new THREE.Mesh(GEO_BOX,stageMats[0]);
     bl.scale.set(0.06,0.5,0.06);
     bl.position.set((i-1)*0.08,0.25,0);
     g.add(bl); blades.push(bl);
   }
+  let fruit=null;
   if(cr.key==='tomato'||cr.key==='pepper'||cr.key==='mint'||cr.key==='mandrake'||cr.key==='eggplant'){
-    const fruit=new THREE.Mesh(GEO_SPH,mat(cr.color));
+    fruit=new THREE.Mesh(GEO_SPH,stageMats[2]);
     fruit.scale.set(0.16,0.16,0.16);
     fruit.position.set(0,0.1,0.06);
     g.add(fruit);
   }
   g.userData.blades=blades;
+  g.userData.fruit=fruit;
+  g.userData.stageMats=stageMats;
   return g;
 }
 function plantCrop(b,key){
@@ -926,9 +940,34 @@ function updateCrops(){
   for(const c of G.crops){
     const cr=cropDef(c.key);
     const pct=clamp((G.day-c.plantDay)/cr.grow,0,1);
+    const stage=pct<0.35?0:(pct<0.7?1:2);   // 0幼苗全绿 1生长中 2成熟色
     const h=pct>0.7?0.5:0.18+pct*0.4;
     c.grp.scale.set(0.7+0.3*pct,h,0.7+0.3*pct);
+    const st=c.grp.userData.stageMats;
+    if(c.grp.userData.blades) c.grp.userData.blades.forEach(b=>{ b.material=st[stage]; });
+    if(c.grp.userData.fruit){
+      const fv=pct<0.4?0.001:(pct-0.4)/0.6;   // 果实 40% 起长出,成熟时最大
+      c.grp.userData.fruit.scale.setScalar(Math.max(0.001,fv*0.16));
+      c.grp.userData.fruit.material=st[stage];
+    }
   }
+}
+// 农田信息面板百分比实时刷新(点选后停留界面也能看到自然增长)
+function updateCropPctUI(){
+  const b=G.sel;
+  if(!b||b.type!=='farm'||infoEl.style.display!=='block') return;
+  const crops=G.crops.filter(c=>c.b===b);
+  crops.forEach((c,i)=>{
+    const el=infoEl.querySelector('#cri'+i);
+    if(!el) return;
+    const cr=cropDef(c.key);
+    const age=G.day-c.plantDay;
+    if(age>=cr.grow){
+      if(el.innerHTML.indexOf('可收获')<0) el.innerHTML='<span style="color:var(--gold)">可收获 ★'+c.star+'</span>';
+    } else {
+      el.innerHTML='<span style="color:var(--dim)">'+Math.floor(clamp(age/cr.grow,0,1)*100)+'%</span>';
+    }
+  });
 }
 
 /* ---------- 动物系统 ---------- */
@@ -1356,7 +1395,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
 
 })();
 </script>
