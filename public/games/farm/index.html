@@ -178,6 +178,8 @@ const G={
   best:{day:0,money:0},
   feed:0,               // 饲料仓存量
   wood:0,               // 木材存量
+  pondFish:0,           // 鱼塘存量(每天+1,点击捞鱼收进背包)
+  pondFx:[],            // 跳鱼动画特效(临时,不入存档)
   seeds:{},             // 各作物已解锁标记(level 判断)
   lastProduce:{},       // 动物最后产出日
   pestsDone:false,      // 今晚偷菜事件是否已发生
@@ -525,6 +527,7 @@ function loop(now){
     updateCrops();
     updateCropPctUI();
     updateAnimalMotion(dt);   // 动物散步(真实时间步进,不受加速影响)
+    updatePondFx(dt);         // 鱼塘跳鱼动画
   }
   // hover 预览
   if(G.st==='play'&&G.hover){
@@ -718,8 +721,9 @@ function renderInfo(){
       html+='<button class="act" id="ibSellWood">卖木材 ('+itemPrice('wood')+'金/份)</button>';
       html+='<button id="ibSell">出售场地 +'+Math.round(def.cost*0.7)+'</button>';
     } else if(b.type==='pond'){
-      html+='<div class="row"><span>产出</span><b>每天 +1 鱼</b></div>';
-      html+='<button class="act" id="ibSellFish">收鱼 (12金/份)</button>';
+      html+='<div class="row"><span>塘中鱼</span><b>'+G.pondFish+' 条</b></div>';
+      html+='<div class="row"><span>产出</span><b>每天 +'+Math.max(1,G.buildings.filter(x=>x.type==='pond').length)+' 条</b></div>';
+      html+='<button class="act" id="ibCatchFish"'+(G.pondFish>0?'':' disabled style="opacity:.4"')+'>捞鱼 ('+G.pondFish+'条)</button>';
       html+='<button id="ibSell">出售场地 +'+Math.round(def.cost*0.7)+'</button>';
     } else if(b.type==='chicken'||b.type==='pasture'||b.type==='pig'){
       html+=renderLivestockInfo(b);
@@ -741,7 +745,7 @@ function renderInfo(){
     toast('卖出木材 +'+gain+' 金币',0xf59e0b);
     renderInfo(); renderBag(); updateHUD();
   });
-  bind('#ibSellFish',()=>{ if(G.bag.fish) sellItem('fish',G.bag.fish); else toast('没有鱼'); });
+  bind('#ibCatchFish',()=>catchFish());
   bind('#ibFert',()=>fertilizeFarm(b));
   bind('#ibSellPig',()=>sellPig(b));
   infoEl.querySelectorAll('[data-plant]').forEach(el=>{
@@ -842,7 +846,7 @@ function startGame(){
   G.st='play';
   G.day=1; G.money=200; G.lv=1;
   G.buildings=[]; G.crops=[]; G.animals=[]; G.pets=[]; G.pests=[];
-  G.bag={}; G.feed=0; G.wood=0; G.petsByType={}; G.hotItems=[]; G.saleItems=[]; G.saleMult=1;
+  G.bag={}; G.feed=0; G.wood=0; G.pondFish=0; G.petsByType={}; G.hotItems=[]; G.saleItems=[]; G.saleMult=1;
   G.pestsDone=false; G.merchant=false; G.merchantDay=7; G.hotSet=false;
   G.merchantHandled=false; G.merchantPending=false;
   G._wallTs=Date.now();   // 离线/后台成长计时锚点
@@ -862,7 +866,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.5.1';
+$('verTxt').textContent='1.6';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1303,7 +1307,7 @@ function dailyTick(){
   const forests=G.buildings.filter(b=>b.type==='forest');
   if(forests.length) G.wood+=forests.length;
   const ponds=G.buildings.filter(b=>b.type==='pond');
-  if(ponds.length) addItem('fish',ponds.length);
+  if(ponds.length) G.pondFish+=ponds.length;   // 鱼进鱼塘存量,点击捞鱼才收进背包
   applyPetSkills();
   updateHUD();
 }
@@ -1327,7 +1331,34 @@ function updateAnimals(){
 }
 // 动物散步:每帧在圈舍范围内随机走动(猪圈/牧场/鸡舍都动,鸡快些、牛羊猪慢些)
 function updateAnimalMotion(dt){
-  if(!G.animals.length||G.st!=='play') return;
+  if(G.st!=='play') return;
+  // 驯服宠物:在小屋附近随机走动(范围 house 中心 ±1.5)
+  G.pets.forEach(p=>{
+    const hx=wx(house.c,2), hz=wz(house.r,2);
+    if(!p.walkT){ p.walkT={x:p.grp.position.x,z:p.grp.position.z,wait:rnd(0.5,2)}; }
+    const wt=p.walkT;
+    wt.wait-=dt;
+    if(wt.wait<=0){
+      const ang=rnd(0,Math.PI*2);
+      wt.x=hx+Math.cos(ang)*rnd(0.6,1.6);
+      wt.z=hz+Math.sin(ang)*rnd(0.6,1.6);
+      wt.wait=rnd(1.5,4.5);
+    }
+    const dx=wt.x-p.grp.position.x, dz=wt.z-p.grp.position.z;
+    const dist=Math.hypot(dx,dz);
+    const spd=0.35*dt;
+    if(dist>spd){
+      p.grp.position.x+=dx/dist*spd;
+      p.grp.position.z+=dz/dist*spd;
+      p.grp.rotation.y=Math.atan2(dx,dz);
+      wt.phase=(wt.phase||0)+dt*10;
+      p.grp.position.y=0.05+Math.abs(Math.sin(wt.phase))*0.03;
+    } else {
+      p.grp.rotation.y+=dt*1.5;
+      p.grp.position.y=0.05;
+    }
+  });
+  if(!G.animals.length) return;
   G.animals.forEach(a=>{
     const b=a.b;
     if(!b) return;
@@ -1363,6 +1394,46 @@ function updateAnimalMotion(dt){
 function applyPetSkills(){
   if(G.petsByType.rabbit) G.money+=2*G.petsByType.rabbit;
   if(G.petsByType.raccoon) G.wood+=G.petsByType.raccoon;
+}
+
+/* ---------- 鱼塘跳鱼动画 ---------- */
+// 捞鱼:把鱼塘存量收进背包(和森林卖木材同模式,点击一次全收)
+function catchFish(){
+  if(G.pondFish<=0){ toast('塘里还没有鱼',0xef4444); return; }
+  const n=G.pondFish; G.pondFish=0;
+  addItem('fish',n);
+  sfx('sale');
+  toast('捞到 '+n+' 条鱼!',0x10b981);
+  renderInfo(); renderBag(); updateHUD();
+}
+// 每秒 10% 概率从鱼塘跳出一条鱼又落下(给死板的鱼塘加点生气)
+function updatePondFx(dt){
+  if(G.st!=='play') return;
+  // 每个鱼塘每秒约 10% 概率触发一次跳鱼
+  const ponds=G.buildings.filter(b=>b.type==='pond');
+  for(const b of ponds){
+    if(Math.random()<0.10*dt&&G.pondFx.length<6){
+      const cx=wx(b.c,b.w), cz=wz(b.r,b.h);
+      const g=new THREE.Group();
+      const body=new THREE.Mesh(GEO_SPH,mat(0x7dd3fc,'basic')); body.scale.set(0.13,0.06,0.2); g.add(body);
+      const tail=new THREE.Mesh(GEO_CONE,mat(0xf59e0b,'basic')); tail.scale.set(0.07,0.12,0.02); tail.rotation.x=Math.PI/2; tail.position.z=-0.16; g.add(tail);
+      g.position.set(cx+rnd(-0.5,0.5),0.06,cz+rnd(-0.5,0.5));
+      g.rotation.y=rnd(0,Math.PI*2);
+      scene.add(g);
+      G.pondFx.push({grp:g,t:0,dur:0.9+rnd(0,0.3),cx,cz,base:0.06});
+    }
+  }
+  // 更新跳鱼:抛物线升起又落下
+  for(let i=G.pondFx.length-1;i>=0;i--){
+    const f=G.pondFx[i];
+    f.t+=dt;
+    const p=f.t/f.dur;
+    if(p>=1){ scene.remove(f.grp); G.pondFx.splice(i,1); continue; }
+    const h=Math.sin(Math.PI*p)*0.55;          // 0→顶→0 抛物线
+    f.grp.position.y=f.base+h;
+    f.grp.rotation.z=Math.sin(p*Math.PI)*0.5;  // 鱼身随跳跃微微摆动
+    f.grp.rotation.y+=dt*3;                    // 旋转翻滚
+  }
 }
 
 /* ---------- 商人系统 ---------- */
@@ -1476,8 +1547,9 @@ function clearSceneObjects(){
   G.animals.forEach(a=>scene.remove(a.grp));
   G.pests.forEach(p=>scene.remove(p.grp));
   G.pets.forEach(p=>scene.remove(p.grp));
+  G.pondFx.forEach(f=>scene.remove(f.grp));   // 跳鱼特效
   scene.remove(house.grp);
-  G.buildings=[];G.crops=[];G.animals=[];G.pests=[];G.pets=[];
+  G.buildings=[];G.crops=[];G.animals=[];G.pests=[];G.pets=[];G.pondFx=[];
 }
 function saveGame(){
   if(G.st==='menu') return;
@@ -1487,7 +1559,7 @@ function saveGame(){
     buildings:G.buildings.map(b=>({type:b.type,c:b.c,r:b.r})),
     crops:G.crops.map(c=>({b:bIdx[c.b.id],slot:c.slot,key:c.key,plantDay:c.plantDay,star:c.star})),
     animals:G.animals.map(a=>({key:a.key,b:bIdx[a.b.id],fedDays:a.fedDays,x:a.x,z:a.z})),
-    bag:G.bag,feed:G.feed,wood:G.wood,petsByType:G.petsByType,
+    bag:G.bag,feed:G.feed,wood:G.wood,pondFish:G.pondFish,petsByType:G.petsByType,
     hotItems:G.hotItems,hotMult:G.hotMult||1.4,saleItems:G.saleItems,saleMult:G.saleMult||1,merchantHandled:G.merchantHandled,
   };
   G.best.day=Math.max(G.best.day,dayInt());
@@ -1502,7 +1574,7 @@ function loadGame(){
   if(!data) return false;
   clearSceneObjects();
   G.money=data.money; G.lv=data.lv||1; G.day=data.day||1;
-  G.feed=data.feed||0; G.wood=data.wood||0;
+  G.feed=data.feed||0; G.wood=data.wood||0; G.pondFish=data.pondFish||0;
   G.bag=data.bag||{}; G.petsByType=data.petsByType||{};
   G.hotItems=data.hotItems||[]; G.hotMult=data.hotMult||1.4; G.hotSet=false;
   G.saleItems=data.saleItems||[]; G.saleMult=data.saleMult||1;
@@ -1575,7 +1647,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,updateAnimalMotion,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,updateAnimalMotion,updatePondFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
 
 })();
 </script>
