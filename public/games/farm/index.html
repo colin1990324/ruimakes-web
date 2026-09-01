@@ -19,9 +19,11 @@
   #hud .stat .sp{ color:var(--dim); font-size:11px; }
   #dayBar{ position:absolute; top:0; left:0; right:0; height:3px; background:rgba(255,255,255,.06); z-index:4; }
   #dayBar i{ display:block; height:100%; width:0%; background:var(--acc); }
-  #speedTag{ position:absolute; top:10px; right:10px; z-index:5; font-size:13px; color:var(--gold); background:rgba(0,0,0,.5);
-    border:1px solid #52525b; border-radius:6px; padding:3px 10px; display:none; }
-  #verStat{ position:absolute; top:10px; right:56px; z-index:5; font-size:12px; color:var(--dim);
+  #speedTag{ position:absolute; top:10px; right:10px; z-index:5; font-size:13px; color:var(--gold); background:rgba(0,0,0,.65);
+    border:1px solid #52525b; border-radius:6px; padding:3px 10px; cursor:pointer; user-select:none; -webkit-user-select:none; display:none; }
+  #speedTag:hover{ border-color:var(--gold); background:rgba(16,185,129,.15); }
+  #speedTag::before{ content:'⏩ '; }
+  #verStat{ position:absolute; top:10px; right:76px; z-index:5; font-size:12px; color:var(--dim);
     background:rgba(0,0,0,.5); border:1px solid #3f3f46; border-radius:6px; padding:3px 8px; }
   #verStat b{ color:#facc15; }
   #merchantBar{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:5; font-size:12px; color:var(--gold);
@@ -818,9 +820,21 @@ function updateHUD(){
   $('hTime').textContent=fmtHour(hourOf());
   const anim=G.animals.length+G.pets.length;
   $('hAnimal').textContent=anim;
-  if(G.speed>1){ $('speedTag').style.display='block'; $('speedTag').textContent=G.speed+'×'; }
-  else $('speedTag').style.display='none';
+  $('speedTag').style.display='block';
+  $('speedTag').textContent=G.speed+'×';   // 速度标签常驻,点击循环加速(1×→2×→4×→8×→16×)
 }
+// 加速循环 1→2→4→8→16→1(空格键 + 右上角速度标签点击,手机触屏同样可用)
+function toggleSpeed(){
+  if(G.st!=='play'&&G.st!=='merchant') return;
+  const seq=[1,2,4,8,16];
+  const i=seq.indexOf(G.speed);
+  G.speed=seq[(i+1)%seq.length];
+  sfx('click');
+  updateHUD();
+  if(G.speed>1) toast('时间加速 '+G.speed+'×',0xf59e0b);
+  else toast('恢复正常速度',0x10b981);
+}
+$('speedTag').onclick=toggleSpeed;
 
 /* ---------- 开始 / 菜单 ---------- */
 function startGame(){
@@ -848,7 +862,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.5';
+$('verTxt').textContent='1.5.1';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -889,10 +903,7 @@ window.addEventListener('keydown',e=>{
   if(e.key===' '){
     e.preventDefault();
     if(G.st!=='play') return;
-    const seq=[1,2,4,8,16];
-    const i=seq.indexOf(G.speed);
-    G.speed=seq[(i+1)%seq.length];
-    sfx('click');
+    toggleSpeed();
   } else if(e.key==='Escape'){
     hidePreview(); hideInfo();
   } else if(e.key==='m'||e.key==='M'){
@@ -1564,7 +1575,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,updateAnimalMotion,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,updateAnimalMotion,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
 
 })();
 </script>
