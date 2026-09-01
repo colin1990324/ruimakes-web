@@ -165,7 +165,9 @@ const G={
   merchant:false,       // 商人是否在场
   merchantDay:7,
   hotSet:false,
-  hotItems:[],          // 本周高价物品
+  hotItems:[],          // 本周高价物品(卖出上浮)
+  saleItems:[],         // 本周特价货品(买入下浮)
+  saleMult:1,           // 特价折扣倍率
   best:{day:0,money:0},
   feed:0,               // 饲料仓存量
   wood:0,               // 木材存量
@@ -296,11 +298,50 @@ function buildModel(type){
       const row=new THREE.Mesh(GEO_BOX,mat(col)); row.scale.set(0.8,0.08,0.18); row.position.set(0,0.22,(i-1)*0.25); grp.add(row);
     }
   } else if(type==='house'){
-    const base=new THREE.Mesh(GEO_BOX,mat(col)); base.scale.set(1.6,0.9,1.6); base.position.y=0.45; grp.add(base);
-    const roof=new THREE.Mesh(GEO_CONE,mat(0x8a4a2a)); roof.scale.set(1.9,0.7,1.9); roof.position.y=1.1; roof.rotation.y=Math.PI/4; grp.add(roof);
-    const door=new THREE.Mesh(GEO_BOX,mat(0x4a2a12)); door.scale.set(0.4,0.5,0.08); door.position.set(0,0.28,0.82); grp.add(door);
-    const chimney=new THREE.Mesh(GEO_CYL,mat(0x6a6a6a)); chimney.scale.set(0.18,0.5,0.18); chimney.position.set(0.55,1.3,-0.4); grp.add(chimney);
-    grp.userData.houseLv=G.lv;
+    const lv=G.lv||1;
+    const s=1+lv*0.10;                       // 整体尺寸随等级放大(Lv1=1.0, Lv3=1.2, Lv6=1.5...)
+    const wallCol=lv>=5?0xe8e0d0:col;        // Lv5+ 外墙换白墙(砖房感)
+    const roofCol=lv>=5?0xb8542a:0x8a4a2a;
+    const base=new THREE.Mesh(GEO_BOX,mat(wallCol)); base.scale.set(1.6*s,0.9*s,1.6*s); base.position.y=0.45*s; grp.add(base);
+    const roof=new THREE.Mesh(GEO_CONE,mat(roofCol)); roof.scale.set(1.9*s,0.7*s,1.9*s); roof.position.y=(0.9+0.35*s)*s; roof.rotation.y=Math.PI/4; grp.add(roof);
+    const door=new THREE.Mesh(GEO_BOX,mat(0x4a2a12)); door.scale.set(0.4,0.5,0.08); door.position.set(0,0.28*s,0.82*s); grp.add(door);
+    // 烟囱:Lv2+ 加粗, Lv4+ 更高
+    const ch=new THREE.Mesh(GEO_CYL,mat(0x6a6a6a)); ch.scale.set(0.18*s*(lv>=2?1.3:1),0.5*s*(lv>=4?1.5:1),0.18*s*(lv>=2?1.3:1)); ch.position.set(0.55*s,1.3*s,-0.4*s); grp.add(ch);
+    // Lv2+: 两侧窗户
+    if(lv>=2){
+      for(const sx of [-0.55,0.55]){
+        const win=new THREE.Mesh(GEO_BOX,mat(0xfacc15,'basic')); win.scale.set(0.24,0.24,0.06); win.position.set(sx*1.6*s,0.62*s,0.84*s); grp.add(win);
+      }
+    }
+    // Lv3+: 二层(加高主体 + 二楼窗)
+    if(lv>=3){
+      base.scale.set(1.6*s,1.35*s,1.6*s); base.position.y=0.675*s;
+      roof.position.y=(1.35+0.4*s)*s;
+      for(const sx of [-0.55,0.55]){
+        const win=new THREE.Mesh(GEO_BOX,mat(0xfacc15,'basic')); win.scale.set(0.22,0.22,0.06); win.position.set(sx*1.5*s,1.15*s,0.8*s); grp.add(win);
+      }
+    }
+    // Lv3+: 门前门廊(平台 + 两根柱子)
+    if(lv>=3){
+      const porch=new THREE.Mesh(GEO_BOX,mat(0x8a4a2a)); porch.scale.set(1.2*s,0.08,0.5*s); porch.position.set(0,0.1,1.05*s); grp.add(porch);
+      for(const sx of [-0.5,0.5]){
+        const pcol=new THREE.Mesh(GEO_CYL,mat(0x6a4a2a)); pcol.scale.set(0.07,0.5*s,0.07); pcol.position.set(sx*1.2*s,0.32*s,1.05*s); grp.add(pcol);
+      }
+    }
+    // Lv4+: 屋檐横梁 + 门口台阶
+    if(lv>=4){
+      const beam=new THREE.Mesh(GEO_BOX,mat(0x8a4a2a)); beam.scale.set(1.5*s,0.07,0.3); beam.position.set(0,0.85*s,1.08*s); grp.add(beam);
+      const step=new THREE.Mesh(GEO_BOX,mat(0x9a8a6a)); step.scale.set(0.6,0.06,0.3); step.position.set(0,0.05,1.05*s); grp.add(step);
+    }
+    // Lv5+: 屋顶尖 + 两侧花坛
+    if(lv>=5){
+      const spike=new THREE.Mesh(GEO_CONE,mat(0xd9a520,'basic')); spike.scale.set(0.1,0.3,0.1); spike.position.y=roof.position.y+0.45*s; grp.add(spike);
+      for(const sx of [-0.9,0.9]){
+        const bed=new THREE.Mesh(GEO_BOX,mat(0x2f7d4f)); bed.scale.set(0.3,0.1,0.6); bed.position.set(sx*1.35*s,0.06,0.3*s); grp.add(bed);
+        const flower=new THREE.Mesh(GEO_SPH,mat(0xf472b6)); flower.scale.set(0.07,0.07,0.07); flower.position.set(sx*1.35*s,0.15,0.3*s); grp.add(flower);
+      }
+    }
+    grp.userData.houseLv=lv;
   } else if(type==='feed'){
     const silo=new THREE.Mesh(GEO_CYL,mat(col)); silo.scale.set(0.6,1.1,0.6); silo.position.y=0.55; grp.add(silo);
     const top=new THREE.Mesh(GEO_CONE,mat(0x6a6a6a)); top.scale.set(0.7,0.35,0.7); top.position.y=1.25; grp.add(top);
@@ -311,10 +352,25 @@ function buildModel(type){
     const water=new THREE.Mesh(GEO_BOX,mat(col,'basic')); water.scale.set(1.7,0.1,1.7); water.position.y=0.05; grp.add(water);
     const edge=new THREE.Mesh(GEO_BOX,mat(0x5a6a5a)); edge.scale.set(2,0.1,2); edge.position.y=0.02; grp.add(edge);
   } else if(type==='pig'){
-    const base=new THREE.Mesh(GEO_BOX,mat(0x7a5a3a)); base.scale.set(1.7,0.4,1.7); base.position.y=0.2; grp.add(base);
-    const roof=new THREE.Mesh(GEO_BOX,mat(col)); roof.scale.set(2,0.2,2); roof.position.y=0.55; grp.add(roof);
-    for(const sx of [-0.7,0.7]){
-      const post=new THREE.Mesh(GEO_BOX,mat(0x5a3a1a)); post.scale.set(0.12,0.6,0.12); post.position.set(sx,0.35,-0.7); grp.add(post);
+    // 开放式猪圈:泥地 + 低围栏 + 入口,无屋顶,小猪可自由活动
+    const base=new THREE.Mesh(GEO_BOX,mat(0x7a5a3a)); base.scale.set(1.7,0.12,1.7); base.position.y=0.06; grp.add(base);
+    // 四周围栏(矮柱 + 横杆)
+    for(const sx of [-0.8,0.8]) for(const sz of [-0.8,0.8]){
+      const post=new THREE.Mesh(GEO_BOX,mat(0x5a3a1a)); post.scale.set(0.1,0.35,0.1); post.position.set(sx,0.22,sz); grp.add(post);
+    }
+    // 左右横杆(沿 z 方向,完整)
+    for(const sx of [-0.8,0.8]){
+      const rail=new THREE.Mesh(GEO_BOX,mat(0x5a3a1a)); rail.scale.set(0.05,0.05,1.5); rail.position.set(sx,0.28,0); grp.add(rail);
+    }
+    // 后横杆(沿 x 方向,完整)
+    const railB=new THREE.Mesh(GEO_BOX,mat(0x5a3a1a)); railB.scale.set(1.5,0.05,0.05); railB.position.set(0,0.28,-0.8); grp.add(railB);
+    // 前横杆(沿 x 方向,中间断开留入口)
+    for(const sx of [-0.55,0.55]){
+      const railF=new THREE.Mesh(GEO_BOX,mat(0x5a3a1a)); railF.scale.set(0.5,0.05,0.05); railF.position.set(sx,0.28,0.8); grp.add(railF);
+    }
+    // 入口矮墩(缺口两侧)
+    for(const sx of [-0.55,0.55]){
+      const post=new THREE.Mesh(GEO_BOX,mat(0x5a3a1a)); post.scale.set(0.1,0.3,0.1); post.position.set(sx,0.19,0.8); grp.add(post);
     }
   } else if(type==='forest'){
     for(let i=0;i<5;i++){
@@ -427,7 +483,7 @@ function updateTime(dt){
   // 商人:每 7 天 8:00-22:00
   const inMerchant=(d%7===0&&h>=8&&h<22);
   if(inMerchant&&!G.hotSet){ G.hotSet=true; rollMerchant(); }
-  if(!inMerchant){ G.hotSet=false; G.hotItems=[]; G.merchantHandled=false; }   // 商人离开后高价失效
+  if(!inMerchant){ G.hotSet=false; G.hotItems=[]; G.merchantHandled=false; G.saleItems=[]; G.saleMult=1; }   // 商人离开后高价/特价失效
   G.merchant=inMerchant;
   // 事件进行中 → 冻结时间:商人到访未处理 / 偷菜动物在场,处理完才继续(加速也不会错过)
   G.merchantPending = inMerchant && !G.merchantHandled;
@@ -458,6 +514,7 @@ function loop(now){
     updateTime(dt*G.speed);
     updateCrops();
     updateCropPctUI();
+    updateAnimalMotion(dt);   // 动物散步(真实时间步进,不受加速影响)
   }
   // hover 预览
   if(G.st==='play'&&G.hover){
@@ -753,7 +810,7 @@ function startGame(){
   G.st='play';
   G.day=1; G.money=200; G.lv=1;
   G.buildings=[]; G.crops=[]; G.animals=[]; G.pets=[]; G.pests=[];
-  G.bag={}; G.feed=0; G.wood=0; G.petsByType={}; G.hotItems=[];
+  G.bag={}; G.feed=0; G.wood=0; G.petsByType={}; G.hotItems=[]; G.saleItems=[]; G.saleMult=1;
   G.pestsDone=false; G.merchant=false; G.merchantDay=7; G.hotSet=false;
   G.merchantHandled=false; G.merchantPending=false;
   G._wallTs=Date.now();   // 离线/后台成长计时锚点
@@ -772,7 +829,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.3';
+$('verTxt').textContent='1.4';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1238,6 +1295,41 @@ function updateAnimals(){
   if(hungry) toast('⚠ 饲料不足,动物们今天没有产出',0xef4444);
   renderBag();
 }
+// 动物散步:每帧在圈舍范围内随机走动(猪圈/牧场/鸡舍都动,鸡快些、牛羊猪慢些)
+function updateAnimalMotion(dt){
+  if(!G.animals.length||G.st!=='play') return;
+  G.animals.forEach(a=>{
+    const b=a.b;
+    if(!b) return;
+    // 建筑占地世界范围:wx(c,w) 中心 ± w/2
+    const cx=wx(b.c,b.w), cz=wz(b.r,b.h);
+    const hw=b.w/2-0.25, hz=b.h/2-0.25;   // 边缘留 0.25 不出栏
+    if(!a.walkT){ a.walkT={x:a.x,z:a.z,wait:rnd(0.5,2)}; }
+    const wt=a.walkT;
+    wt.wait-=dt;
+    if(wt.wait<=0){
+      wt.x=cx+rnd(-hw,hw);
+      wt.z=cz+rnd(-hz,hz);
+      wt.wait=rnd(1.5,4.5);
+    }
+    const dx=wt.x-a.x, dz=wt.z-a.z;
+    const dist=Math.hypot(dx,dz);
+    const spd=(a.key==='chicken'?0.5:0.3)*dt;
+    if(dist>spd){
+      a.x+=dx/dist*spd;
+      a.z+=dz/dist*spd;
+      a.grp.rotation.y=Math.atan2(dx,dz);
+      // 走路起伏(幅度小,不突兀)
+      wt.phase=(wt.phase||0)+dt*10;
+      a.grp.position.y=0.05+Math.abs(Math.sin(wt.phase))*0.04;
+    } else {
+      a.grp.rotation.y+=dt*1.5;           // 原地停留时微微转悠
+      a.grp.position.y=0.05;
+    }
+    a.grp.position.x=a.x;
+    a.grp.position.z=a.z;
+  });
+}
 function applyPetSkills(){
   if(G.petsByType.rabbit) G.money+=2*G.petsByType.rabbit;
   if(G.petsByType.raccoon) G.wood+=G.petsByType.raccoon;
@@ -1250,7 +1342,12 @@ function rollMerchant(){
   G.hotItems=[];
   for(let i=0;i<2&&pool.length;i++) G.hotItems.push(pool.splice(rndi(0,pool.length-1),1)[0]);
   G.hotMult=rnd(1.25,1.5);
-  toast('🧑‍🌾 商人本周高价收购:'+G.hotItems.map(k=>ITEMS[k].name).join('、')+' (×'+G.hotMult.toFixed(2)+')',0xf59e0b);
+  // 买入特价:本周 2 种货品下浮 25%~50%
+  const gpool=MERCHANT_GOODS.slice();
+  G.saleItems=[];
+  for(let i=0;i<2&&gpool.length;i++) G.saleItems.push(gpool.splice(rndi(0,gpool.length-1),1)[0].key);
+  G.saleMult=rnd(0.5,0.75);
+  toast('🧑‍🌾 商人本周高价收购:'+G.hotItems.map(k=>ITEMS[k].name).join('、')+' (×'+G.hotMult.toFixed(2)+');特价:'+G.saleItems.map(k=>MERCHANT_GOODS.find(g=>g.key===k).name).join('、')+' (×'+G.saleMult.toFixed(2)+')',0xf59e0b);
 }
 const MERCHANT_GOODS=[
   {key:'feed',name:'饲料 ×10',price:20},
@@ -1272,11 +1369,15 @@ function renderMerchant(){
   });
   if(keys.length) html+='<div class="item" id="mSellAll" style="border-color:var(--gold)"><b style="color:var(--gold)">💰 全部出售</b></div>';
   html+='</div>';
-  // 买入
-  html+='<div class="sec">— 商人货品 (点击购买) —</div><div class="grid">';
+  // 买入(本周特价货品下浮)
+  const saleTxt=G.saleItems.length?('<span style="color:var(--gold)">本周特价:'+G.saleItems.map(k=>MERCHANT_GOODS.find(g=>g.key===k).name).join('、')+' ×'+G.saleMult.toFixed(2)+'</span>'):'';
+  html+='<div class="sec">— 商人货品 (点击购买) — '+saleTxt+'</div><div class="grid">';
   MERCHANT_GOODS.forEach(gd=>{
     const stock=gd.key==='feed'?('存量 '+G.feed+'/500'):'';
-    html+='<div class="item" data-buy="'+gd.key+'"><b>'+gd.name+'</b><br>'+gd.price+'金 '+stock+'</div>';
+    const onSale=G.saleItems.includes(gd.key);
+    const price=onSale?Math.max(1,Math.round(gd.price*G.saleMult)):gd.price;
+    html+='<div class="item" data-buy="'+gd.key+'"><b>'+gd.name+(onSale?' <span class="hot">↘特价</span>':'')+'</b><br>'+
+      (onSale?'<s style="color:var(--dim)">'+gd.price+'金</s> ':'')+price+'金 '+stock+'</div>';
   });
   html+='</div>';
   html+='<div style="text-align:center"><button class="close" id="mClose">完成交易</button></div>';
@@ -1289,16 +1390,18 @@ function renderMerchant(){
   el.querySelectorAll('[data-buy]').forEach(bd=>{
     bd.onclick=()=>{
       const gd=MERCHANT_GOODS.find(g=>g.key===bd.dataset.buy);
+      const onSale=G.saleItems.includes(gd.key);
+      const price=onSale?Math.max(1,Math.round(gd.price*G.saleMult)):gd.price;
       if(gd.key==='feed'){
         if(G.feed>=500){ toast('饲料仓已满',0xef4444); return; }
-        if(G.money<20){ toast('金币不足',0xef4444); return; }
-        G.money-=20; G.feed=Math.min(500,G.feed+10);
+        if(G.money<price){ toast('金币不足',0xef4444); return; }
+        G.money-=price; G.feed=Math.min(500,G.feed+10);
       } else {
-        if(G.money<gd.price){ toast('金币不足',0xef4444); return; }
-        G.money-=gd.price; addItem(gd.key,1);
+        if(G.money<price){ toast('金币不足',0xef4444); return; }
+        G.money-=price; addItem(gd.key,1);
       }
       sfx('click');
-      toast('买到 '+gd.name,0x10b981);
+      toast('买到 '+gd.name+(onSale?' (特价)':''),0x10b981);
       renderMerchant(); updateHUD();
     };
   });
@@ -1338,7 +1441,7 @@ function saveGame(){
     crops:G.crops.map(c=>({b:bIdx[c.b.id],slot:c.slot,key:c.key,plantDay:c.plantDay,star:c.star})),
     animals:G.animals.map(a=>({key:a.key,b:bIdx[a.b.id],fedDays:a.fedDays,x:a.x,z:a.z})),
     bag:G.bag,feed:G.feed,wood:G.wood,petsByType:G.petsByType,
-    hotItems:G.hotItems,hotMult:G.hotMult||1.4,merchantHandled:G.merchantHandled,
+    hotItems:G.hotItems,hotMult:G.hotMult||1.4,saleItems:G.saleItems,saleMult:G.saleMult||1,merchantHandled:G.merchantHandled,
   };
   G.best.day=Math.max(G.best.day,dayInt());
   G.best.money=Math.max(G.best.money,G.money);
@@ -1355,6 +1458,7 @@ function loadGame(){
   G.feed=data.feed||0; G.wood=data.wood||0;
   G.bag=data.bag||{}; G.petsByType=data.petsByType||{};
   G.hotItems=data.hotItems||[]; G.hotMult=data.hotMult||1.4; G.hotSet=false;
+  G.saleItems=data.saleItems||[]; G.saleMult=data.saleMult||1;
   G.merchantHandled=!!data.merchantHandled; G.merchantPending=false;
   G.best=data.best||{day:0,money:0};
   G._lastDay=Math.floor(G.day);
@@ -1423,7 +1527,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,updateAnimalMotion,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
 
 })();
 </script>
