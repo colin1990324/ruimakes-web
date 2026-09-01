@@ -62,6 +62,11 @@
   #bag .slot .q{ color:var(--dim); font-size:10px; }
   #bag .slot .st{ color:var(--gold); font-size:10px; }
   #bag .empty{ color:var(--dim); font-size:12px; padding:6px 4px; }
+  .qtyrow{ display:flex; align-items:center; gap:8px; width:100%; font-size:11px; color:var(--dim); padding:2px 2px 0; }
+  .qtyrow b{ color:var(--gold); min-width:38px; text-align:right; font-size:12px; }
+  .qtyrow input[type=range]{ flex:1; accent-color:#10b981; height:14px; cursor:pointer; }
+  #merchant .qtyrow{ margin:4px 0 8px; }
+  #merchant .qtyrow b{ color:var(--gold); }
   /* ===== 商人面板 ===== */
   #merchant{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:10;
     background:rgba(9,9,11,.8); }
@@ -426,8 +431,11 @@ function removeBuilding(b){
 }
 // 小木屋(常驻,不在 buildings 列表,但记录位置)
 const house={type:'house',c:Math.round(CX-1),r:Math.round(CZ-1),w:2,h:2};
-(function(){
+function placeHouseGrid(){
   for(let dc=0;dc<2;dc++) for(let dr=0;dr<2;dr++) grid[house.r+dr][house.c+dc]=house;
+}
+(function(){
+  placeHouseGrid();
   house.grp=buildModel('house');
   house.grp.position.set(wx(house.c,2),0,wz(house.r,2));
   scene.add(house.grp);
@@ -754,15 +762,25 @@ function renderBag(){
     return;
   }
   el.style.pointerEvents='auto';
-  let html='';
+  // 数量滑块:滑动选卖出数量,点物品按 N 卖
+  let qty=G.sellQty||1;
+  let html='<div class="qtyrow">卖出 <input type="range" id="bagQty" min="1" max="99" value="'+qty+'"> <b id="bagQtyV">×'+qty+'</b></div>';
   keys.forEach(k=>{
     const hot=G.hotItems.includes(k.replace(/_\d$/,''))?' <span style="color:var(--red)">↗</span>':'';
     html+='<div class="slot" data-k="'+k+'"><div class="n">'+itemName(k)+hot+'</div><div class="q">×'+G.bag[k]+' <span class="st">'+itemPrice(k,true)+'金</span></div></div>';
   });
   html+='<div class="slot" style="border-color:var(--gold)" id="sellAll"><div class="n" style="color:var(--gold)">💰 全卖</div></div>';
   el.innerHTML=html;
+  // 滑块联动:拖动实时更新数量显示
+  const qs=el.querySelector('#bagQty');
+  if(qs){
+    qs.oninput=()=>{ G.sellQty=+qs.value; const v=el.querySelector('#bagQtyV'); if(v) v.textContent='×'+qs.value; };
+  }
   el.querySelectorAll('.slot[data-k]').forEach(s=>{
-    s.onclick=()=>{ sellItem(s.dataset.k,1); toast('出售 1 × '+itemName(s.dataset.k)); };
+    s.onclick=()=>{
+      const n=Math.min(G.sellQty||1,G.bag[s.dataset.k]||1);
+      sellItem(s.dataset.k,n); toast('出售 '+n+' × '+itemName(s.dataset.k));
+    };
   });
   const sa=el.querySelector('#sellAll');
   if(sa) sa.onclick=sellAll;
@@ -817,6 +835,7 @@ function startGame(){
   G.bidSeq=0; G._lastDay=1;
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) grid[r][c]='locked';
   refreshUnlock();
+  placeHouseGrid();       // 房屋放回网格(否则点房子弹不出升级面板)
   refreshLockVisual();
   scene.remove(house.grp);
   house.grp=buildModel('house');
@@ -829,7 +848,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.4';
+$('verTxt').textContent='1.5';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1360,8 +1379,10 @@ function renderMerchant(){
   const el=$('merchant');
   const hot=G.hotItems.length?('<span style="color:var(--red)">本周高价:'+G.hotItems.map(k=>ITEMS[k].name).join('、')+' ×'+G.hotMult.toFixed(2)+'</span>'):'';
   let html='<h2>🧑‍🌾 商人 · MERCHANT</h2><div class="sub">每 7 天来一次,高价收购 2 种收获物 · '+hot+'</div>';
-  // 出售
-  html+='<div class="sec">— 卖出收获 (点击出售 1 个) —</div><div class="grid">';
+  // 出售(带数量滑块)
+  html+='<div class="sec">— 卖出收获 —</div>';
+  html+='<div class="qtyrow">卖出 <input type="range" id="mSellQty" min="1" max="99" value="'+(G.mSellQty||1)+'"> <b id="mSellQtyV">×'+(G.mSellQty||1)+'</b></div>';
+  html+='<div class="grid">';
   const keys=Object.keys(G.bag);
   if(!keys.length) html+='<span style="color:var(--dim)">背包空,去收获点东西吧</span>';
   keys.forEach(k=>{
@@ -1369,9 +1390,11 @@ function renderMerchant(){
   });
   if(keys.length) html+='<div class="item" id="mSellAll" style="border-color:var(--gold)"><b style="color:var(--gold)">💰 全部出售</b></div>';
   html+='</div>';
-  // 买入(本周特价货品下浮)
+  // 买入(本周特价货品下浮,带数量滑块)
   const saleTxt=G.saleItems.length?('<span style="color:var(--gold)">本周特价:'+G.saleItems.map(k=>MERCHANT_GOODS.find(g=>g.key===k).name).join('、')+' ×'+G.saleMult.toFixed(2)+'</span>'):'';
-  html+='<div class="sec">— 商人货品 (点击购买) — '+saleTxt+'</div><div class="grid">';
+  html+='<div class="sec">— 商人货品 (点击购买) — '+saleTxt+'</div>';
+  html+='<div class="qtyrow">购买 <input type="range" id="mBuyQty" min="1" max="10" value="'+(G.mBuyQty||1)+'"> <b id="mBuyQtyV">×'+(G.mBuyQty||1)+'</b></div>';
+  html+='<div class="grid">';
   MERCHANT_GOODS.forEach(gd=>{
     const stock=gd.key==='feed'?('存量 '+G.feed+'/500'):'';
     const onSale=G.saleItems.includes(gd.key);
@@ -1382,8 +1405,16 @@ function renderMerchant(){
   html+='</div>';
   html+='<div style="text-align:center"><button class="close" id="mClose">完成交易</button></div>';
   el.querySelector('.box').innerHTML=html;
+  // 滑块联动
+  const qs=el.querySelector('#mSellQty');
+  if(qs){ qs.oninput=()=>{ G.mSellQty=+qs.value; const v=el.querySelector('#mSellQtyV'); if(v) v.textContent='×'+qs.value; }; }
+  const qb=el.querySelector('#mBuyQty');
+  if(qb){ qb.oninput=()=>{ G.mBuyQty=+qb.value; const v=el.querySelector('#mBuyQtyV'); if(v) v.textContent='×'+qb.value; }; }
   el.querySelectorAll('[data-sell]').forEach(s=>{
-    s.onclick=()=>{ sellItem(s.dataset.sell,1); renderMerchant(); };
+    s.onclick=()=>{
+      const n=Math.min(G.mSellQty||1,G.bag[s.dataset.sell]||1);
+      sellItem(s.dataset.sell,n); renderMerchant();
+    };
   });
   const sa=el.querySelector('#mSellAll');
   if(sa) sa.onclick=()=>{ sellAll(); renderMerchant(); };
@@ -1392,16 +1423,21 @@ function renderMerchant(){
       const gd=MERCHANT_GOODS.find(g=>g.key===bd.dataset.buy);
       const onSale=G.saleItems.includes(gd.key);
       const price=onSale?Math.max(1,Math.round(gd.price*G.saleMult)):gd.price;
+      const n=G.mBuyQty||1;
       if(gd.key==='feed'){
+        const qty=n*10;
         if(G.feed>=500){ toast('饲料仓已满',0xef4444); return; }
-        if(G.money<price){ toast('金币不足',0xef4444); return; }
-        G.money-=price; G.feed=Math.min(500,G.feed+10);
+        const cost=price*n;
+        if(G.money<cost){ toast('金币不足',0xef4444); return; }
+        G.money-=cost; G.feed=Math.min(500,G.feed+qty);
+        toast('买到 饲料 ×'+qty,0x10b981);
       } else {
-        if(G.money<price){ toast('金币不足',0xef4444); return; }
-        G.money-=price; addItem(gd.key,1);
+        const cost=price*n;
+        if(G.money<cost){ toast('金币不足',0xef4444); return; }
+        G.money-=cost; addItem(gd.key,n);
+        toast('买到 '+gd.name+(onSale?' (特价)':'')+' ×'+n,0x10b981);
       }
       sfx('click');
-      toast('买到 '+gd.name+(onSale?' (特价)':''),0x10b981);
       renderMerchant(); updateHUD();
     };
   });
@@ -1464,6 +1500,7 @@ function loadGame(){
   G._lastDay=Math.floor(G.day);
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) grid[r][c]='locked';
   refreshUnlock();
+  placeHouseGrid();       // 房屋放回网格(否则点房子弹不出升级面板)
   data.buildings.forEach(bd=>{
     const def=BUILD_TYPES.find(t=>t.key===bd.type);
     if(!def) return;
