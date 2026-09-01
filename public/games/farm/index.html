@@ -186,6 +186,7 @@ const G={
   wood:0,               // 木材存量
   pondFish:0,           // 鱼塘存量(每天+1,点击捞鱼收进背包)
   pondFx:[],            // 跳鱼动画特效(临时,不入存档)
+  eggFx:[],             // 鸡蛋弹出动画(临时,不入存档)
   seeds:{},             // 各作物已解锁标记(level 判断)
   lastProduce:{},       // 动物最后产出日
   pestsDone:false,      // 今晚偷菜事件是否已发生
@@ -535,6 +536,7 @@ function loop(now){
     updateResourceUI();   // 饲料仓/鱼塘/森林存量实时刷新(同农田百分比)
     updateAnimalMotion(dt);   // 动物散步(真实时间步进,不受加速影响)
     updatePondFx(dt);         // 鱼塘跳鱼动画
+    updateEggFx(dt);          // 鸡蛋弹出动画
   }
   // hover 预览
   if(G.st==='play'&&G.hover){
@@ -876,7 +878,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.8';
+$('verTxt').textContent='1.9';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -975,33 +977,124 @@ function tilePos(b,slot){
 function buildCropVisual(cr){
   const g=new THREE.Group();
   const stageMats=cropStageMats(cr);
-  const blades=[];
-  for(let i=0;i<3;i++){
-    const bl=new THREE.Mesh(GEO_BOX,stageMats[0]);
-    bl.scale.set(0.09,0.7,0.09);
-    bl.position.set((i-1)*0.1,0.35,0);
-    g.add(bl); blades.push(bl);
-  }
+  const blades=[];   // 叶片(随生长阶段变色)
   let fruit=null, heads=[];
-  if(cr.key==='tomato'||cr.key==='pepper'||cr.key==='mint'||cr.key==='mandrake'||cr.key==='eggplant'){
-    fruit=new THREE.Mesh(GEO_SPH,stageMats[2]);
-    fruit.scale.set(0.2,0.2,0.2);
-    fruit.position.set(0,0.14,0.08);
-    g.add(fruit);
-  } else if(cr.key==='wheat'){
-    for(let i=0;i<3;i++){   // 麦穗:3 粒金黄籽,生长中段出现
-      const hd=new THREE.Mesh(GEO_BOX,stageMats[2]);
-      hd.scale.set(0.06,0.12,0.06);
-      hd.position.set((i-1)*0.06,0.8,0);
-      hd.visible=false;
-      g.add(hd); heads.push(hd);
+  // 三片基础叶(统一 3 片,满足测试),每种作物各自形状
+  const mkLeaf=(w,h,d,x,y,z,rz,ry)=>{
+    const bl=new THREE.Mesh(GEO_BOX,stageMats[0]);
+    bl.scale.set(w,h,d); bl.position.set(x,y,z); bl.rotation.z=rz||0; bl.rotation.y=ry||0;
+    g.add(bl); blades.push(bl);
+  };
+  if(cr.key==='wheat'){                       // 小麦:细叶丛 + 金黄麦穗
+    mkLeaf(0.04,0.6,0.04,-0.1,0.32,0,0.35);
+    mkLeaf(0.04,0.6,0.04,0.1,0.32,0,-0.35);
+    mkLeaf(0.04,0.7,0.04,0,0.36,0,0);
+    for(let i=0;i<4;i++){                     // 麦穗:4 粒交错金黄籽 + 芒
+      const hd=new THREE.Mesh(GEO_SPH,stageMats[2]);
+      hd.scale.set(0.045,0.11,0.045);
+      hd.position.set((i%2===0?-0.03:0.03),0.78+i*0.09,0);
+      hd.visible=false; g.add(hd); heads.push(hd);
     }
-  } else if(cr.key==='corn'){
-    const hd=new THREE.Mesh(GEO_BOX,stageMats[2]);   // 玉米棒
-    hd.scale.set(0.09,0.28,0.09);
-    hd.position.set(0,0.88,0);
-    hd.visible=false;
-    g.add(hd); heads.push(hd);
+    for(let i=0;i<3;i++){                     // 芒:细长锥
+      const aw=new THREE.Mesh(GEO_CONE,stageMats[2]);
+      aw.scale.set(0.02,0.3,0.02); aw.rotation.x=Math.PI/2;
+      aw.position.set((i-1)*0.045,1.18,0);
+      aw.visible=false; g.add(aw); heads.push(aw);
+    }
+  } else if(cr.key==='tomato'){               // 番茄:大叶 + 红果挂藤
+    mkLeaf(0.16,0.32,0.05,-0.14,0.34,0,0.5);
+    mkLeaf(0.16,0.32,0.05,0.14,0.34,0,-0.5);
+    mkLeaf(0.14,0.36,0.05,0,0.38,0,0);
+    const stem=new THREE.Mesh(GEO_CYL,stageMats[0]);
+    stem.scale.set(0.05,0.8,0.05); stem.position.y=0.4; g.add(stem);
+    fruit=new THREE.Group();                  // 2 个红番茄 + 绿萼
+    for(let i=0;i<2;i++){
+      const f=new THREE.Mesh(GEO_SPH,stageMats[2]);
+      f.scale.set(0.12,0.12,0.12);
+      f.position.set(i===0?-0.06:0.08,0.12,0);
+      fruit.add(f);
+      const cal=new THREE.Mesh(GEO_CONE,stageMats[0]);
+      cal.scale.set(0.06,0.05,0.06); cal.rotation.x=Math.PI;
+      cal.position.set(f.position.x,f.position.y+0.1,0);
+      fruit.add(cal);
+    }
+    fruit.position.y=0.5; g.add(fruit);
+  } else if(cr.key==='corn'){                 // 玉米:宽叶 + 玉米棒 + 红须
+    mkLeaf(0.14,0.5,0.05,-0.16,0.32,0,0.55);
+    mkLeaf(0.14,0.5,0.05,0.16,0.32,0,-0.55);
+    mkLeaf(0.12,0.55,0.05,0,0.36,0,0);
+    const stem=new THREE.Mesh(GEO_CYL,stageMats[0]);
+    stem.scale.set(0.07,0.9,0.07); stem.position.y=0.45; g.add(stem);
+    const cob=new THREE.Mesh(GEO_CYL,stageMats[2]);   // 玉米棒(横放)
+    cob.scale.set(0.09,0.34,0.09); cob.rotation.z=Math.PI/2;
+    cob.position.set(0.14,0.62,0); cob.visible=false; g.add(cob); heads.push(cob);
+    for(let i=0;i<3;i++){                             // 顶部红须
+      const tassel=new THREE.Mesh(GEO_CONE,mat(0x9a5a3a,'basic'));
+      tassel.scale.set(0.015,0.18,0.015);
+      tassel.position.set(0.34,0.62+(i-1)*0.05,0);
+      tassel.visible=false; g.add(tassel); heads.push(tassel);
+    }
+  } else if(cr.key==='pepper'){               // 辣椒:小叶 + 细长红椒朝下
+    mkLeaf(0.09,0.28,0.04,-0.11,0.3,0,0.45);
+    mkLeaf(0.09,0.28,0.04,0.11,0.3,0,-0.45);
+    mkLeaf(0.08,0.32,0.04,0,0.34,0,0);
+    fruit=new THREE.Group();                  // 2 根红椒(尖朝下)+ 绿柄
+    for(let i=0;i<2;i++){
+      const p=new THREE.Mesh(GEO_CONE,stageMats[2]);
+      p.scale.set(0.07,0.3,0.07); p.rotation.x=Math.PI;
+      p.position.set(i===0?-0.05:0.07,0.1,0);
+      fruit.add(p);
+      const st2=new THREE.Mesh(GEO_CONE,stageMats[0]);
+      st2.scale.set(0.025,0.05,0.025);
+      st2.position.set(p.position.x,p.position.y+0.16,0);
+      fruit.add(st2);
+    }
+    fruit.position.y=0.5; g.add(fruit);
+  } else if(cr.key==='eggplant'){             // 茄子:大叶 + 紫色长茄
+    mkLeaf(0.15,0.35,0.05,-0.15,0.34,0,0.5);
+    mkLeaf(0.15,0.35,0.05,0.15,0.34,0,-0.5);
+    mkLeaf(0.13,0.38,0.05,0,0.38,0,0);
+    const stem=new THREE.Mesh(GEO_CYL,stageMats[0]);
+    stem.scale.set(0.05,0.7,0.05); stem.position.y=0.36; g.add(stem);
+    fruit=new THREE.Group();                  // 长椭圆紫茄 + 绿萼
+    const f=new THREE.Mesh(GEO_SPH,stageMats[2]);
+    f.scale.set(0.12,0.3,0.12); f.position.set(0.02,0.12,0);
+    fruit.add(f);
+    const cal=new THREE.Mesh(GEO_CONE,stageMats[0]);
+    cal.scale.set(0.07,0.06,0.07); cal.rotation.x=Math.PI;
+    cal.position.set(0.02,0.28,0);
+    fruit.add(cal);
+    fruit.position.y=0.55; g.add(fruit);
+  } else if(cr.key==='mint'){                 // 薄荷:对生椭圆叶 + 绿色浆果
+    mkLeaf(0.1,0.28,0.12,-0.12,0.32,0,0,0.35);
+    mkLeaf(0.1,0.28,0.12,0.12,0.32,0,0,-0.35);
+    mkLeaf(0.1,0.32,0.12,0,0.36,0);
+    fruit=new THREE.Group();                  // 3 颗薄荷果(绿中带白)
+    for(let i=0;i<3;i++){
+      const f=new THREE.Mesh(GEO_SPH,stageMats[2]);
+      f.scale.set(0.055,0.055,0.055);
+      f.position.set((i-1)*0.07,0.18+(i%2)*0.05,0.05);
+      fruit.add(f);
+    }
+    fruit.position.y=0.42; g.add(fruit);
+  } else if(cr.key==='mandrake'){             // 蔓德拉草:紫色大叶 + 发光紫果
+    mkLeaf(0.16,0.4,0.06,-0.15,0.36,0,0.5);
+    mkLeaf(0.16,0.4,0.06,0.15,0.36,0,-0.5);
+    mkLeaf(0.14,0.45,0.06,0,0.4,0,0);
+    const stem=new THREE.Mesh(GEO_CYL,stageMats[0]);
+    stem.scale.set(0.06,0.8,0.06); stem.position.y=0.4; g.add(stem);
+    fruit=new THREE.Group();                  // 中央发光紫果
+    const f=new THREE.Mesh(GEO_SPH,stageMats[2]);
+    f.scale.set(0.13,0.16,0.13); f.position.set(0,0.1,0);
+    fruit.add(f);
+    const crown=new THREE.Mesh(GEO_CONE,stageMats[2]);
+    crown.scale.set(0.07,0.1,0.07); crown.position.set(0,0.22,0);
+    fruit.add(crown);
+    fruit.position.y=0.55; g.add(fruit);
+  } else {                                    // 兜底:通用 3 叶
+    mkLeaf(0.08,0.4,0.08,-0.08,0.24,0,0.3);
+    mkLeaf(0.08,0.4,0.08,0.08,0.24,0,-0.3);
+    mkLeaf(0.08,0.45,0.08,0,0.26,0,0);
   }
   g.userData.blades=blades;
   g.userData.fruit=fruit;
@@ -1067,7 +1160,10 @@ function updateCrops(){
     if(c.grp.userData.fruit){
       const fv=pct<0.4?0.001:(pct-0.4)/0.6;   // 果实 40% 起长出,成熟时最大
       c.grp.userData.fruit.scale.setScalar(Math.max(0.001,fv*0.2));
-      c.grp.userData.fruit.material=st[stage];
+      // fruit 可能是 Group(多果实组合),递归设置材质
+      const f=c.grp.userData.fruit;
+      if(f.material!==undefined) f.material=st[stage];
+      if(f.children) f.children.forEach(ch=>{ if(ch.material!==undefined) ch.material=st[stage]; });
     }
     if(c.grp.userData.heads){
       const hv=stage>=1;   // 麦穗/玉米棒生长中段起出现
@@ -1359,6 +1455,7 @@ function updateAnimals(){
         if(a.fedDays===10) toast('🐷 有猪育肥完成,可以出栏了!',0xf59e0b);
       } else {
         addItem(def.prod,1);
+        if(def.prod==='egg') spawnEggPop(a.b);   // 鸡蛋弹出动画
       }
     } else hungry=true;
   });
@@ -1469,6 +1566,30 @@ function updatePondFx(dt){
     f.grp.position.y=f.base+h;
     f.grp.rotation.z=Math.sin(p*Math.PI)*0.5;  // 鱼身随跳跃微微摆动
     f.grp.rotation.y+=dt*3;                    // 旋转翻滚
+  }
+}
+
+/* ---------- 鸡蛋弹出动画 ---------- */
+// 鸡产出鸡蛋时,鸡舍上方弹出一个鸡蛋又落下消失(给产蛋一点反馈)
+function spawnEggPop(b){
+  if(G.eggFx.length>=6) return;
+  const cx=wx(b.c,b.w), cz=wz(b.r,b.h);
+  const g=new THREE.Group();
+  const egg=new THREE.Mesh(GEO_SPH,mat(0xfff3d6,'basic')); egg.scale.set(0.1,0.13,0.1); g.add(egg);
+  g.position.set(cx+rnd(-0.2,0.2),0.8,cz+rnd(-0.2,0.2));
+  scene.add(g);
+  G.eggFx.push({grp:g,t:0,dur:1.0+rnd(0,0.4),base:0.8});
+}
+function updateEggFx(dt){
+  for(let i=G.eggFx.length-1;i>=0;i--){
+    const f=G.eggFx[i];
+    f.t+=dt;
+    const p=f.t/f.dur;
+    if(p>=1){ scene.remove(f.grp); G.eggFx.splice(i,1); continue; }
+    const h=Math.sin(Math.PI*p)*0.9;           // 0→顶→0 抛物线
+    f.grp.position.y=f.base+h;
+    f.grp.rotation.z=Math.sin(p*Math.PI)*0.5;  // 微微摆动
+    f.grp.rotation.y+=dt*4;                    // 旋转
   }
 }
 
@@ -1584,8 +1705,9 @@ function clearSceneObjects(){
   G.pests.forEach(p=>scene.remove(p.grp));
   G.pets.forEach(p=>scene.remove(p.grp));
   G.pondFx.forEach(f=>scene.remove(f.grp));   // 跳鱼特效
+  G.eggFx.forEach(f=>scene.remove(f.grp));    // 鸡蛋弹出特效
   scene.remove(house.grp);
-  G.buildings=[];G.crops=[];G.animals=[];G.pests=[];G.pets=[];G.pondFx=[];
+  G.buildings=[];G.crops=[];G.animals=[];G.pests=[];G.pets=[];G.pondFx=[];G.eggFx=[];
 }
 function saveGame(){
   if(G.st==='menu') return;
@@ -1683,7 +1805,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,spawnEggPop,updateEggFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
 
 })();
 </script>
