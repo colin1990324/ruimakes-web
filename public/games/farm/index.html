@@ -768,7 +768,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.1';
+$('verTxt').textContent='1.2';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -862,7 +862,7 @@ function mixHex(c1,c2,t){
   const b=Math.round((c1&255)*(1-t)+(c2&255)*t);
   return (r<<16)|(g<<8)|b;
 }
-function cropStageMats(cr){ return [mat(CROP_GREEN), mat(mixHex(CROP_GREEN,cr.color,0.6)), mat(cr.color)]; }
+function cropStageMats(cr){ return [mat(CROP_GREEN), mat(mixHex(CROP_GREEN,cr.color,0.5)), mat(cr.color,'basic')]; }
 function tilePos(b,slot){
   const c=b.c+slot%b.w, r=b.r+Math.floor(slot/b.w);
   return [wx(c), wz(r)];
@@ -873,19 +873,34 @@ function buildCropVisual(cr){
   const blades=[];
   for(let i=0;i<3;i++){
     const bl=new THREE.Mesh(GEO_BOX,stageMats[0]);
-    bl.scale.set(0.06,0.5,0.06);
-    bl.position.set((i-1)*0.08,0.25,0);
+    bl.scale.set(0.09,0.7,0.09);
+    bl.position.set((i-1)*0.1,0.35,0);
     g.add(bl); blades.push(bl);
   }
-  let fruit=null;
+  let fruit=null, heads=[];
   if(cr.key==='tomato'||cr.key==='pepper'||cr.key==='mint'||cr.key==='mandrake'||cr.key==='eggplant'){
     fruit=new THREE.Mesh(GEO_SPH,stageMats[2]);
-    fruit.scale.set(0.16,0.16,0.16);
-    fruit.position.set(0,0.1,0.06);
+    fruit.scale.set(0.2,0.2,0.2);
+    fruit.position.set(0,0.14,0.08);
     g.add(fruit);
+  } else if(cr.key==='wheat'){
+    for(let i=0;i<3;i++){   // 麦穗:3 粒金黄籽,生长中段出现
+      const hd=new THREE.Mesh(GEO_BOX,stageMats[2]);
+      hd.scale.set(0.06,0.12,0.06);
+      hd.position.set((i-1)*0.06,0.8,0);
+      hd.visible=false;
+      g.add(hd); heads.push(hd);
+    }
+  } else if(cr.key==='corn'){
+    const hd=new THREE.Mesh(GEO_BOX,stageMats[2]);   // 玉米棒
+    hd.scale.set(0.09,0.28,0.09);
+    hd.position.set(0,0.88,0);
+    hd.visible=false;
+    g.add(hd); heads.push(hd);
   }
   g.userData.blades=blades;
   g.userData.fruit=fruit;
+  g.userData.heads=heads;
   g.userData.stageMats=stageMats;
   return g;
 }
@@ -899,7 +914,9 @@ function plantCrop(b,key){
   let slot=-1;
   for(let i=0;i<b.w*b.h;i++) if(!farmCrops.find(c=>c.slot===i)){ slot=i; break; }
   G.money-=cr.cost;
-  const c={b,slot,key,plantDay:G.day,star:0};
+  // 品质种下时定好(40% 1星/40% 2星/20% 3星),面板直接显示,收获按此结算
+  const r=Math.random();
+  const c={b,slot,key,plantDay:G.day,star:r<0.4?1:(r<0.8?2:3)};
   c.grp=buildCropVisual(cr);
   const [px,pz]=tilePos(b,slot);
   c.grp.position.set(px,0.08,pz);
@@ -915,10 +932,7 @@ function harvestFarm(b){
   const ready=farmCrops.filter(cropMature);
   if(!ready.length){ toast('还没有成熟的作物',0xef4444); return; }
   ready.forEach(c=>{
-    // 品质:40% 1星 / 40% 2星 / 20% 3星
-    const r=Math.random();
-    const star=r<0.4?1:(r<0.8?2:3);
-    addItem(c.key+'_'+star,1);
+    addItem(c.key+'_'+(c.star||1),1);   // 种下时已定品质
     scene.remove(c.grp);
     G.crops.splice(G.crops.indexOf(c),1);
   });
@@ -941,14 +955,21 @@ function updateCrops(){
     const cr=cropDef(c.key);
     const pct=clamp((G.day-c.plantDay)/cr.grow,0,1);
     const stage=pct<0.35?0:(pct<0.7?1:2);   // 0幼苗全绿 1生长中 2成熟色
-    const h=pct>0.7?0.5:0.18+pct*0.4;
+    const h=pct>0.7?0.65:0.22+pct*0.55;
     c.grp.scale.set(0.7+0.3*pct,h,0.7+0.3*pct);
     const st=c.grp.userData.stageMats;
     if(c.grp.userData.blades) c.grp.userData.blades.forEach(b=>{ b.material=st[stage]; });
     if(c.grp.userData.fruit){
       const fv=pct<0.4?0.001:(pct-0.4)/0.6;   // 果实 40% 起长出,成熟时最大
-      c.grp.userData.fruit.scale.setScalar(Math.max(0.001,fv*0.16));
+      c.grp.userData.fruit.scale.setScalar(Math.max(0.001,fv*0.2));
       c.grp.userData.fruit.material=st[stage];
+    }
+    if(c.grp.userData.heads){
+      const hv=stage>=1;   // 麦穗/玉米棒生长中段起出现
+      c.grp.userData.heads.forEach(hd=>{
+        hd.visible=hv;
+        if(hv) hd.scale.setScalar(0.5+0.5*Math.min(1,(pct-0.35)/0.65));
+      });
     }
   }
 }
@@ -1308,7 +1329,7 @@ function saveGame(){
   const data={
     money:G.money,lv:G.lv,day:G.day,ts:Date.now(),
     buildings:G.buildings.map(b=>({type:b.type,c:b.c,r:b.r})),
-    crops:G.crops.map(c=>({b:bIdx[c.b.id],slot:c.slot,key:c.key,plantDay:c.plantDay})),
+    crops:G.crops.map(c=>({b:bIdx[c.b.id],slot:c.slot,key:c.key,plantDay:c.plantDay,star:c.star})),
     animals:G.animals.map(a=>({key:a.key,b:bIdx[a.b.id],fedDays:a.fedDays,x:a.x,z:a.z})),
     bag:G.bag,feed:G.feed,wood:G.wood,petsByType:G.petsByType,
     hotItems:G.hotItems,hotMult:G.hotMult||1.4,
@@ -1349,7 +1370,7 @@ function loadGame(){
   data.crops.forEach(cd=>{
     const b=G.buildings[cd.b];
     if(!b||!cropDef(cd.key)) return;
-    const c={b,slot:cd.slot,key:cd.key,plantDay:cd.plantDay,star:0};
+    const c={b,slot:cd.slot,key:cd.key,plantDay:cd.plantDay,star:cd.star||(Math.random()<0.4?1:(Math.random()<0.8?2:3))};
     c.grp=buildCropVisual(cropDef(cd.key));
     const [px,pz]=tilePos(b,cd.slot);
     c.grp.position.set(px,0.08,pz);
