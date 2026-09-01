@@ -26,6 +26,11 @@
   #verStat{ position:absolute; top:10px; right:76px; z-index:5; font-size:12px; color:var(--dim);
     background:rgba(0,0,0,.5); border:1px solid #3f3f46; border-radius:6px; padding:3px 8px; }
   #verStat b{ color:#facc15; }
+  #feedWarn{ position:absolute; top:10px; right:140px; z-index:6; font-size:13px; color:#fff;
+    background:rgba(239,68,68,.92); border:1px solid #ef4444; border-radius:6px; padding:3px 10px;
+    display:none; letter-spacing:1px; animation:warnBlink 1s step-start infinite; pointer-events:none; }
+  @keyframes warnBlink{ 50%{ opacity:.35; } }
+  @media (max-width:760px){ #feedWarn{ right:10px; top:44px; font-size:11px; } }
   #merchantBar{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:5; font-size:12px; color:var(--gold);
     background:rgba(0,0,0,.65); border:1px solid #7c5a10; border-radius:6px; padding:4px 12px; display:none; letter-spacing:1px; }
   /* ===== 建造菜单(左) ===== */
@@ -120,6 +125,7 @@
   <div class="stat">🐔 <b id="hAnimal">0</b></div>
 </div>
 <div id="speedTag">2×</div>
+<div id="feedWarn">⚠ 饲料仓已空</div>
 <div id="verStat">v<b id="verTxt">0.1</b></div>
 <div id="merchantBar">🛒 商人来访!点击商人交易</div>
 <div id="buildMenu">
@@ -526,6 +532,7 @@ function loop(now){
     updateTime(dt*G.speed);
     updateCrops();
     updateCropPctUI();
+    updateResourceUI();   // 饲料仓/鱼塘/森林存量实时刷新(同农田百分比)
     updateAnimalMotion(dt);   // 动物散步(真实时间步进,不受加速影响)
     updatePondFx(dt);         // 鱼塘跳鱼动画
   }
@@ -710,18 +717,18 @@ function renderInfo(){
       html+='<button id="ibSell">出售场地 +'+Math.round(def.cost*0.7)+'</button>';
     } else if(b.type==='feed'){
       const cap=500;
-      html+='<div class="row"><span>饲料存量</span><b>'+G.feed+' / '+cap+'</b></div>';
+      html+='<div class="row"><span>饲料存量</span><b id="resFeed">'+G.feed+' / '+cap+'</b></div>';
       html+='<div class="row"><span>单价</span><b>2 金/份</b></div>';
       const can=G.money>=20&&G.feed+10<=cap;
       html+='<button id="ibBuyFeed"'+(can?' class="act"':' disabled style="opacity:.4"')+'>买饲料 ×10 (20金)</button>';
       html+='<button id="ibSell">出售场地 +'+Math.round(def.cost*0.7)+'</button>';
     } else if(b.type==='forest'){
-      html+='<div class="row"><span>木材</span><b>'+G.wood+' 份</b></div>';
+      html+='<div class="row"><span>木材</span><b id="resWood">'+G.wood+' 份</b></div>';
       html+='<div class="row"><span>产出</span><b>每天 +1 木材</b></div>';
       html+='<button class="act" id="ibSellWood">卖木材 ('+itemPrice('wood')+'金/份)</button>';
       html+='<button id="ibSell">出售场地 +'+Math.round(def.cost*0.7)+'</button>';
     } else if(b.type==='pond'){
-      html+='<div class="row"><span>塘中鱼</span><b>'+G.pondFish+' 条</b></div>';
+      html+='<div class="row"><span>塘中鱼</span><b id="resPondFish">'+G.pondFish+' 条</b></div>';
       html+='<div class="row"><span>产出</span><b>每天 +'+Math.max(1,G.buildings.filter(x=>x.type==='pond').length)+' 条</b></div>';
       html+='<button class="act" id="ibCatchFish"'+(G.pondFish>0?'':' disabled style="opacity:.4"')+'>捞鱼 ('+G.pondFish+'条)</button>';
       html+='<button id="ibSell">出售场地 +'+Math.round(def.cost*0.7)+'</button>';
@@ -826,6 +833,9 @@ function updateHUD(){
   $('hAnimal').textContent=anim;
   $('speedTag').style.display='block';
   $('speedTag').textContent=G.speed+'×';   // 速度标签常驻,点击循环加速(1×→2×→4×→8×→16×)
+  // 饲料仓空警示:有饲料仓且存量为 0 时右上角闪烁 ⚠
+  const hasSilo=G.buildings.some(b=>b.type==='feed');
+  $('feedWarn').style.display=(hasSilo&&G.feed<=0)?'block':'none';
 }
 // 加速循环 1→2→4→8→16→1(空格键 + 右上角速度标签点击,手机触屏同样可用)
 function toggleSpeed(){
@@ -866,7 +876,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='1.6';
+$('verTxt').textContent='1.7';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1084,6 +1094,27 @@ function updateCropPctUI(){
       el.innerHTML='<span style="color:var(--dim)">'+Math.floor(clamp(age/cr.grow,0,1)*100)+'%</span>';
     }
   });
+}
+// 饲料仓/鱼塘/森林存量实时刷新(和农田百分比一样,点选后停留界面数值自动更新,不必重新点击)
+function updateResourceUI(){
+  const b=G.sel;
+  if(!b||infoEl.style.display!=='block') return;
+  if(b.type==='feed'){
+    const el=infoEl.querySelector('#resFeed');
+    if(el) el.innerHTML=G.feed+' / 500';
+  } else if(b.type==='forest'){
+    const el=infoEl.querySelector('#resWood');
+    if(el) el.innerHTML=G.wood+' 份';
+  } else if(b.type==='pond'){
+    const el=infoEl.querySelector('#resPondFish');
+    if(el) el.innerHTML=G.pondFish+' 条';
+    const btn=infoEl.querySelector('#ibCatchFish');
+    if(btn){
+      btn.innerHTML='捞鱼 ('+G.pondFish+'条)';
+      if(G.pondFish>0){ btn.disabled=false; btn.className='act'; btn.style.opacity=''; }
+      else { btn.disabled=true; btn.className=''; btn.style.opacity='.4'; }
+    }
+  }
 }
 
 /* ---------- 动物系统 ---------- */
@@ -1647,7 +1678,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,updateAnimalMotion,updatePondFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,updateAnimals,updateAnimalMotion,updatePondFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
 
 })();
 </script>
