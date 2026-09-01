@@ -912,7 +912,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='2.1';
+$('verTxt').textContent='2.2';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1019,20 +1019,20 @@ function buildCropVisual(cr){
     bl.scale.set(w,h,d); bl.position.set(x,y,z); bl.rotation.z=rz||0; bl.rotation.y=ry||0;
     g.add(bl); blades.push(bl);
   };
-  if(cr.key==='wheat'){                       // 小麦:细叶丛 + 金黄麦穗(紧凑,不超格)
-    mkLeaf(0.035,0.42,0.035,-0.08,0.24,0,0.3);
-    mkLeaf(0.035,0.42,0.035,0.08,0.24,0,-0.3);
-    mkLeaf(0.035,0.5,0.035,0,0.26,0,0);
+  if(cr.key==='wheat'){                       // 小麦:细叶丛 + 金黄麦穗(原始尺寸一半,紧凑不超格)
+    mkLeaf(0.02,0.3,0.02,-0.05,0.16,0,0.3);
+    mkLeaf(0.02,0.3,0.02,0.05,0.16,0,-0.3);
+    mkLeaf(0.02,0.35,0.02,0,0.18,0,0);
     for(let i=0;i<4;i++){                     // 麦穗:4 粒交错金黄籽 + 芒
       const hd=new THREE.Mesh(GEO_SPH,stageMats[2]);
-      hd.scale.set(0.035,0.08,0.035);
-      hd.position.set((i%2===0?-0.025:0.025),0.52+i*0.07,0);
+      hd.scale.set(0.022,0.055,0.022);
+      hd.position.set((i%2===0?-0.015:0.015),0.39+i*0.045,0);
       hd.visible=false; g.add(hd); heads.push(hd);
     }
     for(let i=0;i<3;i++){                     // 芒:细长锥
       const aw=new THREE.Mesh(GEO_CONE,stageMats[2]);
-      aw.scale.set(0.015,0.22,0.015); aw.rotation.x=Math.PI/2;
-      aw.position.set((i-1)*0.035,0.82,0);
+      aw.scale.set(0.01,0.15,0.01); aw.rotation.x=Math.PI/2;
+      aw.position.set((i-1)*0.022,0.59,0);
       aw.visible=false; g.add(aw); heads.push(aw);
     }
   } else if(cr.key==='tomato'){               // 番茄:大叶 + 红果挂藤
@@ -1053,19 +1053,19 @@ function buildCropVisual(cr){
       fruit.add(cal);
     }
     fruit.position.y=0.5; g.add(fruit);
-  } else if(cr.key==='corn'){                 // 玉米:宽叶 + 玉米棒 + 红须(紧凑,不超格)
-    mkLeaf(0.1,0.38,0.04,-0.12,0.26,0,0.45);
-    mkLeaf(0.1,0.38,0.04,0.12,0.26,0,-0.45);
-    mkLeaf(0.09,0.42,0.04,0,0.28,0,0);
+  } else if(cr.key==='corn'){                 // 玉米:宽叶 + 玉米棒 + 红须(原始尺寸一半,紧凑不超格)
+    mkLeaf(0.07,0.25,0.025,-0.08,0.16,0,0.45);
+    mkLeaf(0.07,0.25,0.025,0.08,0.16,0,-0.45);
+    mkLeaf(0.06,0.275,0.025,0,0.18,0,0);
     const stem=new THREE.Mesh(GEO_CYL,stageMats[0]);
-    stem.scale.set(0.055,0.7,0.055); stem.position.y=0.35; g.add(stem);
+    stem.scale.set(0.035,0.45,0.035); stem.position.y=0.225; g.add(stem);
     const cob=new THREE.Mesh(GEO_CYL,stageMats[2]);   // 玉米棒(横放)
-    cob.scale.set(0.07,0.26,0.07); cob.rotation.z=Math.PI/2;
-    cob.position.set(0.1,0.46,0); cob.visible=false; g.add(cob); heads.push(cob);
+    cob.scale.set(0.045,0.17,0.045); cob.rotation.z=Math.PI/2;
+    cob.position.set(0.07,0.31,0); cob.visible=false; g.add(cob); heads.push(cob);
     for(let i=0;i<3;i++){                             // 顶部红须
       const tassel=new THREE.Mesh(GEO_CONE,mat(0x9a5a3a,'basic'));
-      tassel.scale.set(0.012,0.13,0.012);
-      tassel.position.set(0.25,0.46+(i-1)*0.04,0);
+      tassel.scale.set(0.0075,0.09,0.0075);
+      tassel.position.set(0.17,0.31+(i-1)*0.025,0);
       tassel.visible=false; g.add(tassel); heads.push(tassel);
     }
   } else if(cr.key==='pepper'){               // 辣椒:小叶 + 细长红椒朝下
