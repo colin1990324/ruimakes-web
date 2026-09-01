@@ -354,7 +354,7 @@ function buildModel(type){
     }
   } else if(type==='house'){
     const lv=G.lv||1;
-    const s=1+lv*0.10;                       // 整体尺寸随等级放大(Lv1=1.0, Lv3=1.2, Lv6=1.5...)
+    const s=1;                             // 体积固定不随等级放大(用户要求:升级不再扩大体积,避免侵占旁边物品;升级只增加外观部件)
     const wallCol=lv>=5?0xe8e0d0:col;        // Lv5+ 外墙换白墙(砖房感)
     const roofCol=lv>=5?0xb8542a:0x8a4a2a;
     const base=new THREE.Mesh(GEO_BOX,mat(wallCol)); base.scale.set(1.6*s,0.9*s,1.6*s); base.position.y=0.45*s; grp.add(base);
@@ -929,7 +929,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='2.5';
+$('verTxt').textContent='2.6';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1527,7 +1527,7 @@ function updateAnimals(){
 // 动物散步:每帧在圈舍范围内随机走动(猪圈/牧场/鸡舍都动,鸡快些、牛羊猪慢些)
 function updateAnimalMotion(dt){
   if(G.st!=='play') return;
-  // 驯服宠物:在小屋附近随机走动(范围 house 中心 ±1.5)
+  // 驯服宠物:在小屋外围随机走动(范围 house 中心 ±1.4~2.2,避开房屋占地)
   G.pets.forEach(p=>{
     const hx=wx(house.c,2), hz=wz(house.r,2);
     if(!p.walkT){ p.walkT={x:p.grp.position.x,z:p.grp.position.z,wait:rnd(0.5,2)}; }
@@ -1535,8 +1535,9 @@ function updateAnimalMotion(dt){
     wt.wait-=dt;
     if(wt.wait<=0){
       const ang=rnd(0,Math.PI*2);
-      wt.x=hx+Math.cos(ang)*rnd(0.6,1.6);
-      wt.z=hz+Math.sin(ang)*rnd(0.6,1.6);
+      const rad=rnd(1.4,2.0);            // 环带半径 1.4~2.0,保证不走进小屋底下(屋半宽1)
+      wt.x=hx+Math.cos(ang)*rad;
+      wt.z=hz+Math.sin(ang)*rad;
       wt.wait=rnd(1.5,4.5);
     }
     const dx=wt.x-p.grp.position.x, dz=wt.z-p.grp.position.z;
