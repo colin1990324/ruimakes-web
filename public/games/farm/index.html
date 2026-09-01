@@ -895,6 +895,7 @@ function startGame(){
   G.pestsDone=false; G.merchant=false; G.merchantDay=7; G.hotSet=false;
   G.merchantHandled=false; G.merchantPending=false;
   G.lux=false; G.luxHandled=false; G.luxPending=false; G.luxuries=[];
+  if(luxBay) luxBay.visible=false;   // 新游戏不显示展示区
   G._wallTs=Date.now();   // 离线/后台成长计时锚点
   G.bidSeq=0; G._lastDay=1;
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) grid[r][c]='locked';
@@ -912,7 +913,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='2.2';
+$('verTxt').textContent='2.3';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1791,20 +1792,46 @@ function buildLuxuryVisual(key){
   if(def.type==='plane') return buildPlaneModel(def.color);
   return buildYachtModel(def.color);
 }
-// 小屋周围展示位:顺时针一圈(9 个),买到的奢侈品依次摆放
-const LUX_SPOTS=[
-  [0,-2.4], [1.7,-1.7], [2.4,0], [1.7,1.7], [0,2.4], [-1.7,1.7], [-2.4,0], [-1.7,-1.7],
-  [0,0],  // 第 9 个放门口
-];
+// 地图上方奢侈品展示区:农村范围外的上方一排车位,默认隐藏,购第一件后显示
+const LUX_BAY_Z=-2.2;                    // 展示区 z(网格上方,z 负方向=屏幕上方)
+const LUX_BAY_X0=1.0, LUX_BAY_DX=1.4;    // 车位起点与间距(横向 9 个)
+let luxBay=null;                         // 展示区底座(金色车位带)
+function buildLuxBay(){
+  if(luxBay) return luxBay;
+  luxBay=new THREE.Group();
+  // 深色平台
+  const plat=new THREE.Mesh(GEO_BOX,mat(0x23261f));
+  plat.scale.set(COLS+1,0.06,2.2);
+  plat.position.set(CX,0.02,LUX_BAY_Z);
+  luxBay.add(plat);
+  // 金色边线(前/后)
+  for(const zz of [LUX_BAY_Z-1.05,LUX_BAY_Z+1.05]){
+    const edge=new THREE.Mesh(GEO_BOX,mat(0xd9a520,'basic'));
+    edge.scale.set(COLS+1,0.03,0.04);
+    edge.position.set(CX,0.05,zz);
+    luxBay.add(edge);
+  }
+  // 车位分隔线(9 车位 → 8 条分隔)
+  for(let i=1;i<9;i++){
+    const div=new THREE.Mesh(GEO_BOX,mat(0x3f3f46,'basic'));
+    div.scale.set(0.03,0.03,2.0);
+    div.position.set(LUX_BAY_X0+i*LUX_BAY_DX-0.7,0.05,LUX_BAY_Z);
+    luxBay.add(div);
+  }
+  luxBay.visible=false;                  // 默认不显示
+  scene.add(luxBay);
+  return luxBay;
+}
 function placeLuxuries(){
-  // 清除旧摆放,按购买顺序重排(先买的离屋近,后买的往外一圈)
+  if(!luxBay) buildLuxBay();
+  luxBay.visible=G.luxuries.length>0;    // 购买第一个奢侈品后显示
+  // 清除旧摆放,按购买顺序重排(先买的靠左,依次往右)
   G.luxuries.forEach(l=>{ if(l.grp) scene.remove(l.grp); });
-  const hx=wx(house.c,2), hz=wz(house.r,2);
   G.luxuries.forEach((l,i)=>{
-    const sp=LUX_SPOTS[Math.min(i,LUX_SPOTS.length-1)];
+    const def=luxDef(l.key);
     l.grp=buildLuxuryVisual(l.key);
-    l.grp.position.set(hx+sp[0],0,hz+sp[1]);
-    l.grp.rotation.y=Math.atan2(sp[1],sp[0])+Math.PI/2;
+    l.grp.position.set(LUX_BAY_X0+i*LUX_BAY_DX,0.1,LUX_BAY_Z);
+    l.grp.rotation.y=(def&&def.type==='yacht')?Math.PI:0;  // 车/机头朝镜头,游艇掉头船头朝镜头
     scene.add(l.grp);
   });
 }
@@ -1817,7 +1844,7 @@ function buyLuxury(key){
   G.luxuries.push({key});
   placeLuxuries();
   sfx('coin');
-  toast('🎉 喜提 '+def.name+'!已停放在小屋旁',0xfacc15);
+  toast('🎉 喜提 '+def.name+'!已停放在上方展示区',0xfacc15);
   renderLuxury(); updateHUD(); saveGame();
 }
 function renderLuxury(){
@@ -1972,7 +1999,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,LUXURY_GOODS,luxDef,buildLuxuryVisual,placeLuxuries,buyLuxury,renderLuxury,openLuxury,closeLuxury,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,money1,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,spawnEggPop,updateEggFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,LUXURY_GOODS,luxDef,buildLuxuryVisual,placeLuxuries,buildLuxBay,luxBay,buyLuxury,renderLuxury,openLuxury,closeLuxury,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,money1,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,spawnEggPop,updateEggFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
 
 })();
 </script>
