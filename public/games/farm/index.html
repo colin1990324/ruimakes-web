@@ -52,6 +52,21 @@
   #luxury .item.owned{ opacity:.55; cursor:default; border-color:#3f3f46; }
   #luxury button.close{ margin-top:14px; font-family:inherit; font-size:14px; padding:8px 26px; background:#facc15; color:#1c1300;
     border:none; border-radius:8px; cursor:pointer; }
+  /* ===== 奢侈品详情弹窗(点击停车场展品) ===== */
+  #luxDetail{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:11;
+    background:rgba(0,0,0,.82); }
+  #luxDetail .box{ width:min(430px,92%); background:linear-gradient(165deg,#201a0c,#14120c); border:2px solid #d9a520;
+    border-radius:16px; padding:20px 24px; text-align:center; box-shadow:0 0 40px rgba(217,165,32,.18); }
+  #luxDetail h2{ color:#facc15; letter-spacing:4px; margin-bottom:2px; font-size:22px; text-shadow:0 0 18px rgba(250,204,21,.35); }
+  #luxDetail .sub{ color:var(--dim); font-size:12px; margin-bottom:10px; letter-spacing:2px; }
+  #luxDetail .lore{ color:#e8d9a8; font-size:14px; line-height:1.75; margin:10px 0 14px; padding:14px 16px;
+    background:rgba(217,165,32,.07); border:1px solid rgba(217,165,32,.35); border-radius:10px; text-align:left; }
+  #luxDetail .lore b{ color:#facc15; }
+  #luxDetail .stat{ font-size:13px; color:var(--dim); margin:5px 0; }
+  #luxDetail .stat b{ color:var(--gold); font-size:15px; }
+  #luxDetail button.close{ margin-top:14px; font-family:inherit; font-size:14px; padding:8px 26px; background:#facc15; color:#1c1300;
+    border:none; border-radius:8px; cursor:pointer; }
+  #luxDetail button.close:hover{ background:#ffe066; }
   /* ===== 建造菜单(左) ===== */
   #buildMenu{ position:absolute; left:10px; top:50%; transform:translateY(-50%); z-index:6; width:128px;
     background:rgba(0,0,0,.75); border:1px solid #27272a; border-radius:10px; padding:9px; display:none; }
@@ -158,6 +173,7 @@
 <div id="toast"></div>
 <div id="merchant"><div class="box"></div></div>
 <div id="luxury"><div class="box"></div></div>
+<div id="luxDetail"><div class="box"></div></div>
 
 <div class="ov" id="menuOv">
   <h1>开心农场</h1>
@@ -913,7 +929,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='2.4';
+$('verTxt').textContent='2.5';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -926,6 +942,9 @@ canvas.addEventListener('pointermove',e=>{
 canvas.addEventListener('pointerleave',()=>{ G.hover=null; });
 canvas.addEventListener('pointerdown',e=>{
   if(G.st!=='play') return;
+  // 优先:点击停车场奢侈品 → 详情弹窗(展品在地图外上方,不落地面拾取)
+  const luxKey=pickLuxury(e.clientX,e.clientY);
+  if(luxKey){ openLuxDetail(luxKey); sfx('click'); return; }
   if(!G.buildMode) setBuildMenuOpen(false);   // 非建造状态下点地图 = 收起建造菜单
   const cell=pickCell(e.clientX,e.clientY);
   if(!cell) return;
@@ -1742,17 +1761,26 @@ function closeMerchant(){
 /* ---------- 奢侈品商人系统(房屋 Lv6+ 每 30 天) ---------- */
 const LUXURY_GOODS=[
   // 豪车 3 款
-  {key:'car_sport', type:'car', name:'疾风超跑', price:12000, color:0xd93a3a, desc:'0-100 仅 3 秒'},
-  {key:'car_classic',type:'car', name:'皇家老爷车', price:15000, color:0x1e293b, desc:'复古皮座镀金标'},
-  {key:'car_suv',   type:'car', name:'霸主越野', price:18000, color:0x0ea5e9, desc:'全地形四驱'},
+  {key:'car_sport', type:'car', name:'疾风超跑', price:12000, color:0xd93a3a, desc:'0-100 仅 3 秒',
+   lore:'烈焰红漆划过田野,引擎的咆哮让整个农场都为之一颤。<b>0-100 仅需 3 秒</b>,麦浪在尾翼掀起的风里弯腰致敬。这不是车,是贴着地面飞行的红色闪电。'},
+  {key:'car_classic',type:'car', name:'皇家老爷车', price:15000, color:0x1e293b, desc:'复古皮座镀金标',
+   lore:'手工皮革座椅、镀金徽标、抛光到能照出云影的漆面。<b>每一道弧线都来自上世纪的皇家工坊</b>。坐上它,连商人都要向你脱帽致敬——这才是庄园主的排面。'},
+  {key:'car_suv',   type:'car', name:'霸主越野', price:18000, color:0x0ea5e9, desc:'全地形四驱',
+   lore:'装甲级车身配<b>全地形四驱</b>,泥沼、沙丘、暴雨后的烂路,统统如履平地。车顶探照灯一亮,半个农场的夜晚都属于你。真正的硬汉座驾,从不挑路,只挑对手。'},
   // 飞机 3 款
-  {key:'plane_jet', type:'plane', name:'云雀喷气机', price:50000, color:0xf5f0e0, desc:'跨海私人专机'},
-  {key:'plane_heli',type:'plane', name:'蜂鸟直升机', price:30000, color:0x34d399, desc:'随时起降停机坪'},
-  {key:'plane_prop',type:'plane', name:'信天翁螺旋桨', price:40000, color:0xf59e0b, desc:'复古双翼巡航'},
+  {key:'plane_jet', type:'plane', name:'云雀喷气机', price:50000, color:0xf5f0e0, desc:'跨海私人专机',
+   lore:'白色机身切开云层,<b>2 小时跨越大洋</b>,去任何你地图上画圈的地方。云雀是天空的诗人,而你握着它的笔。当引擎轰鸣在云端响起,整个大陆都在你的脚下。'},
+  {key:'plane_heli',type:'plane', name:'蜂鸟直升机', price:30000, color:0x34d399, desc:'随时起降停机坪',
+   lore:'像蜂鸟一样灵活,<b>任何一块平地都是它的停机坪</b>。后院起飞,三分钟后已经悬停在海岸线上看日落。城市在头顶,烦恼在脚下——这是属于你的天空座驾。'},
+  {key:'plane_prop',type:'plane', name:'信天翁螺旋桨', price:40000, color:0xf59e0b, desc:'复古双翼巡航',
+   lore:'双翼展开如信天翁掠过海面,木色螺旋桨带着旧时代的浪漫轰鸣。<b>它不是最快的,却是最有故事的那架</b>。老飞行员说:坐过它的人,都爱上了一辈子看云的日子。'},
   // 游艇 3 款
-  {key:'yacht_mega',type:'yacht', name:'海皇超级游艇', price:120000, color:0xf5f0e0, desc:'三层甲板带泳池'},
-  {key:'yacht_sail',type:'yacht', name:'白帆远航号', price:60000, color:0x38bdf8, desc:'三桅大帆船'},
-  {key:'yacht_speed',type:'yacht', name:'飞鱼快艇', price:35000, color:0xf472b6, desc:'海面疾驰'},
+  {key:'yacht_mega',type:'yacht', name:'海皇超级游艇', price:120000, color:0xf5f0e0, desc:'三层甲板带泳池',
+   lore:'三层甲板、无边泳池、星空酒廊,<b>海皇之名让整片海域自动让路</b>。船头劈开浪花的瞬间,连海鸥都会列队围观。这不是游艇,是一座漂在海上的私人城堡。'},
+  {key:'yacht_sail',type:'yacht', name:'白帆远航号', price:60000, color:0x38bdf8, desc:'三桅大帆船',
+   lore:'三根桅杆撑起雪白巨帆,满帆时如神鸟掠过海平线。<b>不烧一滴油,只借风与星导航</b>。船长站在船首,远方就是他的全部答案——这才是航海的终极浪漫。'},
+  {key:'yacht_speed',type:'yacht', name:'飞鱼快艇', price:35000, color:0xf472b6, desc:'海面疾驰',
+   lore:'粉色涂装在浪尖划出一道残影,<b>引擎全开时快过任何一条飞鱼</b>。尾迹拖着长长的白色弧线,像海面上写下的签名。别眨眼——它已经冲到下一个海湾了。'},
 ];
 function luxDef(key){ return LUXURY_GOODS.find(g=>g.key===key); }
 // 豪车模型:低矮车身 + 驾驶舱 + 4 轮 + 车灯
@@ -1840,8 +1868,44 @@ function placeLuxuries(){
     l.grp=buildLuxuryVisual(l.key);
     l.grp.position.set(LUX_BAY_X0+i*LUX_BAY_DX,0.1,LUX_BAY_Z);
     l.grp.rotation.y=(def&&def.type==='yacht')?Math.PI:0;  // 车/机头朝镜头,游艇掉头船头朝镜头
+    l.grp.traverse(o=>{ if(o.userData) o.userData.luxKey=l.key; });  // 标记部件所属,点击拾取用
     scene.add(l.grp);
   });
+}
+// 点击停车场展品 → 详情弹窗(拾取奢侈品模型,命中返回其 key)
+function pickLuxury(px,py){
+  if(!G.luxuries.length) return null;
+  ndc.x=(px/window.innerWidth)*2-1;
+  ndc.y=-(py/window.innerHeight)*2+1;
+  raycaster.setFromCamera(ndc,cam);
+  const targets=G.luxuries.map(l=>l.grp).filter(Boolean);
+  if(!targets.length) return null;
+  const hits=raycaster.intersectObjects(targets,true);
+  if(!hits.length) return null;
+  let o=hits[0].object;
+  while(o&&o!==undefined){
+    if(o.userData&&o.userData.luxKey) return o.userData.luxKey;
+    o=o.parent;
+  }
+  return null;
+}
+// 点击停车场展品 → 弹窗查看炫酷详情
+function openLuxDetail(key){
+  const def=luxDef(key);
+  if(!def) return;
+  const typeName={car:'🏎 豪车',plane:'✈️ 飞机',yacht:'🛥 游艇'}[def.type]||def.type;
+  const spot=G.luxuries.findIndex(l=>l.key===key)+1;
+  $('luxDetail').querySelector('.box').innerHTML=
+    '<h2>'+def.name+'</h2>'+
+    '<div class="sub">'+typeName+' · 展位 '+spot+'/'+G.luxuries.length+' · '+def.price.toLocaleString()+' 金</div>'+
+    '<div class="lore">'+def.lore+'</div>'+
+    '<div class="stat">购入价 <b>'+def.price.toLocaleString()+' 金</b> · '+def.desc+'</div>'+
+    '<button class="close" id="ldClose">返回农场</button>';
+  $('luxDetail').style.display='flex';
+  $('ldClose').onclick=closeLuxDetail;
+}
+function closeLuxDetail(){
+  $('luxDetail').style.display='none';
 }
 function buyLuxury(key){
   const def=luxDef(key);
@@ -2007,7 +2071,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,LUXURY_GOODS,luxDef,buildLuxuryVisual,placeLuxuries,buildLuxBay,luxBay,buyLuxury,renderLuxury,openLuxury,closeLuxury,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,money1,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,spawnEggPop,updateEggFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,LUXURY_GOODS,luxDef,buildLuxuryVisual,placeLuxuries,buildLuxBay,luxBay,pickLuxury,openLuxDetail,closeLuxDetail,buyLuxury,renderLuxury,openLuxury,closeLuxury,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,raycaster,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,money1,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,spawnEggPop,updateEggFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
 
 })();
 </script>
