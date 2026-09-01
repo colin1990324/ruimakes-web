@@ -612,10 +612,14 @@ function itemName(key){
   if(m) return ITEMS[m[1]].name+' ★'+m[2];
   return ITEMS[key]?ITEMS[key].name:key;
 }
+// 金额显示统一:最多一位小数,整数不显示小数(浮点误差如 19.200000000000003 → 19.2)
+function money1(v){
+  return Math.round(v*10)/10;
+}
 function itemPrice(key,hot){
   const m=key.match(/^(.*?)_(\d)$/);
   const base=m?ITEMS[m[1]].price*STAR_MULT[+m[2]-1]:ITEMS[key].price;
-  return (hot&&G.hotItems.includes(m?m[1]:key))?Math.round(base*(G.hotMult||1.4)):base;
+  return (hot&&G.hotItems.includes(m?m[1]:key))?Math.round(base*(G.hotMult||1.4)):money1(base);
 }
 function addItem(key,qty){
   if(!G.bag[key]) G.bag[key]=0;
@@ -627,7 +631,7 @@ function sellItem(key,qty){
   if(n<=0) return 0;
   G.bag[key]-=n;
   if(G.bag[key]<=0) delete G.bag[key];
-  const gain=itemPrice(key,true)*n;   // true=商人高价周按高价结算(显示价=成交价)
+  const gain=money1(itemPrice(key,true)*n);   // true=商人高价周按高价结算(显示价=成交价)
   G.money+=gain;
   sfx('sale');
   renderBag();
@@ -638,7 +642,7 @@ function sellItem(key,qty){
 function sellAll(){
   let total=0;
   for(const k of Object.keys(G.bag)) total+=sellItem(k,G.bag[k]);
-  if(total>0){ toast('全部出售 +'+total+' 金币',0xf59e0b); }
+  if(total>0){ toast('全部出售 +'+money1(total)+' 金币',0xf59e0b); }
 }
 
 /* ---------- 建造菜单 UI ---------- */
@@ -776,11 +780,11 @@ function renderInfo(){
   bind('#ibBuyFeed',()=>buyFeed());
   bind('#ibSellWood',()=>{
     if(G.wood<=0){ toast('没有木材',0xef4444); return; }
-    const gain=itemPrice('wood')*G.wood;   // 木材存在 G.wood 不在背包,不能走 sellItem(bag)
+    const gain=money1(itemPrice('wood')*G.wood);   // 木材存在 G.wood 不在背包,不能走 sellItem(bag)
     G.wood=0;
     G.money+=gain;
     sfx('sale');
-    toast('卖出木材 +'+gain+' 金币',0xf59e0b);
+    toast('卖出木材 +'+money1(gain)+' 金币',0xf59e0b);
     renderInfo(); renderBag(); updateHUD();
   });
   bind('#ibCatchFish',()=>catchFish());
@@ -856,7 +860,7 @@ function fmtHour(h){
   return hh+':'+(mm<10?'0':'')+mm;
 }
 function updateHUD(){
-  $('hMoney').textContent=G.money;
+  $('hMoney').textContent=money1(G.money);
   $('hLevel').textContent=G.lv;
   $('hDay').textContent=dayInt();
   $('hTime').textContent=fmtHour(hourOf());
@@ -908,7 +912,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='2.0';
+$('verTxt').textContent='2.1';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1015,20 +1019,20 @@ function buildCropVisual(cr){
     bl.scale.set(w,h,d); bl.position.set(x,y,z); bl.rotation.z=rz||0; bl.rotation.y=ry||0;
     g.add(bl); blades.push(bl);
   };
-  if(cr.key==='wheat'){                       // 小麦:细叶丛 + 金黄麦穗
-    mkLeaf(0.04,0.6,0.04,-0.1,0.32,0,0.35);
-    mkLeaf(0.04,0.6,0.04,0.1,0.32,0,-0.35);
-    mkLeaf(0.04,0.7,0.04,0,0.36,0,0);
+  if(cr.key==='wheat'){                       // 小麦:细叶丛 + 金黄麦穗(紧凑,不超格)
+    mkLeaf(0.035,0.42,0.035,-0.08,0.24,0,0.3);
+    mkLeaf(0.035,0.42,0.035,0.08,0.24,0,-0.3);
+    mkLeaf(0.035,0.5,0.035,0,0.26,0,0);
     for(let i=0;i<4;i++){                     // 麦穗:4 粒交错金黄籽 + 芒
       const hd=new THREE.Mesh(GEO_SPH,stageMats[2]);
-      hd.scale.set(0.045,0.11,0.045);
-      hd.position.set((i%2===0?-0.03:0.03),0.78+i*0.09,0);
+      hd.scale.set(0.035,0.08,0.035);
+      hd.position.set((i%2===0?-0.025:0.025),0.52+i*0.07,0);
       hd.visible=false; g.add(hd); heads.push(hd);
     }
     for(let i=0;i<3;i++){                     // 芒:细长锥
       const aw=new THREE.Mesh(GEO_CONE,stageMats[2]);
-      aw.scale.set(0.02,0.3,0.02); aw.rotation.x=Math.PI/2;
-      aw.position.set((i-1)*0.045,1.18,0);
+      aw.scale.set(0.015,0.22,0.015); aw.rotation.x=Math.PI/2;
+      aw.position.set((i-1)*0.035,0.82,0);
       aw.visible=false; g.add(aw); heads.push(aw);
     }
   } else if(cr.key==='tomato'){               // 番茄:大叶 + 红果挂藤
@@ -1049,19 +1053,19 @@ function buildCropVisual(cr){
       fruit.add(cal);
     }
     fruit.position.y=0.5; g.add(fruit);
-  } else if(cr.key==='corn'){                 // 玉米:宽叶 + 玉米棒 + 红须
-    mkLeaf(0.14,0.5,0.05,-0.16,0.32,0,0.55);
-    mkLeaf(0.14,0.5,0.05,0.16,0.32,0,-0.55);
-    mkLeaf(0.12,0.55,0.05,0,0.36,0,0);
+  } else if(cr.key==='corn'){                 // 玉米:宽叶 + 玉米棒 + 红须(紧凑,不超格)
+    mkLeaf(0.1,0.38,0.04,-0.12,0.26,0,0.45);
+    mkLeaf(0.1,0.38,0.04,0.12,0.26,0,-0.45);
+    mkLeaf(0.09,0.42,0.04,0,0.28,0,0);
     const stem=new THREE.Mesh(GEO_CYL,stageMats[0]);
-    stem.scale.set(0.07,0.9,0.07); stem.position.y=0.45; g.add(stem);
+    stem.scale.set(0.055,0.7,0.055); stem.position.y=0.35; g.add(stem);
     const cob=new THREE.Mesh(GEO_CYL,stageMats[2]);   // 玉米棒(横放)
-    cob.scale.set(0.09,0.34,0.09); cob.rotation.z=Math.PI/2;
-    cob.position.set(0.14,0.62,0); cob.visible=false; g.add(cob); heads.push(cob);
+    cob.scale.set(0.07,0.26,0.07); cob.rotation.z=Math.PI/2;
+    cob.position.set(0.1,0.46,0); cob.visible=false; g.add(cob); heads.push(cob);
     for(let i=0;i<3;i++){                             // 顶部红须
       const tassel=new THREE.Mesh(GEO_CONE,mat(0x9a5a3a,'basic'));
-      tassel.scale.set(0.015,0.18,0.015);
-      tassel.position.set(0.34,0.62+(i-1)*0.05,0);
+      tassel.scale.set(0.012,0.13,0.012);
+      tassel.position.set(0.25,0.46+(i-1)*0.04,0);
       tassel.visible=false; g.add(tassel); heads.push(tassel);
     }
   } else if(cr.key==='pepper'){               // 辣椒:小叶 + 细长红椒朝下
@@ -1808,7 +1812,7 @@ function buyLuxury(key){
   const def=luxDef(key);
   if(!def) return;
   if(G.luxuries.find(l=>l.key===key)){ toast('已经拥有这艘/这辆了',0xef4444); return; }
-  if(G.money<def.price){ toast('金币不足,还需要 '+(def.price-G.money)+' 金',0xef4444); return; }
+  if(G.money<def.price){ toast('金币不足,还需要 '+money1(def.price-G.money)+' 金',0xef4444); return; }
   G.money-=def.price;
   G.luxuries.push({key});
   placeLuxuries();
@@ -1819,7 +1823,7 @@ function buyLuxury(key){
 function renderLuxury(){
   const el=$('luxury');
   const owned=G.luxuries.map(l=>l.key);
-  let html='<h2>🚁 奢侈品商人 · LUXURY</h2><div class="sub">房屋 Lv6+ 每 30 天到访一次 · 豪车 / 飞机 / 游艇 · 金库 '+G.money+' 金</div>';
+  let html='<h2>🚁 奢侈品商人 · LUXURY</h2><div class="sub">房屋 Lv6+ 每 30 天到访一次 · 豪车 / 飞机 / 游艇 · 金库 '+money1(G.money)+' 金</div>';
   const types=[['car','🏎 豪车'],['plane','✈️ 飞机'],['yacht','🛥 游艇']];
   types.forEach(([t,tname])=>{
     html+='<div class="sec">— '+tname+' —</div><div class="grid">';
@@ -1884,7 +1888,7 @@ function saveGame(){
   G.best.money=Math.max(G.best.money,G.money);
   data.best=G.best;
   try{ localStorage.setItem(SAVE_KEY,JSON.stringify(data)); }catch(e){}
-  $('bestShow').textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
+  $('bestShow').textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+money1(G.best.money)+' 金'):'-';
 }
 function loadGame(){
   let data=null;
@@ -1955,7 +1959,7 @@ function loadGame(){
   G.st='play';
   buildMenu(); renderBag(); renderInfo(); updateHUD();
   $('menuOv').classList.add('hide');
-  $('bestShow').textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
+  $('bestShow').textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+money1(G.best.money)+' 金'):'-';
   toast('欢迎回来!第 '+dayInt()+' 天',0x10b981);
   return true;
 }
@@ -1968,7 +1972,7 @@ setInterval(()=>saveGame(),15000);
 $('btnContinue').onclick=()=>{ if(!loadGame()){ toast('没有存档',0xef4444); } };
 if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
 
-window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,LUXURY_GOODS,luxDef,buildLuxuryVisual,placeLuxuries,buyLuxury,renderLuxury,openLuxury,closeLuxury,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,spawnEggPop,updateEggFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
+window.__FARM__={G,BUILD_TYPES,HOUSE,house,UPGRADE_COST,upgradeCost,ITEMS,STAR_MULT,CROPS,LIVESTOCK,PESTS,MERCHANT_GOODS,LUXURY_GOODS,luxDef,buildLuxuryVisual,placeLuxuries,buyLuxury,renderLuxury,openLuxury,closeLuxury,grid,COLS,ROWS,CX,CZ,wx,wz,isUnlocked,refreshUnlock,canPlace,buildBuilding,removeBuilding,pickCell,scene,cam,renderer,ground,buildModel,sfx,toast,rnd,rndi,clamp,$,refreshLockVisual,itemName,itemPrice,money1,addItem,sellItem,sellAll,renderBag,renderInfo,showInfo,hideInfo,hidePreview,startGame,updateHUD,toggleSpeed,updateTime,dayInt,hourOf,spawnPests,plantCrop,harvestFarm,fertilizeFarm,buyFeed,feedCap,updateAnimals,updateAnimalMotion,updatePondFx,spawnEggPop,updateEggFx,catchFish,upgradeHouse,cropDef,cropMature,updateCrops,buyAnimal,sellPig,tamePest,scarePest,resolvePestTheft,dailyTick,applyPetSkills,renderPestBar,rollMerchant,renderMerchant,openMerchant,closeMerchant,saveGame,loadGame,clearSceneObjects,buildCropVisual,updateCropPctUI,updateResourceUI};
 
 })();
 </script>
