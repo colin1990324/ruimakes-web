@@ -913,7 +913,7 @@ function startGame(){
   toast('欢迎来到开心农场!先建一块农田吧',0x10b981);
 }
 $('btnStart').onclick=startGame;
-$('verTxt').textContent='2.3';
+$('verTxt').textContent='2.4';
 // 最高纪录显示(步骤4 存档注入)
 const bestShow=$('bestShow');
 bestShow.textContent=G.best.day>0?('第 '+G.best.day+' 天 / '+G.best.money+' 金'):'-';
@@ -1028,12 +1028,14 @@ function buildCropVisual(cr){
       const hd=new THREE.Mesh(GEO_SPH,stageMats[2]);
       hd.scale.set(0.022,0.055,0.022);
       hd.position.set((i%2===0?-0.015:0.015),0.39+i*0.045,0);
+      hd.userData.baseScale={x:0.022,y:0.055,z:0.022};
       hd.visible=false; g.add(hd); heads.push(hd);
     }
     for(let i=0;i<3;i++){                     // 芒:细长锥
       const aw=new THREE.Mesh(GEO_CONE,stageMats[2]);
       aw.scale.set(0.01,0.15,0.01); aw.rotation.x=Math.PI/2;
       aw.position.set((i-1)*0.022,0.59,0);
+      aw.userData.baseScale={x:0.01,y:0.15,z:0.01};
       aw.visible=false; g.add(aw); heads.push(aw);
     }
   } else if(cr.key==='tomato'){               // 番茄:大叶 + 红果挂藤
@@ -1062,11 +1064,12 @@ function buildCropVisual(cr){
     stem.scale.set(0.035,0.45,0.035); stem.position.y=0.225; g.add(stem);
     const cob=new THREE.Mesh(GEO_CYL,stageMats[2]);   // 玉米棒(横放)
     cob.scale.set(0.045,0.17,0.045); cob.rotation.z=Math.PI/2;
-    cob.position.set(0.07,0.31,0); cob.visible=false; g.add(cob); heads.push(cob);
+    cob.position.set(0.07,0.31,0); cob.userData.baseScale={x:0.045,y:0.17,z:0.045}; cob.visible=false; g.add(cob); heads.push(cob);
     for(let i=0;i<3;i++){                             // 顶部红须
       const tassel=new THREE.Mesh(GEO_CONE,mat(0x9a5a3a,'basic'));
       tassel.scale.set(0.0075,0.09,0.0075);
       tassel.position.set(0.17,0.31+(i-1)*0.025,0);
+      tassel.userData.baseScale={x:0.0075,y:0.09,z:0.0075};
       tassel.visible=false; g.add(tassel); heads.push(tassel);
     }
   } else if(cr.key==='pepper'){               // 辣椒:小叶 + 细长红椒朝下
@@ -1202,9 +1205,14 @@ function updateCrops(){
     }
     if(c.grp.userData.heads){
       const hv=stage>=1;   // 麦穗/玉米棒生长中段起出现
+      const hf=0.5+0.5*Math.min(1,(pct-0.35)/0.65);   // 生长因子 0.5→1.0
       c.grp.userData.heads.forEach(hd=>{
         hd.visible=hv;
-        if(hv) hd.scale.setScalar(0.5+0.5*Math.min(1,(pct-0.35)/0.65));
+        if(hv){
+          // 按初始比例缩放(不能 setScalar 抹平,否则细长麦芒/玉米棒变 1x1x1 巨物)
+          const bs=hd.userData.baseScale||{x:hd.scale.x,y:hd.scale.y,z:hd.scale.z};
+          hd.scale.set(bs.x*hf,bs.y*hf,bs.z*hf);
+        }
       });
     }
   }
