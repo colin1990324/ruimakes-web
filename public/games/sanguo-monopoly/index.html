@@ -103,7 +103,7 @@
 <div id="hud"></div>
 <div id="turnTag">第 <b id="turnNum">1</b> 回合</div>
 <div id="speedTag">2×</div>
-<div id="verStat">v<b id="verTxt">0.3</b></div>
+<div id="verStat">v<b id="verTxt">0.4</b></div>
 <div id="items"></div>
 <div id="diceBox"><div id="dice">-</div><div id="diceTag">空格掷骰</div></div>
 <div id="toast"></div>
@@ -112,8 +112,8 @@
 <div class="ov" id="menuOv">
   <h1>三国大富翁</h1>
   <h2>THREE KINGDOMS MONOPOLY</h2>
-  <p>回合制策略大富翁:占领城池、征兵攻打、统一天下!每州首府=归属权,占领 13 首府或 20 城即胜利。</p>
-  <p>踩驿站可自选方向;事件二选一;商店购买道具;武将各怀天赋。</p>
+  <p>回合制策略大富翁:魏蜀吴三环 + 长江/蜀道/中原三走廊,占领城池、征兵攻打、统一天下!每州首府=归属权,占领 13 首府或 20 城即胜利。</p>
+  <p>踩中路口(交叉城/驿站)可自选方向;事件二选一;商店购买道具;武将各怀天赋。</p>
   <div style="margin-top:14px; font-size:13px;">
     玩家人数 <select id="playerCount"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
   </div>
@@ -142,7 +142,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const rndi=(a,b)=>Math.floor(rnd(a,b+1));
 const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
 const $=id=>document.getElementById(id);
-const SAVE_KEY='sanguo_monopoly_v1';
+const SAVE_KEY='sanguo_monopoly_v2';
 
 /* ---------- 全局状态 ---------- */
 const G={
@@ -156,10 +156,10 @@ const G={
   speed:1, muted:false,
   moveSteps:0, moveCur:0,
   win:null,
-  version:0.1,
+  version:0.4,
 };
 
-/* ---------- 数值常量(设计文档 6.x) ---------- */
+/* ---------- 数值常量(设计文档 6.x,胜利条件不变) ---------- */
 const COST={
   occupy:800,           // 无主普通城池占领
   occupyHalf:400,       // 同州归属后减半
@@ -181,92 +181,134 @@ const PLAYER_COLORS=['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4'
 const PCOLOR_INT=[0xef4444,0x3b82f6,0x22c55e,0xf59e0b,0xa855f7,0x06b6d4];
 const MAX_PLAYERS=6;
 
-/* ---------- 州/城数据(13 州,以设计文档表格为准,共 42 城) ---------- */
+/* ---------- 州/城数据(13 州,共 20 城 13 首府,胜利条件阈值不变) ----------
+ * 三环三走廊格局:
+ *   魏环(北·大方环) 10 城:凉/司隶/冀/幽/并/青/徐/豫/兖 9 首府 + 长安
+ *   蜀环(西南·小环)  4 城:益州(成都首府+汉中+永安+江州)
+ *   吴环(东南·中环)  6 城:扬/荆/交 3 首府(建业+襄阳+番禺)+ 吴郡会稽庐江
+ * 走廊:长江(永安→建业) 蜀道(长安→成都) 中原(许昌→建业) */
 const STATES=[
-  {name:'凉州',cap:'武威',cities:['天水','金城']},
+  {name:'司隶',cap:'洛阳',cities:['长安']},
+  {name:'冀州',cap:'邺城',cities:[]},
+  {name:'豫州',cap:'许昌',cities:[]},
+  {name:'兖州',cap:'濮阳',cities:[]},
+  {name:'青州',cap:'临淄',cities:[]},
+  {name:'徐州',cap:'下邳',cities:[]},
+  {name:'并州',cap:'晋阳',cities:[]},
+  {name:'幽州',cap:'蓟城',cities:[]},
+  {name:'凉州',cap:'武威',cities:[]},
   {name:'益州',cap:'成都',cities:['汉中','永安','江州']},
-  {name:'交州',cap:'番禺',cities:['合浦']},
   {name:'扬州',cap:'建业',cities:['吴郡','会稽','庐江']},
-  {name:'徐州',cap:'下邳',cities:['彭城','小沛']},
-  {name:'青州',cap:'临淄',cities:['北海','东莱']},
-  {name:'幽州',cap:'蓟城',cities:['涿郡','渔阳']},
-  {name:'并州',cap:'晋阳',cities:['上党','雁门']},
-  {name:'冀州',cap:'邺城',cities:['南皮','平原','清河']},
-  {name:'兖州',cap:'濮阳',cities:['陈留','东郡']},
-  {name:'司隶',cap:'洛阳',cities:['长安','弘农']},
-  {name:'豫州',cap:'许昌',cities:['汝南','颍川']},
-  {name:'荆州',cap:'襄阳',cities:['江陵','长沙','武陵']},
+  {name:'荆州',cap:'襄阳',cities:[]},
+  {name:'交州',cap:'番禺',cities:[]},
 ];
-// 环上捷径(驿站对),构成多分支图:环带 + 4 条内部通道
-const SHORTCUTS=[[10,12],[3,5],[6,8],[1,9]];
 
 /* ---------- 地图节点图 ---------- */
-// nodes[i]: {id,type,state,pos:{x,z},name,next:[]}
+// nodes[i]: {id,type,state,name,pos:{x,z},next:[],corr?}
 // type: junction|event|shop|city|capital
 const nodes=[]; const nodeById={};
-const JN={};        // JN[stateIndex] = 州 i 前驿站 id
-const STATE_CHAIN={}; // STATE_CHAIN[i] = 州内节点序 [E,S,城1,首府,城2,城3]
+const JN={};        // JN[state] = 该州首府节点 id(13 州)
+const STATE_CHAIN={}; // 兼容导出(三环无"段链",置空)
 
-function addNode(type,state,name){
+function addNode(type,state,name,corr){
   const n={id:nodes.length,type,state,name,next:[],pos:{x:0,z:0}};
+  if(corr) n.corr=corr;   // 走廊标记:yangtze|shudao|zhongyuan
   nodes.push(n); nodeById[n.id]=n;
   return n;
 }
 function link(a,b){ if(!a.next.includes(b.id)) a.next.push(b.id); if(!b.next.includes(a.id)) b.next.push(a.id); }
 
-// 生成环形图:J(i) → E(i) → S(i) → [C1, CAP, C2...] → J(i+1),外加捷径
+/* 三环三走廊图(环顺序即行走方向):
+ * 魏环(20格,心0,-7) 吴环(12格,心8,6) 蜀环(8格,心-8,8)
+ * 走廊:蜀道=长安-陈仓-汉中-成都;长江=永安-白帝-江陵-柴桑-建业;中原=许昌-汝南-寿春-合肥-建业
+ * 交叉点(出度>1)自动成为选路口:长安/许昌/汉中/永安/建业 */
+const RING_WEI=[]; const RING_WU=[]; const RING_SHU=[];   // 环上节点 id 顺序(顺时针)
+const CORRIDORS=[];                                       // {key,name,color,nodes:[node...]}
 function buildGraph(){
-  const N=STATES.length;
-  const J=[];
-  for(let i=0;i<N;i++) J.push(addNode('junction',i,'驿站'));
-  for(let i=0;i<N;i++){
-    const E=addNode('event',i,'事件');
-    const S=addNode('shop',i,'商店');
-    const C=STATES[i].cities.map(cn=>addNode('city',i,cn));
-    const CAP=addNode('capital',i,STATES[i].cap);
-    const chain=[E,S,C[0],CAP,...C.slice(1)];
-    STATE_CHAIN[i]=chain;
-    JN[i]=J[i].id;
-    const seq=[J[i],...chain,J[(i+1)%N]];
-    for(let k=0;k<seq.length-1;k++) link(seq[k],seq[k+1]);
-  }
-  for(const [a,b] of SHORTCUTS) link(J[a],J[b]);
+  const mkRing=(arr)=>{
+    const ring=[];
+    for(const [type,state,name,corr] of arr) ring.push(addNode(type,state,name,corr||undefined));
+    for(let i=0;i<ring.length;i++) link(ring[i],ring[(i+1)%ring.length]);
+    return ring;
+  };
+  const W=mkRing([
+    ['capital',8,'武威',null], ['event',8,'桃园',null], ['city',0,'长安','shudao'],
+    ['shop',0,'集市',null], ['capital',0,'洛阳',null], ['event',0,'虎牢关',null],
+    ['capital',1,'邺城',null], ['shop',1,'商栈',null], ['capital',7,'蓟城',null],
+    ['capital',6,'晋阳',null], ['event',6,'官渡',null], ['capital',4,'临淄',null],
+    ['shop',4,'马市',null], ['capital',5,'下邳',null], ['event',5,'长坂坡',null],
+    ['capital',2,'许昌','zhongyuan'], ['shop',2,'粮铺',null], ['capital',3,'濮阳',null],
+    ['event',3,'街亭',null], ['shop',8,'铁匠铺',null],
+  ]);
+  const WU=mkRing([
+    ['capital',10,'建业',null], ['city',10,'吴郡',null], ['shop',10,'钱庄',null],
+    ['event',10,'濡须口',null], ['city',10,'会稽',null], ['city',10,'庐江',null],
+    ['shop',11,'盐市',null], ['capital',11,'襄阳',null], ['capital',12,'番禺',null],
+    ['event',12,'夷陵',null], ['shop',10,'布庄',null], ['shop',10,'药铺',null],
+  ]);
+  const SHU=mkRing([
+    ['capital',9,'成都',null], ['city',9,'汉中','shudao'], ['event',9,'定军山',null],
+    ['city',9,'永安','yangtze'], ['city',9,'江州',null], ['shop',9,'木牛坊',null],
+    ['event',9,'南蛮',null], ['shop',9,'锦官城',null],
+  ]);
+  RING_WEI.push(...W.map(n=>n.id)); RING_WU.push(...WU.map(n=>n.id)); RING_SHU.push(...SHU.map(n=>n.id));
+  for(const n of [...W,...WU,...SHU]) if(n.type==='capital'&&!JN[n.state]) JN[n.state]=n.id;
+  // 走廊(交叉点=城,中间节点:驿站/事件/商店)
+  const byName=n=>nodes.find(x=>x.name===n);
+  const changAn=byName('长安'), luoYang=byName('洛阳'), hanZhong=byName('汉中'),
+    chengDu=byName('成都'), yongAn=byName('永安'), jianYe=byName('建业'), xuChang=byName('许昌');
+  const chencang=addNode('junction',0,'陈仓','shudao');
+  link(changAn,chencang); link(chencang,hanZhong);
+  const baidi=addNode('junction',9,'白帝','yangtze');
+  const jiangling=addNode('shop',11,'江陵','yangtze');
+  const chaishang=addNode('event',10,'柴桑','yangtze');
+  link(yongAn,baidi); link(baidi,jiangling); link(jiangling,chaishang); link(chaishang,jianYe);
+  const runan=addNode('event',2,'汝南','zhongyuan');
+  const shouchun=addNode('shop',2,'寿春','zhongyuan');
+  const hefei=addNode('junction',10,'合肥','zhongyuan');
+  link(xuChang,runan); link(runan,shouchun); link(shouchun,hefei); link(hefei,jianYe);
+  CORRIDORS.push(
+    {key:'shudao',name:'蜀道',color:'shudao',nodes:[changAn,chencang,hanZhong,chengDu]},
+    {key:'yangtze',name:'长江',color:'yangtze',nodes:[yongAn,baidi,jiangling,chaishang,jianYe]},
+    {key:'zhongyuan',name:'中原',color:'zhongyuan',nodes:[xuChang,runan,shouchun,hefei,jianYe]},
+  );
 }
 function buildGraphSafe(){ if(nodes.length===0) buildGraph(); }
 
-/* ---------- 布局:大富翁式方形棋盘 ----------
- * 外圈方环(上14+右13+下13+左12=52 格) + 内圈回形环(28 格) + 中心起点(1 格) = 81
- * 环带顺序 = 外圈顺时针走线,在左末端拐入内环,内环走完回到中心 J0(起点王座) */
-const MAP_R=13;   // 外圈半边长(间距2)
-const IN_R=7;     // 内环半边长(间距2)
-function boardCoords(){
+/* ---------- 布局:三环方环 + 三走廊 ----------
+ * 方环格数=8R/d(上R+1 右R 下R 左R-1),间距统一 2:
+ *   魏环 R=5 → 20 格;吴环 R=3 → 12 格;蜀环 R=2 → 8 格
+ * 环心:魏(0,-7) 吴(8,6) 蜀(-8,8);走廊节点沿两端直线等距插值 */
+function ringCoords(cx,cz,R){
   const c=[];
-  for(let x=-MAP_R;x<=MAP_R;x+=2) c.push({x,z:-MAP_R});    // 外上 14
-  for(let z=-MAP_R+2;z<=MAP_R;z+=2) c.push({x:MAP_R,z});   // 外右 13
-  for(let x=MAP_R-2;x>=-MAP_R;x-=2) c.push({x,z:MAP_R});   // 外下 13
-  for(let z=MAP_R-2;z>=-MAP_R+2;z-=2) c.push({x:-MAP_R,z});// 外左 12
-  for(let x=-IN_R;x<=IN_R;x+=2) c.push({x,z:-IN_R});       // 内上 8
-  for(let z=-IN_R+2;z<=IN_R;z+=2) c.push({x:IN_R,z});      // 内右 7
-  for(let x=IN_R-2;x>=-IN_R;x-=2) c.push({x,z:IN_R});      // 内下 7
-  for(let z=IN_R-2;z>=-IN_R+2;z-=2) c.push({x:-IN_R,z});   // 内左 6
-  c.push({x:0,z:0});                                        // 中心起点 J0
-  return c;  // 52+28+1 = 81
+  for(let x=-R;x<=R;x+=2) c.push({x:cx+x,z:cz-R});        // 上(含两角) R+1
+  for(let z=-R+2;z<=R;z+=2) c.push({x:cx+R,z:cz+z});      // 右(含右下)  R
+  for(let x=R-2;x>=-R;x-=2) c.push({x:cx+x,z:cz+R});      // 下(含左下)  R
+  for(let z=R-2;z>=-R+2;z-=2) c.push({x:cx-R,z:cz+z});    // 左           R-1
+  return c;
 }
+function lerpC(a,b,t){ return {x:a.x+(b.x-a.x)*t, z:a.z+(b.z-a.z)*t}; }
 function layoutMap(){
-  const coords=boardCoords();
-  const N=STATES.length;
-  let k=0;
-  for(let i=0;i<N;i++){
-    for(const nd of STATE_CHAIN[i]) nd.pos=coords[k++];       // E,S,城...,首府...
-    nodeById[JN[(i+1)%N]].pos=coords[k++];                    // 段尾驿站(i=12 时回到 J0=中心)
-  }
+  const rings=[RING_WEI,RING_WU,RING_SHU];
+  const css=[ringCoords(0,-7,5),ringCoords(8,6,3),ringCoords(-8,8,2)];
+  for(let k=0;k<3;k++) for(let i=0;i<rings[k].length;i++) nodeById[rings[k][i]].pos=css[k][i];
+  // 走廊中间节点手摆:避开三环格子(与任何环格中心距 ≥2),形成行军折线
+  const MANUAL={
+    '陈仓':{x:-7,z:-5},
+    '白帝':{x:-3,z:6.5}, '江陵':{x:0,z:5.5}, '柴桑':{x:2.5,z:4},
+    '汝南':{x:-2,z:0}, '寿春':{x:0.5,z:1}, '合肥':{x:3,z:1.5},
+  };
+  for(const nm of Object.keys(MANUAL)){ const n=nodes.find(x=>x.name===nm); if(n) n.pos=MANUAL[nm]; }
 }
 buildGraph();
 layoutMap();
 
 /* ---------- 地图工具 ---------- */
+const SHORTCUTS=[];   // 三环三走廊为多分支图,无独立捷径(兼容导出)
 function cityCount(){ return nodes.filter(n=>n.type==='city'||n.type==='capital').length; }
 function capitalCount(){ return nodes.filter(n=>n.type==='capital').length; }
+function isCorridorEdge(a,b){ return !!(a.corr&&a.corr===b.corr); }
+function corridorNodes(){ return nodes.filter(n=>n.corr); }
 
 /* ========== 武将(6 将,天赋 hook 注册表) ========== */
 const GENERALS=[
@@ -606,7 +648,8 @@ function tryBazhen(){
 function startMove(){ G.moveSteps=G.dice; G.moveCur=0; G.phase='move'; if(G.moveSteps<=0) onLandArrive(); }
 function onLandArrive(){
   const p=cur(); const node=nodes[p.pos];
-  if(node.type==='junction'&&node.next.length>1){
+  // 三环三走廊:交叉点(出度>2,环+走廊交汇城)才选路;普通环格/走廊中站自动沿路走
+  if(node.next.length>2){
     G.phase='route';
     onRoute(p,node);
   } else {
@@ -621,8 +664,7 @@ function onLand(){
   if(node.type==='city'||node.type==='capital') onLandCity(p,node);
   else if(node.type==='event') onLandEvent(p,node);
   else if(node.type==='shop') onLandShop(p,node);
-  else if(node.type==='junction') onRoute(p,node);
-  else endTurn();
+  else endTurn();   // 驿站(走廊中站,出度2)自动通过
 }
 
 /* ----- 城池格子 ----- */
@@ -767,7 +809,7 @@ function onLandShop(p,node){
   }
 }
 
-/* ----- 驿站选路 ----- */
+/* ----- 路口选路(三环交叉点/驿站,出度>1 触发) ----- */
 function onRoute(p,node){
   const opts=node.next.map(nid=>nodes[nid]);
   if(p.isAI){
@@ -776,7 +818,7 @@ function onRoute(p,node){
     toast(p.name+' 选择前往 '+pick.name,0x38bdf8);
     endTurn();
   } else {
-    showModal('🚏 驿站 · 选择方向','当前位置:'+node.name,opts.map(o=>({txt:'前往 '+o.name,cls:'act',fn:()=>{ setDir(p,o.id); endTurn(); }})));
+    showModal('🧭 路口 · 选择方向','当前位置:'+node.name,opts.map(o=>({txt:'前往 '+o.name,cls:'act',fn:()=>{ setDir(p,o.id); endTurn(); }})));
   }
 }
 
@@ -914,8 +956,8 @@ renderer.setSize(window.innerWidth,window.innerHeight);
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x0c1017);
 const cam=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,300);
-cam.position.set(0,48,25);
-cam.lookAt(0,0,0);
+cam.position.set(0,60,30);
+cam.lookAt(0,-1,0);
 const sun=new THREE.DirectionalLight(0xfff5e0,1.1);
 sun.position.set(20,40,10);
 scene.add(sun);
@@ -926,7 +968,9 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshLambert
 ground.rotation.x=-Math.PI/2; ground.position.set(0,-0.05,0);
 scene.add(ground);
 
-// 大富翁道路底板:外圈方环 + 内环 + 中心王座台
+// 三环三走廊底板:魏环(北深蓝灰) 吴环(东南墨绿) 蜀环(西南深红褐) + 三条走廊色带
+const RING_BASE_COL={wei:0x2a3a4a,wu:0x1e3a2e,shu:0x3a2a2a};
+const CORR_BASE_COL={shudao:0x2a5a3a,yangtze:0x2a4a6a,zhongyuan:0x5a4a2a};
 function roadStrip(x,z,along,len,w,color){
   const m=new THREE.Mesh(GEO.box,mat(color));
   const horiz=along==='x';
@@ -934,16 +978,28 @@ function roadStrip(x,z,along,len,w,color){
   m.position.set(x,0.008,z);
   scene.add(m);
 }
+function ringBase(cx,cz,R,color){
+  roadStrip(cx,cz-R,'x',R*2+2,2.4,color);          // 上
+  roadStrip(cx+R,cz,'z',R*2+2,2.4,color);          // 右
+  roadStrip(cx,cz+R,'x',R*2+2,2.4,color);          // 下
+  roadStrip(cx-R,cz,'z',R*2+2,2.4,color);          // 左
+}
+function corrBase(a,b,w,color){
+  const dx=a.x-b.x, dz=a.z-b.z, len=Math.sqrt(dx*dx+dz*dz);
+  const m=new THREE.Mesh(GEO.box,mat(color));
+  m.scale.set(w,0.03,len);
+  m.position.set((a.x+b.x)/2,0.008,(a.z+b.z)/2);
+  m.rotation.y=Math.atan2(dx,dz);
+  scene.add(m);
+}
 function buildBoardBase(){
-  roadStrip(0,-MAP_R-0.8,'x',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);  // 外上
-  roadStrip(MAP_R+0.8,0,'z',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);   // 外右
-  roadStrip(0,MAP_R+0.8,'x',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);   // 外下
-  roadStrip(-MAP_R-0.8,0,'z',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);  // 外左
-  roadStrip(0,-IN_R-0.8,'x',(IN_R+0.8)*2+1,2.2,0x1e2e28);    // 内上
-  roadStrip(IN_R+0.8,0,'z',(IN_R+0.8)*2+1,2.2,0x1e2e28);     // 内右
-  roadStrip(0,IN_R+0.8,'x',(IN_R+0.8)*2+1,2.2,0x1e2e28);     // 内下
-  roadStrip(-IN_R-0.8,0,'z',(IN_R+0.8)*2+1,2.2,0x1e2e28);    // 内左
-  roadStrip(0,0,'x',5.4,5.4,0x3a3326);                        // 中心台
+  ringBase(0,-7,5,RING_BASE_COL.wei);    // 魏环
+  ringBase(8,6,3,RING_BASE_COL.wu);      // 吴环
+  ringBase(-8,8,2,RING_BASE_COL.shu);    // 蜀环
+  for(const cd of CORRIDORS){
+    const arr=cd.nodes;
+    for(let i=0;i<arr.length-1;i++) corrBase(arr[i].pos,arr[i+1].pos,1.6,CORR_BASE_COL[cd.color]);
+  }
 }
 
 // 共享几何
@@ -968,26 +1024,16 @@ function addEdgeMesh(a,b,color){
   scene.add(m);
   return m;
 }
-const EDGE_COL={ring:0x3a4a5a,short:0x4a5a3a};
+const EDGE_COL={ring:0x3a4a5a,corr:{shudao:0x2a5a3a,yangtze:0x2a4a6a,zhongyuan:0x5a4a2a}};
 function buildPath(){
-  const ringColor=EDGE_COL.ring;
   for(const n of nodes){
     for(const nid of n.next){
       if(nid>n.id) continue; // 每条边画一次
       const b=nodeById[nid];
-      const isShort=SHORTCUTS.some(([x,y])=> (x===n.id?false:false)); // 捷径判定:两端都是驿站且不相邻
-      const isShort2=isJunction(n)&&isJunction(b)&&!adjacentOnRing(n,b);
-      addEdgeMesh(n,b,isShort2?EDGE_COL.short:ringColor);
+      const col=isCorridorEdge(n,b)?EDGE_COL.corr[n.corr]:EDGE_COL.ring;
+      addEdgeMesh(n,b,col);
     }
   }
-}
-function isJunction(n){ return n.type==='junction'; }
-const JN_IDS=Object.values(JN);   // 13 个驿站节点 id,下标=州序
-function adjacentOnRing(a,b){
-  const N=STATES.length;
-  const ja=JN_IDS.indexOf(a.id), jb=JN_IDS.indexOf(b.id);
-  if(ja<0||jb<0) return false;
-  return Math.abs(ja-jb)===1||Math.abs(ja-jb)===N-1;
 }
 
 // 名字标签(CanvasTexture Sprite,headless 无 canvas 时返回 null)
@@ -1198,9 +1244,11 @@ function updateMove(dt){
     const r=logicStep();
     const dx=r.to.x-r.from.x, dz=r.to.z-r.from.z;
     if(p._tok&&(dx||dz)) p._tok.rotation.y=Math.atan2(dx,dz);
-    moveAnim={from:r.from,to:r.to,t:0,last:(G.moveCur+1>=G.moveSteps)};
+    // 环上 2 单位=0.3s;走廊长边按距离加权(行军速度感一致)
+    const dist=Math.sqrt(dx*dx+dz*dz);
+    moveAnim={from:r.from,to:r.to,t:0,dur:Math.max(0.3,dist*0.15),last:(G.moveCur+1>=G.moveSteps)};
   }
-  moveAnim.t+=dt/0.3;
+  moveAnim.t+=dt/moveAnim.dur;
   const t=clamp(moveAnim.t,0,1);
   const v=lerpV(moveAnim.from,moveAnim.to,t);
   positionTokenAt(p,v.x,0.06+Math.sin(t*Math.PI)*0.55,v.z);
@@ -1478,12 +1526,13 @@ window.addEventListener('resize',()=>{
 });
 
 /* ---------- 启动 ---------- */
-$('verTxt').textContent='0.3';
+$('verTxt').textContent='0.4';
 buildMenu();
 buildPath();
 buildAllNodeModels();
 
 window.__SANGUO__={G,nodes,nodeById,STATES,SHORTCUTS,JN,STATE_CHAIN,COST,START,PLAYER_COLORS,PCOLOR_INT,MAX_PLAYERS,SAVE_KEY,
+  RING_WEI,RING_WU,RING_SHU,CORRIDORS,isCorridorEdge,corridorNodes,
   GENERALS,generalOf,hookOf,ITEMS,SHOP_ITEMS,EVENTS,
   newPlayer,myCities,myCapitals,myCitiesByState,stateOwnedBy,occupyCostFor,findCityByStateCap,
   resolveBattle,defensePower,hasAlliance,canAttack,
