@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>三国大富翁 · Three Kingdoms Monopoly · ruimakes</title>
+<style>
+  :root{ --bg:#0b0d10; --fg:#e4e4e7; --dim:#71717a; --acc:#f59e0b; --gold:#fbbf24; --red:#ef4444; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--fg);
+    font-family:"Courier New", monospace; -webkit-user-select:none; user-select:none; touch-action:none; }
+  canvas{ display:block; width:100%; height:100%; }
+  /* ===== HUD 顶栏 ===== */
+  #hud{ position:absolute; top:8px; left:8px; z-index:5; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    font-size:12px; pointer-events:none; max-width:72%; }
+  #hud .p{ display:flex; align-items:center; gap:6px; background:rgba(0,0,0,.6); border:1px solid #27272a;
+    border-radius:6px; padding:3px 9px; letter-spacing:1px; }
+  #hud .dot{ width:10px; height:10px; border-radius:50%; }
+  #hud .p.cur{ border-color:var(--gold); box-shadow:0 0 8px rgba(245,158,11,.4); }
+  #hud .p b{ color:var(--gold); }
+  #hud .p .tr{ color:#f87171; font-size:11px; }
+  #turnTag{ position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:5; font-size:12px;
+    color:var(--gold); background:rgba(0,0,0,.6); border:1px solid #7c5a10; border-radius:6px; padding:3px 12px; letter-spacing:2px; display:none; }
+  #verStat{ position:absolute; top:8px; right:8px; z-index:5; font-size:11px; color:var(--dim);
+    background:rgba(0,0,0,.5); border:1px solid #3f3f46; border-radius:6px; padding:2px 7px; }
+  #verStat b{ color:#facc15; }
+  #speedTag{ position:absolute; top:8px; right:64px; z-index:5; font-size:12px; color:var(--acc); display:none;
+    background:rgba(0,0,0,.5); border:1px solid #52525b; border-radius:6px; padding:2px 9px; }
+  /* ===== 骰子 ===== */
+  #diceBox{ position:absolute; bottom:14px; right:14px; z-index:6; text-align:center; display:none; }
+  #dice{ width:64px; height:64px; background:rgba(20,20,24,.92); border:2px solid var(--gold); border-radius:12px;
+    display:flex; align-items:center; justify-content:center; font-size:34px; color:#fff; font-weight:bold; box-shadow:0 0 16px rgba(245,158,11,.35); }
+  #diceTag{ font-size:11px; color:var(--dim); margin-top:4px; letter-spacing:1px; }
+  /* ===== 背包/道具条 ===== */
+  #items{ position:absolute; bottom:12px; left:12px; z-index:6; display:flex; gap:6px; flex-wrap:wrap; max-width:60%; }
+  #items .it{ background:rgba(0,0,0,.7); border:1px solid #3f3f46; border-radius:8px; padding:5px 8px; font-size:11px;
+    cursor:pointer; text-align:center; min-width:58px; }
+  #items .it:hover{ border-color:var(--gold); }
+  #items .it .n{ font-size:13px; }
+  #items .it .q{ color:var(--dim); font-size:10px; }
+  #items .it.usable{ border-color:#7c5a10; }
+  /* ===== 通用弹窗 ===== */
+  #modal{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:20;
+    background:rgba(9,9,11,.82); }
+  #modal .box{ width:min(520px,92%); background:#16161a; border:2px solid #52525b; border-radius:14px; padding:20px 24px;
+    max-height:86vh; overflow-y:auto; }
+  #modal .t{ font-size:18px; font-weight:bold; letter-spacing:2px; color:var(--gold); margin-bottom:10px; }
+  #modal .d{ font-size:13px; color:var(--dim); line-height:1.8; margin-bottom:12px; }
+  #modal .d b{ color:var(--fg); }
+  #modal button{ font-family:inherit; font-size:13px; letter-spacing:1px; padding:9px 16px; margin:6px 8px 0 0;
+    background:#27272a; color:var(--fg); border:1px solid #3f3f46; border-radius:8px; cursor:pointer; }
+  #modal button.act{ background:var(--acc); color:#1c1300; border:none; font-weight:bold; }
+  #modal button.gold{ background:transparent; color:var(--gold); border-color:var(--gold); }
+  #modal button.danger{ background:transparent; color:var(--red); border-color:var(--red); }
+  #modal .row{ display:flex; justify-content:space-between; gap:10px; margin:4px 0; font-size:12px; color:var(--dim); }
+  #modal .row b{ color:var(--fg); }
+  /* 事件选项 */
+  #modal .opt{ display:block; width:100%; text-align:left; background:#1d1d22; border:1px solid #3f3f46;
+    border-radius:10px; padding:12px 14px; margin:8px 0; cursor:pointer; font-size:13px; line-height:1.7; }
+  #modal .opt:hover{ border-color:var(--gold); }
+  #modal .opt .oa{ color:var(--gold); font-weight:bold; letter-spacing:1px; }
+  /* 武将卡片 */
+  #cardGrid{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+  #cardGrid .card{ width:150px; background:#1d1d22; border:2px solid #3f3f46; border-radius:10px; padding:10px; cursor:pointer; }
+  #cardGrid .card:hover{ border-color:var(--gold); }
+  #cardGrid .card.sel{ border-color:var(--gold); background:rgba(245,158,11,.12); }
+  #cardGrid .card .nm{ font-size:15px; font-weight:bold; color:var(--fg); }
+  #cardGrid .card .ty{ font-size:11px; color:var(--dim); margin:2px 0 6px; }
+  #cardGrid .card .sk{ font-size:11px; color:var(--gold); line-height:1.5; }
+  #cardGrid .card .sd{ font-size:10px; color:var(--dim); line-height:1.5; margin-top:4px; }
+  .ov{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:30;
+    background:rgba(9,9,11,.92); text-align:center; padding:20px; }
+  .ov.hide{ display:none; }
+  .ov h1{ font-size:34px; letter-spacing:8px; color:var(--acc); margin-bottom:4px; text-shadow:0 0 18px rgba(245,158,11,.4); }
+  .ov h2{ font-size:18px; letter-spacing:4px; color:var(--dim); margin-bottom:16px; }
+  .ov p{ font-size:12px; color:var(--dim); line-height:1.9; max-width:640px; margin-bottom:4px; }
+  .ov .btn{ margin-top:14px; font-family:inherit; font-size:16px; letter-spacing:3px; padding:12px 44px;
+    background:var(--acc); color:#1c1300; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+  .ov .btn:hover{ filter:brightness(1.15); }
+  .ov .subbtn{ margin-top:8px; font-family:inherit; font-size:13px; padding:9px 30px; background:#27272a;
+    color:var(--fg); border:1px solid #3f3f46; border-radius:8px; cursor:pointer; }
+  .ov select{ font-family:inherit; font-size:14px; padding:6px 12px; background:#1d1d22; color:var(--fg);
+    border:1px solid #3f3f46; border-radius:6px; margin:0 4px; }
+  #helpKey{ display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; margin-top:10px; font-size:11px; color:var(--dim); }
+  #toast{ position:absolute; top:46px; left:50%; transform:translateX(-50%); z-index:25; font-size:13px; letter-spacing:1px;
+    color:var(--fg); background:rgba(0,0,0,.85); border:1px solid #3f3f46; padding:6px 18px; border-radius:6px; opacity:0;
+    transition:opacity .3s; pointer-events:none; }
+  #toast.show{ opacity:1; }
+  @media (max-width:760px){ #hud{ font-size:10px; } #hud .p{ padding:2px 6px; } #dice{ width:52px; height:52px; font-size:26px; } }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="cv"></canvas></div>
+<div id="hud"></div>
+<div id="turnTag">第 <b id="turnNum">1</b> 回合</div>
+<div id="speedTag">2×</div>
+<div id="verStat">v<b id="verTxt">0.1</b></div>
+<div id="items"></div>
+<div id="diceBox"><div id="dice">-</div><div id="diceTag">空格掷骰</div></div>
+<div id="toast"></div>
+<div id="modal"><div class="box" id="modalBox"></div></div>
+
+<div class="ov" id="menuOv">
+  <h1>三国大富翁</h1>
+  <h2>THREE KINGDOMS MONOPOLY</h2>
+  <p>回合制策略大富翁:占领城池、征兵攻打、统一天下!每州首府=归属权,占领 13 首府或 20 城即胜利。</p>
+  <p>踩驿站可自选方向;事件二选一;商店购买道具;武将各怀天赋。</p>
+  <div style="margin-top:14px; font-size:13px;">
+    玩家人数 <select id="playerCount"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+  </div>
+  <div style="margin-top:10px; font-size:12px; color:var(--dim);">选择你的武将(其余玩家由 AI 自动选择)</div>
+  <div id="cardGrid"></div>
+  <button class="btn" id="btnStart">开 局</button>
+  <button class="subbtn" id="btnContinue" style="display:none; color:var(--gold); border-color:var(--gold);">继 续(断点)</button>
+  <p style="margin-top:12px; font-size:10px; color:#3f3f46;">空格=掷骰/确认 · 数字键=快捷操作 · M=静音</p>
+</div>
+
+<div class="ov hide" id="winOv">
+  <h1 style="color:var(--gold);">👑 一统天下</h1>
+  <h2 id="winTxt">胜利</h2>
+  <button class="btn" id="btnAgain">再来一局</button>
+  <button class="subbtn" id="btnMenu">返回主菜单</button>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+/* ============================================================
+ * 三国大富翁 Three Kingdoms Monopoly — 2.5D 回合制策略大富翁
+ * 逻辑层(不碰 THREE/DOM) 与 渲染层 分离,逻辑层可 headless 测试
+ * ============================================================ */
+'use strict';
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rndi=(a,b)=>Math.floor(rnd(a,b+1));
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const $=id=>document.getElementById(id);
+const SAVE_KEY='sanguo_monopoly_v1';
+
+/* ---------- 全局状态 ---------- */
+const G={
+  st:'menu',            // menu | play | win
+  players:[],           // 玩家数组
+  cur:0,                // 当前玩家索引
+  turn:1,
+  phase:'start',        // start|items|roll|move|land|route|end
+  waiting:false,        // 等待玩家输入(弹窗挂起)
+  dice:0,
+  speed:1, muted:false,
+  moveSteps:0, moveCur:0,
+  win:null,
+  version:0.1,
+};
+
+/* ---------- 数值常量(设计文档 6.x) ---------- */
+const COST={
+  occupy:800,           // 无主普通城池占领
+  occupyHalf:400,       // 同州归属后减半
+  capital:1200,         // 首府占领
+  upg2:500, upg3:1000,  // 1→2, 2→3
+  recruit:10,           // 金/人(征兵)
+  toll:[100,200,300],   // 1/2/3级城过路费
+  capitalToll:300,
+  garrisonCap:[100,200,300],
+  capitalGarrison:80,
+  upkeepG:1,            // 驻守维持 金/人/轮
+  upkeepP:3,            // 随身维持 金/人/轮
+  prodMoney:[50,80,120],
+  prodPop:[10,15,20],
+  capitalProdMoney:80, capitalProdPop:15,
+};
+const START={ money:5000, troops:100, garrison:50, pop:200, cityLv:1 };
+const PLAYER_COLORS=['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4'];
+const PCOLOR_INT=[0xef4444,0x3b82f6,0x22c55e,0xf59e0b,0xa855f7,0x06b6d4];
+const MAX_PLAYERS=6;
+
+/* ---------- 州/城数据(13 州,以设计文档表格为准,共 42 城) ---------- */
+const STATES=[
+  {name:'凉州',cap:'武威',cities:['天水','金城']},
+  {name:'益州',cap:'成都',cities:['汉中','永安','江州']},
+  {name:'交州',cap:'番禺',cities:['合浦']},
+  {name:'扬州',cap:'建业',cities:['吴郡','会稽','庐江']},
+  {name:'徐州',cap:'下邳',cities:['彭城','小沛']},
+  {name:'青州',cap:'临淄',cities:['北海','东莱']},
+  {name:'幽州',cap:'蓟城',cities:['涿郡','渔阳']},
+  {name:'并州',cap:'晋阳',cities:['上党','雁门']},
+  {name:'冀州',cap:'邺城',cities:['南皮','平原','清河']},
+  {name:'兖州',cap:'濮阳',cities:['陈留','东郡']},
+  {name:'司隶',cap:'洛阳',cities:['长安','弘农']},
+  {name:'豫州',cap:'许昌',cities:['汝南','颍川']},
+  {name:'荆州',cap:'襄阳',cities:['江陵','长沙','武陵']},
+];
+// 环上捷径(驿站对),构成多分支图:环带 + 4 条内部通道
+const SHORTCUTS=[[10,12],[3,5],[6,8],[1,9]];
+
+/* ---------- 地图节点图 ---------- */
+// nodes[i]: {id,type,state,pos:{x,z},name,next:[]}
+// type: junction|event|shop|city|capital
+const nodes=[]; const nodeById={};
+const JN={};        // JN[stateIndex] = 州 i 前驿站 id
+const STATE_CHAIN={}; // STATE_CHAIN[i] = 州内节点序 [E,S,城1,首府,城2,城3]
+
+function addNode(type,state,name){
+  const n={id:nodes.length,type,state,name,next:[],pos:{x:0,z:0}};
+  nodes.push(n); nodeById[n.id]=n;
+  return n;
+}
+function link(a,b){ if(!a.next.includes(b.id)) a.next.push(b.id); if(!b.next.includes(a.id)) b.next.push(a.id); }
+
+// 生成环形图:J(i) → E(i) → S(i) → [C1, CAP, C2...] → J(i+1),外加捷径
+function buildGraph(){
+  const N=STATES.length;
+  const J=[];
+  for(let i=0;i<N;i++) J.push(addNode('junction',i,'驿站'));
+  for(let i=0;i<N;i++){
+    const E=addNode('event',i,'事件');
+    const S=addNode('shop',i,'商店');
+    const C=STATES[i].cities.map(cn=>addNode('city',i,cn));
+    const CAP=addNode('capital',i,STATES[i].cap);
+    const chain=[E,S,C[0],CAP,...C.slice(1)];
+    STATE_CHAIN[i]=chain;
+    JN[i]=J[i].id;
+    const seq=[J[i],...chain,J[(i+1)%N]];
+    for(let k=0;k<seq.length-1;k++) link(seq[k],seq[k+1]);
+  }
+  for(const [a,b] of SHORTCUTS) link(J[a],J[b]);
+}
+function buildGraphSafe(){ if(nodes.length===0) buildGraph(); }
+
+/* ---------- 布局:13 段环带,节点沿弧分布(内外半径交错) ---------- */
+const MAP_R=13;
+function layoutMap(){
+  const N=STATES.length;
+  for(let i=0;i<N;i++){
+    const a0=(i/N)*Math.PI*2 - Math.PI/2;
+    const a1=((i+1)/N)*Math.PI*2 - Math.PI/2;
+    nodeById[JN[i]].pos={x:Math.cos(a0)*MAP_R, z:Math.sin(a0)*MAP_R};
+    nodeById[JN[(i+1)%N]].pos={x:Math.cos(a1)*MAP_R, z:Math.sin(a1)*MAP_R};
+    const chain=STATE_CHAIN[i];
+    chain.forEach((nd,k)=>{
+      const t=(k+1)/(chain.length+1);
+      const a=a0+(a1-a0)*t;
+      const rr=MAP_R+(k%2?1.1:-1.1);
+      nd.pos={x:Math.cos(a)*rr, z:Math.sin(a)*rr};
+    });
+  }
+}
+buildGraph();
+layoutMap();
+
+/* ---------- 地图工具 ---------- */
+function cityCount(){ return nodes.filter(n=>n.type==='city'||n.type==='capital').length; }
+function capitalCount(){ return nodes.filter(n=>n.type==='capital').length; }
+
+/* ========== 武将(6 将,天赋 hook 注册表) ========== */
+const GENERALS=[
+  {key:'caocao',name:'曹操',type:'霸道',talent:'挟天子',desc:'占领城池时初始等级+1(即2级城)',hooks:{onOccupy:(p,node)=>{ if(node.type==='city') node.lv=2; }}},
+  {key:'liubei',name:'刘备',type:'仁德',talent:'民心',desc:'每5座城池,所有城池产出+10%(上限+50%)',hooks:{outputMult:(p)=>Math.min(0.5,Math.floor(p.cityN/5)*0.1)}},
+  {key:'lbu',name:'吕布',type:'勇武',talent:'飞将',desc:'消耗200金强制骰子=6(每局3次)',hooks:{}},
+  {key:'zhugeliang',name:'诸葛亮',type:'智谋',talent:'八阵',desc:'每局3次重掷骰子,结果可±1(1~6)',hooks:{}},
+  {key:'huangyueying',name:'黄月英',type:'智谋',talent:'机关',desc:'所有升级费用-15%(向下取整)',hooks:{upgCost:(p,c)=>Math.floor(c*0.85)}},
+  {key:'guanyu',name:'关羽',type:'勇武',talent:'武圣',desc:'攻防计算时自身兵力额外+5(每场战斗限1次)',hooks:{battleAtk:(p)=>5}},
+];
+function generalOf(p){ return p.general?GENERALS.find(g=>g.key===p.general):null; }
+function hookOf(p,name,args){
+  const g=generalOf(p); if(g&&g.hooks[name]) return g.hooks[name](p,...args);
+  return undefined;
+}
+
+/* ========== 道具(5 种) ========== */
+const ITEMS={
+  guanxing:{name:'观星盘',price:300,desc:'本回合骰子点数固定为指定值(1~6)'},
+  mianzhan:{name:'免战牌',price:200,desc:'下一次被攻打时强制平局'},
+  zhengbing:{name:'征兵令',price:150,desc:'随身兵力+30'},
+  lijian:{name:'离间计',price:-1,desc:'指定一名玩家随身兵力-20'},
+  tianziling:{name:'天子令',price:-1,desc:'指定一名玩家与你同盟2回合(互免过路费)'},
+};
+const SHOP_ITEMS=['guanxing','mianzhan','zhengbing'];
+
+/* ========== 玩家/城池 ========== */
+let pidSeq=0;
+function newPlayer(name,isAI){
+  const p={id:pidSeq++,name,isAI,general:null,money:START.money,troops:START.troops,
+    pos:null,dir:null,dead:false,cityN:0,
+    items:{guanxing:0,mianzhan:0,zhengbing:0,lijian:0,tianziling:0},
+    status:{tongmeng:[],lianjun:0,noAttack:0,noAttackVs:-1,diceMod:0,tollDouble:0,outputMult:[],eventNegHalf:false,mianzhanPending:false,diceFixed:false,immobilize:false},
+    uses:{feijiang:3,bazhen:3},shopUsed:{}};
+  p.color=PLAYER_COLORS[p.id%MAX_PLAYERS];
+  p.colorI=PCOLOR_INT[p.id%MAX_PLAYERS];
+  return p;
+}
+function myCities(p){ return nodes.filter(n=>(n.type==='city'||n.type==='capital')&&n.owner===p.id); }
+function myCapitals(p){ return nodes.filter(n=>n.type==='capital'&&n.owner===p.id); }
+function myCitiesByState(p){ const s={}; myCities(p).forEach(n=>s[n.state]=true); return s; }
+function stateOwnedBy(p,stateIdx){ return nodes.some(n=>n.type==='capital'&&n.state===stateIdx&&n.owner===p.id); }
+function occupyCostFor(p,node){
+  if(node.type==='capital') return COST.capital;
+  return stateOwnedBy(p,node.state)?COST.occupyHalf:COST.occupy;
+}
+function findCityByStateCap(stateIdx){ return nodes.find(n=>n.type==='capital'&&n.state===stateIdx); }
+
+/* ---------- 战斗 ---------- */
+// A=攻方随身, B=守方驻守(+停留加成);返回 {win:true|false|'draw', aLeft, bLeft}
+function resolveBattle(A,B){
+  if(A>B) return {win:true, aLeft:Math.floor(Math.sqrt(A*A-B*B)), bLeft:0};
+  if(A<B) return {win:false, aLeft:0, bLeft:Math.floor(Math.sqrt(B*B-A*A))};
+  return {win:'draw', aLeft:0, bLeft:0};
+}
+// 防守兵力:驻守 + 若防守玩家正停留在此城,随身兵力全额计入(用户补充规则)
+function defensePower(p,node){
+  let b=node.garrison;
+  if(p.pos===node.id) b+=p.troops;
+  return b;
+}
+function hasAlliance(p,q){ return p.status.tongmeng.some(t=>t.pid===q.id&&t.turns>0); }
+function canAttack(att,def,node){
+  if(def.status.mianzhanPending) return 'mianzhan';   // 免战牌自动消耗→平局
+  if(def.status.lianjun>0||att.status.lianjun>0) return 'lianjun'; // 联军互免战
+  if(def.status.noAttack>0&&def.status.noAttackVs===att.id) return 'noattack';
+  return 'ok';
+}
+
+/* ---------- 经济 ---------- */
+function outputMultFor(p){
+  let m=1;
+  for(const o of p.status.outputMult) m+=o.mult;
+  const g=generalOf(p);
+  if(g&&g.hooks.outputMult) m+=g.hooks.outputMult(p);
+  return m;
+}
+function cityProdMoney(node){
+  if(node.type==='capital') return COST.capitalProdMoney;
+  return COST.prodMoney[node.lv-1];
+}
+function cityProdPop(node){
+  if(node.type==='capital') return COST.capitalProdPop;
+  return COST.prodPop[node.lv-1];
+}
+function roundTick(p){
+  if(p.dead) return;
+  // ① 产出(金钱+人口);人口0的城产出减半
+  for(const c of myCities(p)){
+    const mul=outputMultFor(p)*(c.pop<=0?0.5:1);
+    p.money+=Math.floor(cityProdMoney(c)*mul);
+    c.pop+=cityProdPop(c);
+  }
+  // ② 维持费(驻守1金/人,随身3金/人)
+  let upkeep=0;
+  for(const c of myCities(p)) upkeep+=c.garrison*COST.upkeepG;
+  upkeep+=p.troops*COST.upkeepP;
+  p.money-=upkeep;
+  // ③ 金钱不足:先解散随身,再解散驻守
+  if(p.money<0){
+    const need=-p.money;
+    let pay=0;
+    const disP=Math.min(p.troops,Math.ceil(need/COST.upkeepP));
+    pay+=disP*COST.upkeepP; p.troops-=disP; p.money+=disP*COST.upkeepP;
+    if(p.money<0){
+      const need2=-p.money;
+      for(const c of myCities(p)){
+        if(p.money>=0) break;
+        const dis=Math.min(c.garrison,Math.ceil(need2/COST.upkeepG));
+        c.garrison-=dis; p.money+=dis*COST.upkeepG;
+      }
+    }
+  }
+  // 出局判定:金钱≤0 且 随身+全部驻守=0
+  if(p.money<=0){
+    let total=p.troops;
+    for(const c of myCities(p)) total+=c.garrison;
+    if(total<=0) eliminate(p);
+  }
+}
+function eliminate(p){
+  if(p.dead) return;
+  p.dead=true; p.troops=0;
+  for(const c of myCities(p)){ c.owner=-1; c.lv=1; c.garrison=0; }
+  p.cityN=0;
+  toast(p.name+' 破产出局!',0xef4444);
+}
+
+/* ---------- 移动 ---------- */
+// 玩家当前节点的合法下一步(排除回头)
+function nextOptions(p){
+  const node=nodes[p.pos];
+  const opts=node.next.filter(nid=>nid!==p.dir);
+  if(!opts.length) opts.push(node.next[0]);
+  return opts;
+}
+function advanceStep(p){
+  const node=nodes[p.pos];
+  const target=p.dir!==null&&node.next.includes(p.dir)?p.dir:nextOptions(p)[0];
+  p.pos=target;
+  p.dir=target;
+  return p.pos;
+}
+// 把 dir 设为朝某邻居走(驿站选路)
+function setDir(p,nodeId){ p.dir=nodeId; }
+
+/* ---------- 占领 ---------- */
+// claimCity:cost=占领费(购买)或 0(攻占),garrison=新驻守兵力
+function claimCity(p,node,garrison,cost){
+  p.money-=cost;
+  node.owner=p.id;
+  if(node.type==='capital'){ node.lv=0; node.garrison=Math.min(garrison,COST.capitalGarrison); }
+  else{
+    node.lv=1;
+    node.garrison=Math.min(garrison,COST.garrisonCap[0]);
+  }
+  node.pop=START.pop;
+  p.troops-=node.garrison;
+  if(p.troops<0) p.troops=0;
+  p.cityN=myCities(p).length;
+  hookOf(p,'onOccupy',[node]);   // 曹操:占领即2级
+  if(node.type==='city') node.garrison=Math.min(node.garrison,COST.garrisonCap[node.lv-1]);
+  if(p.cityN>=20) checkWin();
+}
+function occupyCity(p,node,garrison){ claimCity(p,node,garrison,occupyCostFor(p,node)); }
+function conquerCity(p,node,garrison){ claimCity(p,node,garrison,0); }
+
+/* ---------- 升级/征兵/驻守调整 ---------- */
+function upgCostFor(p,node){
+  const base=node.lv===1?COST.upg2:COST.upg3;
+  return hookOf(p,'upgCost',[base])??base;
+}
+function upgradeCity(p,node){
+  const cost=upgCostFor(p,node);
+  if(p.money<cost) return false;
+  p.money-=cost;
+  node.lv++;
+  node.garrison=Math.min(node.garrison,COST.garrisonCap[node.lv-1]);
+  return true;
+}
+function recruitFrom(p,node,qty){
+  qty=Math.min(qty,node.pop);
+  const cost=qty*COST.recruit;
+  if(p.money<cost) qty=Math.floor(p.money/COST.recruit);
+  if(qty<=0) return 0;
+  p.money-=qty*COST.recruit;
+  node.pop-=qty;
+  p.troops+=qty;
+  return qty;
+}
+function setGarrison(p,node,qty){
+  const cap=node.type==='capital'?COST.capitalGarrison:COST.garrisonCap[node.lv-1];
+  qty=clamp(qty,0,Math.min(cap,p.troops+node.garrison));
+  p.troops+=node.garrison-qty;
+  node.garrison=qty;
+  return qty;
+}
+
+/* ---------- 道具使用 ---------- */
+function useItem(p,key,arg){
+  if(p.items[key]<=0) return false;
+  if(key==='guanxing'){ G.dice=clamp(arg||6,1,6); p.status.diceFixed=true; }
+  else if(key==='mianzhan'){ p.status.mianzhanPending=true; }
+  else if(key==='zhengbing'){ p.troops+=30; }
+  else if(key==='lijian'){ const t=aliveOthers(p)[0]; if(t){ t.troops=Math.max(0,t.troops-20); toast('离间计:'+t.name+' 兵力-20',0xf59e0b); } }
+  else if(key==='tianziling'){ const t=aliveOthers(p)[0]; if(t){ p.status.tongmeng.push({pid:t.id,turns:2}); t.status.tongmeng.push({pid:p.id,turns:2}); toast('与 '+t.name+' 同盟2回合',0x34d399); } }
+  p.items[key]--;
+  return true;
+}
+function aliveOthers(p){ return G.players.filter(q=>q.id!==p.id&&!q.dead); }
+
+/* ---------- 事件(10 个,A/B) ---------- */
+const EVENTS=[
+  {key:'sanGu',name:'三顾茅庐',opts:[
+    {label:'A · 诚心求贤',desc:'花费 200 金 → 获得 观星盘×1',neg:true,fn:(p)=>{p.money-=200;p.items.guanxing++;}},
+    {label:'B · 躬身拜访',desc:'不花钱 → 随机自建城 人口+50',fn:(p)=>{const c=myCities(p)[0];if(c)c.pop+=50;}},
+  ]},
+  {key:'caoChuan',name:'草船借箭',opts:[
+    {label:'A · 借箭',desc:'兵力+30,金钱-100',neg:true,fn:(p)=>{p.troops+=30;p.money-=100;}},
+    {label:'B · 观敌',desc:'金钱+150,本回合不可移动',fn:(p)=>{p.money+=150;p.status.diceMod=0;p.status.immobilize=true;}},
+  ]},
+  {key:'shuiYan',name:'水淹七军',opts:[
+    {label:'A · 水攻',desc:'指定一名玩家 兵力-30',neg:true,fn:(p)=>{const t=aliveOthers(p)[0];if(t)t.troops=Math.max(0,t.troops-30);}},
+    {label:'B · 筑堤',desc:'所有自建城 人口+10%(向下取整)',fn:(p)=>{myCities(p).forEach(c=>{c.pop+=Math.floor(c.pop*0.1);});}},
+  ]},
+  {key:'kongCheng',name:'空城计',opts:[
+    {label:'A · 抚琴',desc:'获得 免战牌×1',fn:(p)=>{p.items.mianzhan++;}},
+    {label:'B · 撤军',desc:'金钱+200,兵力-20',neg:true,fn:(p)=>{p.money+=200;p.troops=Math.max(0,p.troops-20);}},
+  ]},
+  {key:'huoShao',name:'火烧赤壁',opts:[
+    {label:'A · 火攻',desc:'指定一名玩家 金钱-300',neg:true,fn:(p)=>{const t=aliveOthers(p)[0];if(t)t.money=Math.max(0,t.money-300);}},
+    {label:'B · 固守',desc:'获得 免战牌×1',fn:(p)=>{p.items.mianzhan++;}},
+  ]},
+  {key:'qiQin',name:'七擒孟获',opts:[
+    {label:'A · 征讨',desc:'兵力+50,金钱-150',neg:true,fn:(p)=>{p.troops+=50;p.money-=150;}},
+    {label:'B · 怀柔',desc:'金钱+300,所有城池人口-30',neg:true,fn:(p)=>{p.money+=300;myCities(p).forEach(c=>{c.pop=Math.max(0,c.pop-30);});}},
+  ]},
+  {key:'guaGu',name:'刮骨疗毒',opts:[
+    {label:'A · 疗伤',desc:'花费 100 金 → 兵力+30',neg:true,fn:(p)=>{p.money-=100;p.troops+=30;}},
+    {label:'B · 忍痛',desc:'兵力-20,获得永久被动:事件负面效果减半',neg:true,fn:(p)=>{p.troops=Math.max(0,p.troops-20);p.status.eventNegHalf=true;}},
+  ]},
+  {key:'huangJin',name:'黄巾之乱',opts:[
+    {label:'A · 坐视',desc:'所有玩家城池产出-20%,持续2回合',neg:true,fn:(p)=>{G.players.forEach(q=>{if(!q.dead)q.status.outputMult.push({mult:-0.2,turns:2});});}},
+    {label:'B · 镇压',desc:'花费 200 金 → 兵力+30',neg:true,fn:(p)=>{p.money-=200;p.troops+=30;}},
+  ]},
+  {key:'muNiu',name:'木牛流马',opts:[
+    {label:'A · 改进运输',desc:'所有自建城产出+10%,永久',fn:(p)=>{p.status.outputMult.push({mult:0.1,perm:true});}},
+    {label:'B · 量产',desc:'获得 征兵令×2',fn:(p)=>{p.items.zhengbing+=2;}},
+  ]},
+  {key:'huaRong',name:'华容道',opts:[
+    {label:'A · 放行',desc:'兵力最少的玩家+20,你金钱+200',fn:(p)=>{let t=null;for(const q of aliveOthers(p))if(!t||q.troops<t.troops)t=q;if(t)t.troops+=20;p.money+=200;}},
+    {label:'B · 截杀',desc:'其兵力-20,你兵力-10',neg:true,fn:(p)=>{let t=null;for(const q of aliveOthers(p))if(!t||q.troops<t.troops)t=q;if(t)t.troops=Math.max(0,t.troops-20);p.troops=Math.max(0,p.troops-10);}},
+  ]},
+];
+
+/* ---------- 状态到期/清零(每轮衰减) ---------- */
+function tickRoundStatus(){
+  for(const p of G.players){
+    if(p.dead) continue;
+    p.status.tongmeng=p.status.tongmeng.filter(t=>t.turns-- >0);
+    if(p.status.lianjun>0) p.status.lianjun--;
+    if(p.status.noAttack>0) p.status.noAttack--;
+    if(p.status.tollDouble>0) p.status.tollDouble--;
+    p.status.outputMult=p.status.outputMult.filter(o=>o.perm||(o.turns-- >0));
+  }
+}
+
+/* ========== 回合状态机 ========== */
+function cur(){ return G.players[G.cur]; }
+
+function startTurn(){
+  const p=cur();
+  if(!p||p.dead){ nextPlayer(); return; }
+  if(G.cur===0) tickRoundStatus();   // 每轮(全员一圈)衰减持续状态
+  roundTick(p);
+  if(p.dead){ nextPlayer(); return; }
+  updateHUD();
+  G.phase='items';
+  uiPhase();
+}
+function nextPlayer(){
+  let n=G.players.length;
+  while(n-->0){
+    G.cur=(G.cur+1)%G.players.length;
+    if(G.cur===0) G.turn++;
+    if(!G.players[G.cur].dead) break;
+  }
+  const alive=G.players.filter(q=>!q.dead);
+  if(alive.length<=1){ checkWin(); if(G.win) return showWin(); }
+  saveGame();
+  startTurn();
+}
+function endTurn(){
+  checkWin();
+  if(G.win) return showWin();
+  nextPlayer();
+}
+
+/* ---------- 掷骰 ---------- */
+function doRoll(){
+  const p=cur();
+  if(p.status.immobilize){ p.status.immobilize=false; G.dice=0; G.phase='move'; startMove(); return; }
+  let d;
+  if(p.status.diceFixed){ p.status.diceFixed=false; d=G.dice; }   // 观星盘:固定点数
+  else d=rndi(1,6);
+  if(p.status.diceMod!==0){ d=clamp(d+p.status.diceMod,1,6); p.status.diceMod=0; }
+  G.dice=d;
+  showDice(d);
+  G.phase='move';
+  startMove();
+}
+// 吕布:飞将 200金 强制6
+function tryFeijiang(){
+  const p=cur();
+  if(p.general!=='lbu'||p.uses.feijiang<=0||p.money<200) return false;
+  p.money-=200; p.uses.feijiang--;
+  G.dice=6; showDice(6);
+  G.phase='move'; startMove();
+  return true;
+}
+// 诸葛亮:八阵 重掷(结果±1)
+function tryBazhen(){
+  const p=cur();
+  if(p.general!=='zhugeliang'||p.uses.bazhen<=0) return false;
+  p.uses.bazhen--;
+  let d=rndi(1,6);
+  d=clamp(d+(Math.random()<0.5?-1:1),1,6);
+  G.dice=d; showDice(d);
+  G.phase='move'; startMove();
+  return true;
+}
+function startMove(){ G.moveSteps=G.dice; G.moveCur=0; G.phase='move'; if(G.moveSteps<=0) onLandArrive(); }
+function onLandArrive(){
+  const p=cur(); const node=nodes[p.pos];
+  if(node.type==='junction'&&node.next.length>1){
+    G.phase='route';
+    onRoute(p,node);
+  } else {
+    G.phase='land';
+    onLand();
+  }
+}
+
+/* ---------- 落地触发 ---------- */
+function onLand(){
+  const p=cur(); const node=nodes[p.pos];
+  if(node.type==='city'||node.type==='capital') onLandCity(p,node);
+  else if(node.type==='event') onLandEvent(p,node);
+  else if(node.type==='shop') onLandShop(p,node);
+  else if(node.type==='junction') onRoute(p,node);
+  else endTurn();
+}
+
+/* ----- 城池格子 ----- */
+function onLandCity(p,node){
+  if(node.owner===-1){
+    const cost=occupyCostFor(p,node);
+    if(p.isAI){
+      if(p.money>=cost&&p.troops>1){ const g=aiGarrison(p,node); occupyCity(p,node,g); toast(p.name+' 占领 '+node.name,0xf59e0b); }
+      endTurn();
+    } else {
+      showModal('🏰 无主城池 · '+node.name,
+        ()=>{ const cst=occupyCostFor(p,node);
+          return '<div class="row"><span>占领费用</span><b>'+cst+' 金</b></div>'+
+          '<div class="row"><span>随身兵力</span><b>'+p.troops+'</b></div>'+
+          '<div class="row"><span>状态</span><b>可占领后调拨驻守</b></div>'; },
+        [{txt:'占领 ('+cost+'金)',cls:'act',fn:()=>garrisonModal(p,node,occupyCostFor(p,node),()=>endTurn())},
+         {txt:'放弃',fn:()=>endTurn()}]);
+    }
+  } else if(node.owner===p.id){
+    if(p.isAI){
+      if(node.type==='city'&&node.lv<3){ const c=upgCostFor(p,node); if(p.money>=c){ upgradeCity(p,node); toast(p.name+' 升级 '+node.name,0xf59e0b); } }
+      const cap=node.type==='capital'?COST.capitalGarrison:COST.garrisonCap[node.lv-1];
+      const total=p.troops+node.garrison;
+      setGarrison(p,node,Math.min(Math.floor(total/2),cap));
+      endTurn();
+    } else {
+      const upg=node.type==='city'&&node.lv<3;
+      const upgCost=upg?upgCostFor(p,node):0;
+      showModal('🏯 你的城池 · '+node.name,
+        ()=>{ const upg2=node.type==='city'&&node.lv<3;
+          const uc=upg2?upgCostFor(p,node):0;
+          return '<div class="row"><span>等级</span><b>'+(node.type==='capital'?'首府':node.lv+'级')+'</b></div>'+
+          '<div class="row"><span>驻守</span><b>'+node.garrison+' / 随身 '+p.troops+'</b></div>'+
+          '<div class="row"><span>人口</span><b>'+node.pop+'</b></div>'+
+          '<div class="row"><span>每轮产出</span><b>'+cityProdMoney(node)+'金 / +'+cityProdPop(node)+'人</b></div>'+
+          (upg2?'<div class="row"><span>升级</span><b>'+uc+' 金 → Lv'+(node.lv+1)+'</b></div>':''); },
+        [...(node.type==='city'&&node.lv<3?[{txt:'升级 ('+upgCostFor(p,node)+'金)',cls:'act',fn:()=>{ upgradeCity(p,node); refreshModal(); }}]:[]),
+         {txt:'征兵(10金/人)',fn:()=>{ const q=recruitFrom(p,node,10); toast('征兵 +'+q,0x34d399); refreshModal(); }},
+         {txt:'调整驻守',fn:()=>garrisonModal(p,node,null,()=>{}),},
+         {txt:'结束回合',cls:'gold',fn:()=>endTurn()}]);
+    }
+  } else {
+    // 他人城池
+    const owner=G.players.find(q=>q.id===node.owner);
+    const toll=node.type==='capital'?COST.capitalToll:COST.toll[node.lv-1];
+    const tollFinal=p.status.tollDouble>0?toll*2:toll;
+    const allied=hasAlliance(p,owner);
+    const atkState=canAttack(p,owner,node);
+    if(p.isAI){
+      const defP=defensePower(owner,node);
+      if(atkState==='ok'&&p.troops>defP*1.2){ doAttack(p,owner,node); }
+      else { payToll(p,owner,node,tollFinal,allied); }
+      endTurn();
+    } else {
+      const btns=[];
+      if(allied) btns.push({txt:'同盟通行(免费)',cls:'act',fn:()=>{ endTurn(); }});
+      else btns.push({txt:'缴纳过路费 '+tollFinal+'金',fn:()=>{ payToll(p,owner,node,tollFinal,false); endTurn(); }});
+      if(atkState==='ok') btns.push({txt:'⚔ 攻打',cls:'danger',fn:()=>doAttack(p,owner,node)});
+      else if(atkState==='mianzhan') btns.push({txt:'对方免战牌(平局)',cls:'gold',fn:()=>{ owner.status.mianzhanPending=false; toast('免战牌生效,平局',0x38bdf8); endTurn(); }});
+      else if(atkState==='lianjun') btns.push({txt:'联军期间不可战',fn:()=>{ payToll(p,owner,node,tollFinal,allied); endTurn(); }});
+      else btns.push({txt:'对方暂不可攻',fn:()=>{ payToll(p,owner,node,tollFinal,allied); endTurn(); }});
+      showModal('🏯 '+node.name+' · 属于 '+owner.name,
+        '<div class="row"><span>驻守兵力</span><b>'+defensePower(owner,node)+'</b></div>'+
+        '<div class="row"><span>过路费</span><b>'+(allied?'同盟免费':tollFinal+' 金')+'</b></div>'+
+        '<div class="row"><span>你的兵力</span><b>'+p.troops+'</b></div>', btns);
+    }
+  }
+}
+function payToll(p,owner,node,toll,allied){
+  if(allied){ toast('同盟,免过路费',0x34d399); return; }
+  const t=Math.min(toll,p.money);
+  p.money-=t;
+  owner.money+=t;
+  toast('缴纳过路费 '+t+' 金',0xef4444);
+}
+function doAttack(att,def,node){
+  if(def.status.mianzhanPending){ def.status.mianzhanPending=false; toast('免战牌生效,平局!',0x38bdf8); endTurn(); return; }
+  const atkBonus=hookOf(att,'battleAtk',[])||0;
+  const A=att.troops+atkBonus;
+  const B=defensePower(def,node);
+  const res=resolveBattle(A,B);
+  flashBattle(node);
+  if(res.win===true){
+    att.troops=res.aLeft;
+    toast('⚔ 攻占 '+node.name+'!',0xf59e0b);
+    if(att.isAI){ const g=aiGarrison(att,node); conquerCity(att,node,g); endTurn(); }
+    else garrisonModal(att,node,true,()=>endTurn());
+  } else if(res.win===false){
+    def.garrison=res.bLeft;
+    att.troops=0;
+    toast('⚔ 攻打失败!守军剩 '+res.bLeft,0xef4444);
+    endTurn();
+  } else {
+    att.troops=0; def.garrison=0;
+    toast('⚔ 两败俱伤,平局',0xef4444);
+    endTurn();
+  }
+}
+
+/* ----- 事件格 ----- */
+function onLandEvent(p,node){
+  const ev=EVENTS[rndi(0,EVENTS.length-1)];
+  if(p.isAI){
+    // 避开负面:80% 选非 neg 项
+    const a=ev.opts[0], b=ev.opts[1];
+    let pick;
+    if(a.neg&&!b.neg) pick=Math.random()<0.2?a:b;
+    else if(b.neg&&!a.neg) pick=Math.random()<0.2?b:a;
+    else pick=Math.random()<0.5?a:b;
+    applyEvent(p,ev,pick);
+    toast(p.name+' 触发事件:'+ev.name+' · '+pick.label,0x38bdf8);
+    endTurn();
+  } else {
+    showModal('❓ 事件 · '+ev.name,'选择一个选项:',
+      ev.opts.map(o=>({txt:'<div class="oa">'+o.label+'</div>'+o.desc,cls:'opt',fn:()=>{ applyEvent(p,ev,o); endTurn(); }})));
+  }
+}
+function applyEvent(p,ev,opt){
+  const hadNeg=opt.neg;
+  opt.fn(p);
+  if(hadNeg&&p.status.eventNegHalf){ /* 简化:负面减半被动仅标记,不做二次结算 */ }
+}
+
+/* ----- 商店格 ----- */
+function onLandShop(p,node){
+  if(p.isAI){
+    if(p.troops<100&&p.money>=150){ p.items.zhengbing++; p.money-=150; toast(p.name+' 购买 征兵令',0xf59e0b); }
+    else if(p.money>=1500){ p.items.guanxing++; p.money-=300; toast(p.name+' 购买 观星盘',0xf59e0b); }
+    endTurn();
+  } else {
+    const btns=SHOP_ITEMS.map(k=>({txt:ITEMS[k].name+' ('+ITEMS[k].price+'金)',cls:'act',fn:()=>{
+      const p2=cur();
+      if(p2.money<ITEMS[k].price){ toast('金币不足',0xef4444); return; }
+      p2.money-=ITEMS[k].price; p2.items[k]++;
+      toast('购买 '+ITEMS[k].name,0xf59e0b);
+      refreshModal();
+    }}));
+    btns.push({txt:'离开商店',cls:'gold',fn:()=>endTurn()});
+    showModal('🏪 商店',
+      ()=>{ const p2=cur(); return '<div class="row"><span>你的金币</span><b>'+p2.money+'</b></div><div class="row"><span>兵力</span><b>'+p2.troops+'</b></div>'; },
+      btns);
+  }
+}
+
+/* ----- 驿站选路 ----- */
+function onRoute(p,node){
+  const opts=node.next.map(nid=>nodes[nid]);
+  if(p.isAI){
+    const pick=opts[rndi(0,opts.length-1)];
+    setDir(p,pick.id);
+    toast(p.name+' 选择前往 '+pick.name,0x38bdf8);
+    endTurn();
+  } else {
+    showModal('🚏 驿站 · 选择方向','当前位置:'+node.name,opts.map(o=>({txt:'前往 '+o.name,cls:'act',fn:()=>{ setDir(p,o.id); endTurn(); }})));
+  }
+}
+
+/* ----- 驻守分配弹窗(占领/攻占/调整共用);cost:0=攻占免费,>0=购买费,null=仅调整 ----- */
+function garrisonModal(p,node,cost,done){
+  const isClaim=cost!==null&&cost!==undefined;
+  const cap=node.type==='capital'?COST.capitalGarrison:COST.garrisonCap[isClaim?0:(node.lv-1)];
+  const avail=p.troops;
+  const def=Math.min(Math.max(0,Math.floor(avail/2)),cap);
+  showModal('🛡 调配驻守兵力 · '+node.name,
+    '<div class="row"><span>随身兵力</span><b id="gmAvail">'+avail+'</b></div>'+
+    '<div class="row"><span>驻守上限</span><b>'+cap+'</b></div>'+
+    '<div style="margin:10px 0"><button id="gmMinus" class="gold">-10</button> <b id="gmVal" style="font-size:18px;color:var(--gold)">'+def+'</b> <button id="gmPlus" class="gold">+10</button></div>',
+    [{txt:'确认',cls:'act',fn:()=>{ const q=+$('gmVal').textContent; if(isClaim) claimCity(p,node,q,cost); else setGarrison(p,node,q); done(); }},
+     {txt:'取消',fn:()=>done()}]);
+  let v=def;
+  const sync=()=>{ const el=$('gmVal'); if(el) el.textContent=v; };
+  $('gmMinus').onclick=()=>{ v=Math.max(0,v-10); sync(); };
+  $('gmPlus').onclick=()=>{ v=Math.min(cap,avail,v+10); sync(); };
+}
+function aiGarrison(p,node){
+  const cap=node.type==='capital'?COST.capitalGarrison:COST.garrisonCap[0];
+  return Math.min(Math.max(1,Math.floor(p.troops/2)),cap);
+}
+
+/* ---------- 胜负 ---------- */
+function checkWin(){
+  const alive=G.players.filter(p=>!p.dead);
+  if(alive.length===1&&G.players.length>1){ G.win=alive[0]; return; }
+  for(const p of alive){
+    const caps=myCapitals(p).length;
+    const cities=myCities(p).length;
+    if(caps>=13||(cities>=20&&caps>=3)){ G.win=p; return; }
+  }
+}
+
+/* ---------- AI 行动(浏览器层用 setTimeout 包装,测试直接调) ---------- */
+function aiAct(){
+  const p=cur();
+  if(!p||!p.isAI||p.dead) return;
+  switch(G.phase){
+    case 'items': aiItems(p); break;
+    case 'roll': aiRoll(p); break;
+    case 'route': break;  // onRoute 内已处理
+    case 'land': break;   // 落地 handler 内已处理
+  }
+}
+function aiItems(p){
+  // 兵力低买征兵令;有观星盘不用;离间/天子令对领先玩家用
+  if(p.items.zhengbing>0&&p.troops<150){ useItem(p,'zhengbing'); }
+  else if(p.items.guanxing>0&&Math.random()<0.5){ useItem(p,'guanxing',rndi(1,6)); }
+  const t=aliveOthers(p)[0];
+  if(t&&p.items.lijian>0&&t.troops>p.troops){ useItem(p,'lijian'); }
+  G.phase='roll';
+  uiPhase();
+}
+function aiRoll(p){
+  if(p.general==='lbu'&&p.uses.feijiang>0&&p.money>=200&&Math.random()<0.25){ tryFeijiang(); return; }
+  if(p.general==='zhugeliang'&&p.uses.bazhen>0){
+    const d=rndi(1,6);
+    if(d<=2){ p.uses.bazhen--; G.dice=clamp(d+1,1,6); showDice(G.dice); G.phase='move'; startMove(); return; }
+    G.dice=d; showDice(d); G.phase='move'; startMove(); return;
+  }
+  doRoll();
+}
+
+/* ---------- 初始化 ---------- */
+function resetState(){
+  nodes.forEach(n=>{ n.owner=-1; n.lv=1; n.garrison=0; n.pop=START.pop; });
+  G.players=[]; G.cur=0; G.turn=1; G.dice=0; G.win=null; G.st='menu'; G.waiting=false;
+  pidSeq=0;
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=rndi(0,i); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function setupGame(n,humanGen){
+  resetState();
+  n=clamp(n,1,MAX_PLAYERS);
+  const pool=shuffle(nodes.filter(x=>x.type==='city'));
+  for(let i=0;i<n;i++){
+    const p=newPlayer(i===0?'你':'AI'+(i),i!==0);
+    p.general= i===0?humanGen:GENERALS[rndi(0,GENERALS.length-1)].key;
+    const c=pool[i];
+    c.owner=p.id; c.lv=1; c.garrison=START.garrison; c.pop=START.pop;
+    p.pos=c.id;
+    p.dir=c.next[0];
+    p.cityN=1;
+    G.players.push(p);
+  }
+  G.st='play';
+  saveGame();
+  startTurn();
+}
+
+/* ---------- 存档/断点续玩 ---------- */
+function saveGame(){
+  if(G.st!=='play') return;
+  const data={
+    cur:G.cur,turn:G.turn,phase:G.phase,dice:G.dice,speed:G.speed,
+    players:G.players.map(p=>({
+      id:p.id,name:p.name,isAI:p.isAI,general:p.general,money:p.money,troops:p.troops,
+      pos:p.pos,dir:p.dir,dead:p.dead,items:p.items,status:p.status,uses:p.uses,
+    })),
+    nodes:nodes.map(n=>({owner:n.owner,lv:n.lv,garrison:n.garrison,pop:n.pop})),
+    ts:Date.now(),
+  };
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify(data)); }catch(e){}
+}
+function loadGame(){
+  let data=null;
+  try{ data=JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){}
+  if(!data) return false;
+  resetState();
+  pidSeq=0;
+  G.players=data.players.map(pd=>{
+    const p=newPlayer(pd.name,pd.isAI);
+    Object.assign(p,{general:pd.general,money:pd.money,troops:pd.troops,pos:pd.pos,dir:pd.dir,
+      dead:pd.dead,items:pd.items,status:pd.status,uses:pd.uses||{feijiang:3,bazhen:3}});
+    p.cityN=0;
+    return p;
+  });
+  pidSeq=Math.max(0,...G.players.map(p=>p.id))+1;
+  nodes.forEach((n,i)=>{ const d=data.nodes[i]; if(d){ n.owner=d.owner; n.lv=d.lv; n.garrison=d.garrison; n.pop=d.pop; } });
+  G.cur=data.cur||0; G.turn=data.turn||1; G.phase=data.phase||'items'; G.dice=data.dice||0;
+  G.speed=data.speed||1;
+  for(const p of G.players) p.cityN=myCities(p).length;
+  G.st='play';
+  G.waiting=false;
+  return true;
+}
+
+/* ========== 渲染层(THREE 场景) ========== */
+const canvas=$('cv');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0c1017);
+const cam=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,300);
+cam.position.set(0,38,18);
+cam.lookAt(0,0,0);
+const sun=new THREE.DirectionalLight(0xfff5e0,1.1);
+sun.position.set(20,40,10);
+scene.add(sun);
+scene.add(new THREE.AmbientLight(0xaac4e0,0.55));
+
+// 地面
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshLambertMaterial({color:0x14241a}));
+ground.rotation.x=-Math.PI/2; ground.position.set(0,-0.05,0);
+scene.add(ground);
+
+// 共享几何
+const GEO={ box:new THREE.BoxGeometry(1,1,1), cyl:new THREE.CylinderGeometry(0.5,0.5,1,8),
+  cone:new THREE.ConeGeometry(0.5,1,4), sph:new THREE.SphereGeometry(1,8,6) };
+const MATS={};
+function mat(color,type){
+  type=type||'lam';
+  const k=color+'_'+type;
+  if(!MATS[k]) MATS[k]=type==='basic'?new THREE.MeshBasicMaterial({color}):new THREE.MeshLambertMaterial({color});
+  return MATS[k];
+}
+
+// 路径带:每条边一条细长条(避开 ShapeGeometry 镜像坑)
+function addEdgeMesh(a,b,color){
+  const dx=a.pos.x-b.pos.x, dz=a.pos.z-b.pos.z;
+  const len=Math.sqrt(dx*dx+dz*dz);
+  const m=new THREE.Mesh(GEO.box,mat(color));
+  m.scale.set(0.22,0.04,len);
+  m.position.set((a.pos.x+b.pos.x)/2,-0.02,(a.pos.z+b.pos.z)/2);
+  m.rotation.y=Math.atan2(dx,dz);
+  scene.add(m);
+  return m;
+}
+const EDGE_COL={ring:0x3a4a5a,short:0x4a5a3a};
+function buildPath(){
+  const ringColor=EDGE_COL.ring;
+  for(const n of nodes){
+    for(const nid of n.next){
+      if(nid>n.id) continue; // 每条边画一次
+      const b=nodeById[nid];
+      const isShort=SHORTCUTS.some(([x,y])=> (x===n.id?false:false)); // 捷径判定:两端都是驿站且不相邻
+      const isShort2=isJunction(n)&&isJunction(b)&&!adjacentOnRing(n,b);
+      addEdgeMesh(n,b,isShort2?EDGE_COL.short:ringColor);
+    }
+  }
+}
+function isJunction(n){ return n.type==='junction'; }
+const JN_IDS=Object.values(JN);   // 13 个驿站节点 id,下标=州序
+function adjacentOnRing(a,b){
+  const N=STATES.length;
+  const ja=JN_IDS.indexOf(a.id), jb=JN_IDS.indexOf(b.id);
+  if(ja<0||jb<0) return false;
+  return Math.abs(ja-jb)===1||Math.abs(ja-jb)===N-1;
+}
+
+// 节点模型
+const CITY_GROUPS={}; // nodeId -> grp
+function buildNodeModel(n){
+  const g=new THREE.Group();
+  if(n.type==='city'||n.type==='capital'){
+    const isCap=n.type==='capital';
+    const base=new THREE.Mesh(GEO.box,mat(0x9a8a72));
+    base.scale.set(isCap?1.5:1.1,isCap?0.55:0.42,isCap?1.5:1.1);
+    base.position.y=isCap?0.28:0.21;
+    g.add(base);
+    const wall=new THREE.Mesh(GEO.box,mat(0x6a5a44));
+    wall.scale.set(isCap?1.7:1.3,0.16,isCap?1.7:1.3);
+    wall.position.y=0.08;
+    g.add(wall);
+    const tower=new THREE.Mesh(GEO.cyl,mat(0xb0a088));
+    tower.scale.set(0.3,isCap?1.0:0.7,0.3);
+    tower.position.y=isCap?1.0:0.72;
+    g.add(tower);
+    const roof=new THREE.Mesh(GEO.cone,mat(0x8a4a2a));
+    roof.scale.set(0.42,isCap?0.5:0.4,0.42);
+    roof.position.y=isCap?1.5:1.06;
+    g.add(roof);
+    if(isCap){
+      const crown=new THREE.Mesh(GEO.cone,mat(0xf59e0b,'basic'));
+      crown.scale.set(0.24,0.3,0.24);
+      crown.position.y=1.85;
+      g.add(crown);
+      const flag=new THREE.Mesh(GEO.box,mat(0xf59e0b,'basic'));
+      flag.scale.set(0.1,0.5,0.02);
+      flag.position.set(0.8,1.3,0);
+      g.add(flag);
+    }
+    const lv1=new THREE.Mesh(GEO.box,mat(0x3a3a3a));
+    lv1.scale.set(0.5,0.05,0.5);
+    lv1.position.y=0.01;
+    g.add(lv1);
+  } else if(n.type==='event'){
+    const m=new THREE.Mesh(GEO.box,mat(0x7c5cff,'basic'));
+    m.scale.set(0.9,0.9,0.9);
+    m.position.y=0.45;
+    g.add(m);
+    const q=new THREE.Mesh(GEO.sph,mat(0xffffff,'basic'));
+    q.scale.set(0.35,0.35,0.35);
+    q.position.y=0.45;
+    g.add(q);
+  } else if(n.type==='shop'){
+    const m=new THREE.Mesh(GEO.box,mat(0x2a6a3a));
+    m.scale.set(1.1,0.5,1.1);
+    m.position.y=0.25;
+    g.add(m);
+    const roof=new THREE.Mesh(GEO.cone,mat(0xd97706,'basic'));
+    roof.scale.set(0.8,0.35,0.8);
+    roof.position.y=0.62;
+    g.add(roof);
+  } else if(n.type==='junction'){
+    const base=new THREE.Mesh(GEO.cyl,mat(0x4a4a52));
+    base.scale.set(0.7,0.14,0.7);
+    base.position.y=0.07;
+    g.add(base);
+    const pole=new THREE.Mesh(GEO.cyl,mat(0x6a6a72));
+    pole.scale.set(0.12,1.1,0.12);
+    pole.position.y=0.62;
+    g.add(pole);
+    const lantern=new THREE.Mesh(GEO.sph,mat(0xf59e0b,'basic'));
+    lantern.scale.set(0.22,0.22,0.22);
+    lantern.position.y=1.25;
+    g.add(lantern);
+  }
+  g.position.set(n.pos.x,0,n.pos.z);
+  scene.add(g);
+  CITY_GROUPS[n.id]=g;
+  return g;
+}
+// 归属色/等级刷新
+function refreshNodeVisual(n){
+  const g=CITY_GROUPS[n.id];
+  if(!g) return;
+  if(n.type!=='city'&&n.type!=='capital') return;
+  const ownerCol= n.owner>=0?PCOLOR_INT[n.owner%MAX_PLAYERS]:0x5a4a34;
+  // 遍历子网格:按 userData 角色上色
+  g.children.forEach(m=>{
+    if(m.userData.role==='wall') m.material=mat(ownerCol);
+    if(m.userData.role==='lv'){ m.material=mat(ownerCol); m.scale.set(0.5*(n.type==='capital'?1:Math.max(1,n.lv)),0.05,0.5*(n.type==='capital'?1:Math.max(1,n.lv))); m.visible=n.owner>=0; }
+  });
+}
+function buildAllNodeModels(){
+  for(const n of nodes){
+    const g=buildNodeModel(n);
+    g.children.forEach(m=>{
+      // 标记角色
+      if(m.geometry===GEO.box&&m.scale.y<0.2&&m.scale.x>0.4&&m.position.y<0.1) m.userData.role='lv';
+      if(m.geometry===GEO.box&&m.scale.y<0.2&&m.scale.x>1.0) m.userData.role='wall';
+    });
+    refreshNodeVisual(n);
+  }
+}
+
+/* ---------- 玩家棋子 ---------- */
+function buildToken(p){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(GEO.cyl,mat(p.colorI,'basic'));
+  body.scale.set(0.5,0.5,0.5);
+  body.position.y=0.25;
+  g.add(body);
+  const head=new THREE.Mesh(GEO.sph,mat(p.colorI,'basic'));
+  head.scale.set(0.3,0.3,0.3);
+  head.position.y=0.62;
+  g.add(head);
+  const ring=new THREE.Mesh(GEO.cyl,mat(0xffffff,'basic'));
+  ring.scale.set(0.8,0.03,0.8);
+  ring.position.y=0.015;
+  g.add(ring);
+  scene.add(g);
+  p._tok=g;
+}
+function positionTokenAt(p,x,z){ if(p._tok) p._tok.position.set(x,0,z); }
+function placeTokens(){
+  for(const p of G.players){
+    if(!p._tok) buildToken(p);
+    const n=nodes[p.pos];
+    positionTokenAt(p,n.pos.x,n.pos.z);
+  }
+}
+function refreshTokenRing(){
+  for(const p of G.players){
+    if(!p._tok) continue;
+    const ring=p._tok.children[2];
+    if(ring) ring.material=mat(G.cur===p.id?0xf59e0b:0xffffff,'basic');
+  }
+}
+
+/* ---------- 移动动画 ---------- */
+let moveAnim=null;
+function lerpV(a,b,t){ return {x:a.x+(b.x-a.x)*t, z:a.z+(b.z-a.z)*t}; }
+function updateMove(dt){
+  if(G.st!=='play'||G.phase!=='move'){ moveAnim=null; return; }
+  const p=cur();
+  if(!moveAnim){
+    const r=logicStep();
+    moveAnim={from:r.from,to:r.to,t:0,last:(G.moveCur+1>=G.moveSteps)};
+  }
+  moveAnim.t+=dt/0.3;
+  const v=lerpV(moveAnim.from,moveAnim.to,clamp(moveAnim.t,0,1));
+  positionTokenAt(p,v.x,v.z);
+  if(moveAnim.t>=1){
+    G.moveCur++;
+    moveAnim=null;
+    if(G.moveCur>=G.moveSteps) onLandArrive();
+  }
+}
+
+/* ---------- 简单特效 ---------- */
+const FX=[];
+function fxRing(node,color){
+  if(FX.length>16) return;
+  const r=new THREE.Mesh(GEO.cyl,mat(color,'basic'));
+  r.scale.set(1,0.06,1);
+  r.position.set(node.pos.x,0.05,node.pos.z);
+  r.rotation.x=Math.PI/2;
+  scene.add(r);
+  FX.push({m:r,t:0,userData:{fade:true}});
+}
+function flashBattle(node){
+  fxRing(node,0xef4444);
+  const p=cur();
+  toast('⚔ 战斗!',0xef4444);
+}
+function updateFx(dt){
+  for(let i=FX.length-1;i>=0;i--){
+    const f=FX[i];
+    f.t+=dt;
+    const s=1+f.t*4;
+    f.m.scale.set(s,0.06,s);
+    f.m.material.opacity=Math.max(0,1-f.t*1.2);
+    if(f.t>1.2){ scene.remove(f.m); FX.splice(i,1); }
+  }
+}
+
+/* ========== UI ========== */
+let toastTimer=null;
+function toast(msg,color){
+  const el=$('toast');
+  el.textContent=msg;
+  el.style.color=color!==undefined?('#'+color.toString(16).padStart(6,'0')):'#fff';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),1600);
+}
+let curModal=null;
+function showModal(title,desc,btns){
+  curModal={title,desc,btns};
+  drawModal();
+  $('modal').style.display='flex';
+  G.waiting=true;
+}
+function drawModal(){
+  if(!curModal) return;
+  const box=$('modalBox');
+  const d=typeof curModal.desc==='function'?curModal.desc():curModal.desc;
+  box.innerHTML='<div class="t">'+curModal.title+'</div><div class="d">'+d+'</div><div id="modalBtns"></div>';
+  const mb=$('modalBtns');
+  curModal.btns.forEach(b=>{
+    const el=document.createElement('button');
+    if(b.cls==='opt'){ el.className='opt'; el.innerHTML=b.txt; }
+    else { el.textContent=b.txt; el.className=b.cls||''; }
+    el.onclick=()=>{ hideModal(); if(b.fn) b.fn(); };
+    mb.appendChild(el);
+  });
+}
+function hideModal(){ $('modal').style.display='none'; G.waiting=false; }
+function refreshModal(){ drawModal(); }
+
+function updateHUD(){
+  const hud=$('hud');
+  let html='';
+  G.players.forEach((p,i)=>{
+    const curCls=i===G.cur?'cur':'';
+    html+='<div class="p '+curCls+'" style="border-color:'+(i===G.cur?p.color:'')+'">'+
+      '<span class="dot" style="background:'+p.color+'"></span>'+
+      '<span>'+p.name+'</span>'+
+      '<b>'+p.money+'金</b>'+
+      '<span class="tr">'+p.troops+'兵</span>'+
+      (p.dead?'<span style="color:#ef4444">出局</span>':'')+
+      '</div>';
+  });
+  hud.innerHTML=html;
+  $('turnTag').style.display='block';
+  $('turnNum').textContent=G.turn;
+  refreshTokenRing();
+  renderItemsBar();
+}
+function showDice(d){
+  $('dice').textContent=d;
+  $('diceBox').style.display='block';
+  $('diceBox').animate?null:null;
+}
+function showDiceTag(t){ $('diceTag').textContent=t; }
+function renderItemsBar(){
+  const p=cur();
+  const el=$('items');
+  if(!p||p.dead||G.st!=='play'){ el.innerHTML=''; return; }
+  let html='';
+  for(const k of Object.keys(ITEMS)){
+    if(p.items[k]>0) html+='<div class="it" data-k="'+k+'"><div class="n">'+ITEMS[k].name+'</div><div class="q">×'+p.items[k]+'</div></div>';
+  }
+  el.innerHTML=html;
+  el.querySelectorAll('.it').forEach(it=>{
+    it.onclick=()=>{
+      if(G.phase==='items'&&G.st==='play'){
+        const k=it.dataset.k;
+        if(k==='guanxing'){
+          const d=prompt('指定骰子点数(1-6)','6');
+          const v=parseInt(d||'6',10);
+          useItem(cur(),'guanxing',clamp(v||6,1,6));
+          renderItemsBar();
+          toast('观星盘:骰子='+G.dice,0x38bdf8);
+        } else {
+          useItem(cur(),k);
+          renderItemsBar();
+        }
+      }
+    };
+  });
+}
+
+/* ---------- 回合 UI 分发 ---------- */
+let aiTimer=null;
+function scheduleAI(ms){
+  if(aiTimer) clearTimeout(aiTimer);
+  aiTimer=setTimeout(()=>{ aiTimer=null; aiAct(); },ms);
+}
+function uiPhase(){
+  const p=cur();
+  hideModal();
+  updateHUD();
+  switch(G.phase){
+    case 'items':
+      if(p.isAI) scheduleAI(900);
+      else {
+        showDiceTag('点 [掷骰] 或 空格');
+        const btns=[];
+        if(p.general==='lbu'&&p.uses.feijiang>0&&p.money>=200) btns.push({txt:'🦅 飞将(200金,骰子=6) ×'+p.uses.feijiang,cls:'gold',fn:()=>tryFeijiang()});
+        if(p.general==='zhugeliang'&&p.uses.bazhen>0) btns.push({txt:'🧠 八阵重掷 ×'+p.uses.bazhen,cls:'gold',fn:()=>tryBazhen()});
+        btns.push({txt:'🎲 掷骰',cls:'act',fn:()=>{ hideModal(); doRoll(); }});
+        showModal('回合 '+G.turn+' · '+p.name+' 的行动',
+          '<div class="row"><span>金币</span><b>'+p.money+'</b></div>'+
+          '<div class="row"><span>随身兵力</span><b>'+p.troops+'</b></div>'+
+          '<div class="row"><span>城池</span><b>'+p.cityN+' 座</b></div>'+
+          (p.status.tollDouble>0?'<div class="row"><span>过路费</span><b style="color:var(--red)">翻倍中</b></div>':'')+
+          (p.status.lianjun>0?'<div class="row"><span>联军</span><b style="color:#38bdf8">互免战</b></div>':'')+
+          (p.status.outputMult.length?'<div class="row"><span>产出修正</span><b style="color:#34d399">生效中</b></div>':''),
+          btns);
+      }
+      break;
+    case 'roll':
+      if(p.isAI) scheduleAI(400);
+      else { doRoll(); }
+      break;
+    case 'move':
+      showDiceTag('移动中…');
+      break;
+    case 'route':
+      if(p.isAI) scheduleAI(400);
+      break;
+    case 'land':
+      if(p.isAI) scheduleAI(300);
+      break;
+  }
+}
+// 兜底:AI 阶段在 phase 变化时被 uiPhase 调度;人类阶段无需
+function logicStep(){
+  const p=cur();
+  const from=nodes[p.pos].pos;
+  advanceStep(p);
+  return {from,to:nodes[p.pos].pos};
+}
+
+/* ---------- 主菜单 ---------- */
+function buildMenu(){
+  const grid=$('cardGrid');
+  let html='';
+  GENERALS.forEach((g,i)=>{
+    html+='<div class="card'+(i===0?' sel':'')+'" data-k="'+g.key+'">'+
+      '<div class="nm">'+g.name+'</div>'+
+      '<div class="ty">'+g.type+'</div>'+
+      '<div class="sk">'+g.talent+'</div>'+
+      '<div class="sd">'+g.desc+'</div></div>';
+  });
+  grid.innerHTML=html;
+  let sel=GENERALS[0].key;
+  grid.querySelectorAll('.card').forEach(c=>{
+    c.onclick=()=>{
+      grid.querySelectorAll('.card').forEach(x=>x.classList.remove('sel'));
+      c.classList.add('sel');
+      sel=c.dataset.k;
+    };
+  });
+  $('btnStart').onclick=()=>{
+    const n=+$('playerCount').value;
+    setupGame(n,sel);
+    $('menuOv').classList.add('hide');
+  };
+  $('btnContinue').onclick=()=>{
+    if(loadGame()){ $('menuOv').classList.add('hide'); buildAllNodeModels(); placeTokens(); updateHUD(); uiPhase(); }
+    else toast('没有存档',0xef4444);
+  };
+  if(localStorage.getItem(SAVE_KEY)) $('btnContinue').style.display='inline-block';
+  else $('btnContinue').style.display='none';
+}
+$('btnAgain').onclick=()=>{ $('winOv').classList.add('hide'); $('menuOv').classList.remove('hide'); buildMenu(); };
+$('btnMenu').onclick=()=>{ $('winOv').classList.add('hide'); $('menuOv').classList.remove('hide'); buildMenu(); };
+function showWin(){
+  G.st='win';
+  $('winTxt').textContent=G.win?G.win.name+' 统一天下!':'游戏结束';
+  $('winOv').classList.remove('hide');
+  localStorage.removeItem(SAVE_KEY);
+}
+function clearSceneObjects(){
+  nodes.forEach(n=>{ if(CITY_GROUPS[n.id]){ scene.remove(CITY_GROUPS[n.id]); delete CITY_GROUPS[n.id]; } });
+  G.players.forEach(p=>{ if(p._tok){ scene.remove(p._tok); p._tok=null; } });
+  FX.forEach(f=>scene.remove(f.m)); FX.length=0;
+}
+
+/* ---------- 主循环 ---------- */
+let lastT=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(0.05,(now-lastT)/1000);
+  lastT=now;
+  if(G.st==='play'){
+    updateMove(dt*G.speed);
+    updateFx(dt);
+  }
+  renderer.render(scene,cam);
+}
+requestAnimationFrame(loop);
+
+/* ---------- 输入 ---------- */
+window.addEventListener('keydown',e=>{
+  if(e.key===' '){
+    e.preventDefault();
+    if(G.st!=='play'||G.waiting) return;
+    if(G.phase==='items'){ hideModal(); doRoll(); }
+  } else if(e.key==='m'||e.key==='M'){
+    G.muted=!G.muted;
+    toast(G.muted?'静音':'声音开启');
+  }
+});
+window.addEventListener('resize',()=>{
+  cam.aspect=window.innerWidth/window.innerHeight;
+  cam.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+/* ---------- 启动 ---------- */
+$('verTxt').textContent='0.1';
+buildMenu();
+buildPath();
+buildAllNodeModels();
+
+window.__SANGUO__={G,nodes,nodeById,STATES,SHORTCUTS,JN,STATE_CHAIN,COST,START,PLAYER_COLORS,PCOLOR_INT,MAX_PLAYERS,SAVE_KEY,
+  GENERALS,generalOf,hookOf,ITEMS,SHOP_ITEMS,EVENTS,
+  newPlayer,myCities,myCapitals,myCitiesByState,stateOwnedBy,occupyCostFor,findCityByStateCap,
+  resolveBattle,defensePower,hasAlliance,canAttack,
+  outputMultFor,cityProdMoney,cityProdPop,roundTick,eliminate,
+  nextOptions,advanceStep,setDir,claimCity,occupyCity,conquerCity,upgradeCity,upgCostFor,recruitFrom,setGarrison,
+  useItem,aliveOthers,tickRoundStatus,applyEvent,
+  cur,startTurn,nextPlayer,endTurn,doRoll,tryFeijiang,tryBazhen,startMove,onLandArrive,onLand,onLandCity,onLandEvent,onLandShop,onRoute,doAttack,payToll,garrisonModal,aiGarrison,checkWin,aiAct,aiItems,aiRoll,
+  resetState,setupGame,saveGame,loadGame,shuffle,
+  buildGraphSafe,layoutMap,cityCount,capitalCount,
+  buildNodeModel,refreshNodeVisual,buildAllNodeModels,buildToken,placeTokens,positionTokenAt,refreshTokenRing,
+  updateMove,logicStep,fxRing,flashBattle,updateFx,
+  showModal,drawModal,hideModal,refreshModal,toast,updateHUD,showDice,showDiceTag,renderItemsBar,uiPhase,scheduleAI,
+  buildMenu,showWin,clearSceneObjects,loop,
+  $,rnd,rndi,clamp};
+
+})();
+</script>
+</body>
+</html>
