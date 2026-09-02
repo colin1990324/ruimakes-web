@@ -26,17 +26,23 @@
   #verStat b{ color:#facc15; }
   #speedTag{ position:absolute; top:8px; right:64px; z-index:5; font-size:12px; color:var(--acc); display:none;
     background:rgba(0,0,0,.5); border:1px solid #52525b; border-radius:6px; padding:2px 9px; }
-  /* ===== 骰子 ===== */
-  #diceBox{ position:absolute; bottom:14px; right:14px; z-index:6; text-align:center; display:none; }
-  #dice{ width:64px; height:64px; background:rgba(20,20,24,.92); border:2px solid var(--gold); border-radius:12px;
-    display:flex; align-items:center; justify-content:center; font-size:34px; color:#fff; font-weight:bold; box-shadow:0 0 16px rgba(245,158,11,.35); }
-  #diceTag{ font-size:11px; color:var(--dim); margin-top:4px; letter-spacing:1px; }
+  /* ===== 骰子(右下角实体骰子,点击掷骰) ===== */
+  #diceBox{ position:absolute; bottom:16px; right:16px; z-index:6; text-align:center; cursor:pointer; user-select:none; }
+  #dice{ width:78px; height:78px; background:linear-gradient(145deg,#fdfdfe,#e4e4e7); border:2px solid #b8b8c0;
+    border-radius:16px; box-shadow:0 6px 18px rgba(0,0,0,.55), inset 0 -4px 0 rgba(0,0,0,.12);
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:11px; gap:2px;
+    transition:transform .12s; }
+  #dice:active{ transform:scale(.94); }
+  #dice .dp{ display:none; border-radius:50%; background:radial-gradient(circle at 38% 34%, #3a3835, #161311 70%);
+    box-shadow:inset 0 -1px 2px rgba(255,255,255,.3); }
+  #dice .dp.on{ display:block; }
+  #diceTag{ font-size:11px; color:var(--dim); margin-top:5px; letter-spacing:1px; text-shadow:0 1px 3px rgba(0,0,0,.8); }
   #dice.rolling{ animation:diceShake .13s linear infinite; }
   @keyframes diceShake{
     0%{ transform:rotate(0deg) scale(1); }
-    25%{ transform:rotate(-9deg) scale(1.1); }
-    50%{ transform:rotate(7deg) scale(.94); }
-    75%{ transform:rotate(-6deg) scale(1.06); }
+    25%{ transform:rotate(-9deg) scale(1.08); }
+    50%{ transform:rotate(7deg) scale(.96); }
+    75%{ transform:rotate(-6deg) scale(1.05); }
     100%{ transform:rotate(0deg) scale(1); }
   }
   /* ===== 背包/道具条 ===== */
@@ -47,11 +53,11 @@
   #items .it .n{ font-size:13px; }
   #items .it .q{ color:var(--dim); font-size:10px; }
   #items .it.usable{ border-color:#7c5a10; }
-  /* ===== 通用弹窗 ===== */
-  #modal{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:20;
-    background:rgba(9,9,11,.82); }
-  #modal .box{ width:min(520px,92%); background:#16161a; border:2px solid #52525b; border-radius:14px; padding:20px 24px;
-    max-height:86vh; overflow-y:auto; }
+  /* ===== 通用弹窗(右侧面板,不挡地图) ===== */
+  #modal{ position:absolute; inset:0; display:none; justify-content:flex-end; align-items:stretch; z-index:20;
+    background:rgba(9,9,11,.35); }
+  #modal .box{ width:min(380px,94vw); background:#16161a; border:2px solid #52525b; border-right:none;
+    border-radius:14px 0 0 14px; padding:22px 26px; overflow-y:auto; max-height:100%; box-shadow:-10px 0 30px rgba(0,0,0,.5); }
   #modal .t{ font-size:18px; font-weight:bold; letter-spacing:2px; color:var(--gold); margin-bottom:10px; }
   #modal .d{ font-size:13px; color:var(--dim); line-height:1.8; margin-bottom:12px; }
   #modal .d b{ color:var(--fg); }
@@ -103,9 +109,13 @@
 <div id="hud"></div>
 <div id="turnTag">第 <b id="turnNum">1</b> 回合</div>
 <div id="speedTag">2×</div>
-<div id="verStat">v<b id="verTxt">0.4</b></div>
+<div id="verStat">v<b id="verTxt">0.5</b></div>
 <div id="items"></div>
-<div id="diceBox"><div id="dice">-</div><div id="diceTag">空格掷骰</div></div>
+<div id="diceBox"><div id="dice">
+  <span class="dp"></span><span class="dp"></span><span class="dp"></span>
+  <span class="dp"></span><span class="dp"></span><span class="dp"></span>
+  <span class="dp"></span><span class="dp"></span><span class="dp"></span>
+</div><div id="diceTag">🎲 点我掷骰</div></div>
 <div id="toast"></div>
 <div id="modal"><div class="box" id="modalBox"></div></div>
 
@@ -290,13 +300,14 @@ function ringCoords(cx,cz,R){
 function lerpC(a,b,t){ return {x:a.x+(b.x-a.x)*t, z:a.z+(b.z-a.z)*t}; }
 function layoutMap(){
   const rings=[RING_WEI,RING_WU,RING_SHU];
-  const css=[ringCoords(0,-7,5),ringCoords(8,6,3),ringCoords(-8,8,2)];
+  // 环心拉开撑开地图(v0.5):魏(0,-12)R5 / 吴(14,11)R3 / 蜀(-13,13)R2,格距仍 2
+  const css=[ringCoords(0,-12,5),ringCoords(14,11,3),ringCoords(-13,13,2)];
   for(let k=0;k<3;k++) for(let i=0;i<rings[k].length;i++) nodeById[rings[k][i]].pos=css[k][i];
   // 走廊中间节点手摆:避开三环格子(与任何环格中心距 ≥2),形成行军折线
   const MANUAL={
-    '陈仓':{x:-7,z:-5},
-    '白帝':{x:-3,z:6.5}, '江陵':{x:0,z:5.5}, '柴桑':{x:2.5,z:4},
-    '汝南':{x:-2,z:0}, '寿春':{x:0.5,z:1}, '合肥':{x:3,z:1.5},
+    '陈仓':{x:-9,z:-5},
+    '白帝':{x:-5,z:12}, '江陵':{x:1,z:11}, '柴桑':{x:7,z:9.5},
+    '汝南':{x:-2,z:-1}, '寿春':{x:2,z:2}, '合肥':{x:6,z:5},
   };
   for(const nm of Object.keys(MANUAL)){ const n=nodes.find(x=>x.name===nm); if(n) n.pos=MANUAL[nm]; }
 }
@@ -955,16 +966,23 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.setSize(window.innerWidth,window.innerHeight);
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x0c1017);
-const cam=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,300);
-cam.position.set(0,60,30);
-cam.lookAt(0,-1,0);
+const cam=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,400);
+// 动态相机:横屏/iPad 贴近放大看棋子移动,手机竖屏自动拉远看全图
+function fitCam(){
+  const asp=window.innerWidth/window.innerHeight;
+  if(asp<0.7){ cam.position.set(0,74,40); }
+  else { cam.position.set(0,48,26); }
+  cam.lookAt(0,0,0);
+  cam.updateProjectionMatrix();
+}
+fitCam();
 const sun=new THREE.DirectionalLight(0xfff5e0,1.1);
 sun.position.set(20,40,10);
 scene.add(sun);
 scene.add(new THREE.AmbientLight(0xaac4e0,0.55));
 
 // 地面
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshLambertMaterial({color:0x14241a}));
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(90,90),new THREE.MeshLambertMaterial({color:0x14241a}));
 ground.rotation.x=-Math.PI/2; ground.position.set(0,-0.05,0);
 scene.add(ground);
 
@@ -993,9 +1011,9 @@ function corrBase(a,b,w,color){
   scene.add(m);
 }
 function buildBoardBase(){
-  ringBase(0,-7,5,RING_BASE_COL.wei);    // 魏环
-  ringBase(8,6,3,RING_BASE_COL.wu);      // 吴环
-  ringBase(-8,8,2,RING_BASE_COL.shu);    // 蜀环
+  ringBase(0,-12,5,RING_BASE_COL.wei);   // 魏环
+  ringBase(14,11,3,RING_BASE_COL.wu);    // 吴环
+  ringBase(-13,13,2,RING_BASE_COL.shu);  // 蜀环
   for(const cd of CORRIDORS){
     const arr=cd.nodes;
     for(let i=0;i<arr.length-1;i++) corrBase(arr[i].pos,arr[i+1].pos,1.6,CORR_BASE_COL[cd.color]);
@@ -1340,27 +1358,31 @@ function updateHUD(){
   refreshTokenRing();
   renderItemsBar();
 }
+// 实体骰子:3x3 点阵(标准骰子布局,索引 0-8)
+const DICE_DOTS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 function showDice(d){
-  $('dice').textContent=d;
+  const el=$('dice');
+  const dots=DICE_DOTS[d]||[];
+  const kids=el.children||[];
+  for(let i=0;i<9;i++){ const k=kids[i]; if(k&&k.classList) k.classList.toggle('on',dots.includes(i)); }
   $('diceBox').style.display='block';
 }
-// 骰子滚动动画:数字跳动+抖动 ~0.9s,停在最终点数后回调
+// 骰子滚动动画:点数跳动+抖动 ~0.9s,停在最终点数后回调
 let diceAnimTimer=null;
 function rollAnimate(finalD,cb){
-  const el=$('dice');
   $('diceBox').style.display='block';
   $('diceTag').textContent='掷骰中…';
-  el.classList.add('rolling');
+  $('dice').classList.add('rolling');
   const total=900, step=70;
   let tick=0;
   if(diceAnimTimer) clearInterval(diceAnimTimer);
   diceAnimTimer=setInterval(()=>{
     tick++;
-    el.textContent=rndi(1,6);
+    showDice(rndi(1,6));
     if(tick*step>=total){
       clearInterval(diceAnimTimer); diceAnimTimer=null;
-      el.classList.remove('rolling');
-      el.textContent=finalD;
+      $('dice').classList.remove('rolling');
+      showDice(finalD);
       $('diceTag').textContent='移动中…';
       setTimeout(cb,260);
     }
@@ -1509,6 +1531,12 @@ function loop(now){
 requestAnimationFrame(loop);
 
 /* ---------- 输入 ---------- */
+// 右下角实体骰子:点击掷骰(弹窗打开时点击 = 点"掷骰"按钮,关弹窗直接 roll)
+$('diceBox').onclick=()=>{
+  if(G.st!=='play'||G.rolling) return;
+  if(G.phase==='items'){ hideModal(); doRoll(); }
+  else if(G.phase==='roll'){ doRoll(); }
+};
 window.addEventListener('keydown',e=>{
   if(e.key===' '){
     e.preventDefault();
@@ -1521,12 +1549,12 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('resize',()=>{
   cam.aspect=window.innerWidth/window.innerHeight;
-  cam.updateProjectionMatrix();
+  fitCam();
   renderer.setSize(window.innerWidth,window.innerHeight);
 });
 
 /* ---------- 启动 ---------- */
-$('verTxt').textContent='0.4';
+$('verTxt').textContent='0.5';
 buildMenu();
 buildPath();
 buildAllNodeModels();
