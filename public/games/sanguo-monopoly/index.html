@@ -64,6 +64,7 @@
   #cardGrid .card{ width:150px; background:#1d1d22; border:2px solid #3f3f46; border-radius:10px; padding:10px; cursor:pointer; }
   #cardGrid .card:hover{ border-color:var(--gold); }
   #cardGrid .card.sel{ border-color:var(--gold); background:rgba(245,158,11,.12); }
+  #cardGrid .card img.portrait{ width:100%; height:84px; object-fit:cover; border-radius:6px; border:1px solid #3f3f46; display:block; margin-bottom:6px; background:#111; }
   #cardGrid .card .nm{ font-size:15px; font-weight:bold; color:var(--fg); }
   #cardGrid .card .ty{ font-size:11px; color:var(--dim); margin:2px 0 6px; }
   #cardGrid .card .sk{ font-size:11px; color:var(--gold); line-height:1.5; }
@@ -1166,6 +1167,7 @@ function updateHUD(){
     const curCls=i===G.cur?'cur':'';
     html+='<div class="p '+curCls+'" style="border-color:'+(i===G.cur?p.color:'')+'">'+
       '<span class="dot" style="background:'+p.color+'"></span>'+
+      (p.general?'<img src="img/'+p.general+'.webp" style="width:18px;height:18px;border-radius:50%;border:1px solid #3f3f46" alt="">':'')+
       '<span>'+p.name+'</span>'+
       '<b>'+p.money+'金</b>'+
       '<span class="tr">'+p.troops+'兵</span>'+
@@ -1270,6 +1272,7 @@ function buildMenu(){
   let html='';
   GENERALS.forEach((g,i)=>{
     html+='<div class="card'+(i===0?' sel':'')+'" data-k="'+g.key+'">'+
+      '<img class="portrait" src="img/'+g.key+'.webp" alt="'+g.name+'">'+
       '<div class="nm">'+g.name+'</div>'+
       '<div class="ty">'+g.type+'</div>'+
       '<div class="sk">'+g.talent+'</div>'+
@@ -1342,7 +1345,7 @@ window.addEventListener('resize',()=>{
 });
 
 /* ---------- 启动 ---------- */
-$('verTxt').textContent='0.1';
+$('verTxt').textContent='0.2';
 buildMenu();
 buildPath();
 buildAllNodeModels();
