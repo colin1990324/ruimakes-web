@@ -109,7 +109,7 @@
 <div id="hud"></div>
 <div id="turnTag">第 <b id="turnNum">1</b> 回合</div>
 <div id="speedTag">2×</div>
-<div id="verStat">v<b id="verTxt">0.6</b></div>
+<div id="verStat">v<b id="verTxt">0.7</b></div>
 <div id="items"></div>
 <div id="diceBox"><div id="dice">
   <span class="dp"></span><span class="dp"></span><span class="dp"></span>
@@ -239,7 +239,8 @@ const SH_NAMES=['长安市','洛阳市','邺城市','许昌市','濮阳市','临
   '镖局','药铺','钱庄','布庄','盐市','马市','粮铺','铁匠铺','木匠铺','鱼市'];
 
 function buildGraph(){
-  // 三环:城市 idx 均匀分布(间隔 6-7),其余格事件/商店交替(从事件开始)
+  // 三环:城市 idx 均匀分布(间隔 6-8);每段城之间 1 个特殊格(事件/商店交替),其余全部空白格(纯路)
+  // 大富翁视觉:角色走环上的"路",城/特殊格是路边"地块"(渲染层偏移 n.off)
   const RINGS=[
     {ring:RING_WEI,total:64,cityIdx:[0,6,13,19,26,32,39,45,52,58],
       cityName:['武威','长安','洛阳','邺城','蓟城','晋阳','临淄','下邳','许昌','濮阳'],
@@ -256,6 +257,9 @@ function buildGraph(){
   ];
   let evN=0, shN=0;
   for(const def of RINGS){
+    const cx=def.ring===RING_WEI?0:(def.ring===RING_WU?24:-21);
+    const cz=def.ring===RING_WEI?-10:(def.ring===RING_WU?15:17);
+    def.center={x:cx,z:cz};
     for(let i=0;i<def.total;i++){
       const ci=def.cityIdx.indexOf(i);
       if(ci>=0){
@@ -263,9 +267,23 @@ function buildGraph(){
         def.ring.push(nd.id);
         if(nd.type==='capital'&&!JN[nd.state]) JN[nd.state]=nd.id;
       } else {
-        const isEv=(i%2===0);
-        const nd=addNode(isEv?'event':'shop',-1,isEv?EV_NAMES[evN++%EV_NAMES.length]:SH_NAMES[shN++%SH_NAMES.length]);
-        def.ring.push(nd.id);
+        def.ring.push(null);   // 占位,段生成时填充
+      }
+    }
+    // 段生成:每段城之间 1 个特殊格(段中间),其余空白格
+    for(let seg=0;seg<def.cityIdx.length;seg++){
+      const a=def.cityIdx[seg], b=def.cityIdx[(seg+1)%def.cityIdx.length];
+      const span=(b-a+def.total)%def.total;
+      const mid=(a+Math.floor(span/2))%def.total;
+      for(let k=1;k<span;k++){
+        const idx=(a+k)%def.total;
+        if(idx===mid){
+          const isEv=(seg%2===0);
+          const nd=addNode(isEv?'event':'shop',-1,isEv?EV_NAMES[evN++%EV_NAMES.length]:SH_NAMES[shN++%SH_NAMES.length]);
+          def.ring[idx]=nd.id;
+        } else {
+          def.ring[idx]=addNode('empty',-1,'').id;
+        }
       }
     }
     for(let i=0;i<def.total;i++) link(nodeById[def.ring[i]],nodeById[def.ring[(i+1)%def.total]]);
@@ -311,6 +329,7 @@ function lerpC(a,b,t){ return {x:a.x+(b.x-a.x)*t, z:a.z+(b.z-a.z)*t}; }
 function layoutMap(){
   const rings=[RING_WEI,RING_WU,RING_SHU];
   const css=[ringCoords(0,-10,16),ringCoords(24,15,10),ringCoords(-21,17,7)];
+  const centers=[{x:0,z:-10},{x:24,z:15},{x:-21,z:17}];
   for(let k=0;k<3;k++) for(let i=0;i<rings[k].length;i++) nodeById[rings[k][i]].pos=css[k][i];
   // 走廊:以环上节点为段界,段内非环节点等距插值(避免跨环长边);个别节点手摆避开环格
   const ringIds=new Set([...RING_WEI,...RING_WU,...RING_SHU]);
@@ -328,6 +347,27 @@ function layoutMap(){
   // 剑阁:蜀道段内插值落在蜀环上边线上,上移 2 避开
   const jiange=nodes.find(x=>x.name==='剑阁');
   if(jiange) jiange.pos={x:-21,z:12};
+  // 路边地块偏移 n.off:环节点朝环心方向(路内侧),走廊节点沿走廊法线
+  const OFF=1.7;
+  for(let k=0;k<3;k++){
+    for(const id of rings[k]){
+      const n=nodeById[id];
+      const dx=centers[k].x-n.pos.x, dz=centers[k].z-n.pos.z;   // 指向环心(路内侧)
+      const d=Math.sqrt(dx*dx+dz*dz)||1;
+      n.off={x:dx/d*OFF, z:dz/d*OFF};
+    }
+  }
+  for(const cd of CORRIDORS){
+    const arr=cd.nodes;
+    const A=arr[0].pos, B=arr[arr.length-1].pos;
+    const vx=B.x-A.x, vz=B.z-A.z;
+    const vl=Math.sqrt(vx*vx+vz*vz)||1;
+    const nx=-vz/vl*OFF, nz=vx/vl*OFF;   // 走廊法线(统一一侧)
+    for(const n of arr){
+      if(ringIds.has(n.id)) continue;
+      n.off={x:nx,z:nz};
+    }
+  }
 }
 buildGraph();
 layoutMap();
@@ -1097,130 +1137,150 @@ function makeLabel(text,color,bg){
   return sp;
 }
 
-// 节点模型
+// 节点模型:路中心 = 格位标记(角色走的路);城/特殊格 = 路边地块(模型+标签偏移 n.off)
 const CITY_GROUPS={}; // nodeId -> grp
 function buildNodeModel(n){
   const g=new THREE.Group();
-  if(n.id===JN[0]){
-    // 中心起点:王座+大旗
-    const base=new THREE.Mesh(GEO.cyl,mat(0x8a6d2a));
-    base.scale.set(1.5,0.35,1.5);
-    base.position.y=0.18;
-    g.add(base);
-    const seat=new THREE.Mesh(GEO.cyl,mat(0xf59e0b,'basic'));
-    seat.scale.set(0.9,0.5,0.9);
-    seat.position.y=0.5;
-    g.add(seat);
-    const pole=new THREE.Mesh(GEO.cyl,mat(0x6a5a44));
-    pole.scale.set(0.14,2.6,0.14);
-    pole.position.y=1.9;
-    g.add(pole);
-    const flag=new THREE.Mesh(GEO.box,mat(0xef4444,'basic'));
-    flag.scale.set(1.3,0.55,0.05);
-    flag.position.set(0.78,2.4,0);
-    g.add(flag);
-    const star=new THREE.Mesh(GEO.sph,mat(0xfff3c4,'basic'));
-    star.scale.set(0.24,0.24,0.24);
-    star.position.set(1.28,2.45,0);
-    g.add(star);
-  } else if(n.type==='city'||n.type==='capital'){
-    const isCap=n.type==='capital';
-    const base=new THREE.Mesh(GEO.box,mat(0x9a8a72));
-    base.scale.set(isCap?1.5:1.1,isCap?0.55:0.42,isCap?1.5:1.1);
-    base.position.y=isCap?0.28:0.21;
-    g.add(base);
-    const wall=new THREE.Mesh(GEO.box,mat(0x6a5a44));
-    wall.scale.set(isCap?1.7:1.3,0.16,isCap?1.7:1.3);
-    wall.position.y=0.08;
-    g.add(wall);
-    const tower=new THREE.Mesh(GEO.cyl,mat(0xb0a088));
-    tower.scale.set(0.3,isCap?1.0:0.7,0.3);
-    tower.position.y=isCap?1.0:0.72;
-    g.add(tower);
-    const roof=new THREE.Mesh(GEO.cone,mat(0x8a4a2a));
-    roof.scale.set(0.42,isCap?0.5:0.4,0.42);
-    roof.position.y=isCap?1.5:1.06;
-    g.add(roof);
-    if(isCap){
-      const crown=new THREE.Mesh(GEO.cone,mat(0xf59e0b,'basic'));
-      crown.scale.set(0.24,0.3,0.24);
-      crown.position.y=1.85;
-      g.add(crown);
-      const flag=new THREE.Mesh(GEO.box,mat(0xf59e0b,'basic'));
-      flag.scale.set(0.1,0.5,0.02);
-      flag.position.set(0.8,1.3,0);
-      g.add(flag);
+  // 路面格位标记(所有节点,含空白格)
+  const roadMark=new THREE.Mesh(GEO.cyl,mat(0x4a5868));
+  roadMark.scale.set(0.34,0.02,0.34); roadMark.position.y=0.014;
+  g.add(roadMark);
+  if(n.type!=='empty'){
+    const g2=new THREE.Group();
+    // 路边地块底座(浅色台面,大富翁地产地块)
+    const lot=new THREE.Mesh(GEO.box,mat(0x5a4f40));
+    lot.scale.set(1.55,0.07,1.55); lot.position.y=0.035;
+    g2.add(lot);
+    if(n.id===JN[0]){
+      // 中心起点:王座+大旗
+      const base=new THREE.Mesh(GEO.cyl,mat(0x8a6d2a));
+      base.scale.set(1.5,0.35,1.5);
+      base.position.y=0.18;
+      g2.add(base);
+      const seat=new THREE.Mesh(GEO.cyl,mat(0xf59e0b,'basic'));
+      seat.scale.set(0.9,0.5,0.9);
+      seat.position.y=0.5;
+      g2.add(seat);
+      const pole=new THREE.Mesh(GEO.cyl,mat(0x6a5a44));
+      pole.scale.set(0.14,2.6,0.14);
+      pole.position.y=1.9;
+      g2.add(pole);
+      const flag=new THREE.Mesh(GEO.box,mat(0xef4444,'basic'));
+      flag.scale.set(1.3,0.55,0.05);
+      flag.position.set(0.78,2.4,0);
+      g2.add(flag);
+      const star=new THREE.Mesh(GEO.sph,mat(0xfff3c4,'basic'));
+      star.scale.set(0.24,0.24,0.24);
+      star.position.set(1.28,2.45,0);
+      g2.add(star);
+    } else if(n.type==='city'||n.type==='capital'){
+      const isCap=n.type==='capital';
+      const base=new THREE.Mesh(GEO.box,mat(0x9a8a72));
+      base.scale.set(isCap?1.5:1.1,isCap?0.55:0.42,isCap?1.5:1.1);
+      base.position.y=isCap?0.28:0.21;
+      g2.add(base);
+      const wall=new THREE.Mesh(GEO.box,mat(0x6a5a44));
+      wall.scale.set(isCap?1.7:1.3,0.16,isCap?1.7:1.3);
+      wall.position.y=0.08;
+      g2.add(wall);
+      const tower=new THREE.Mesh(GEO.cyl,mat(0xb0a088));
+      tower.scale.set(0.3,isCap?1.0:0.7,0.3);
+      tower.position.y=isCap?1.0:0.72;
+      g2.add(tower);
+      const roof=new THREE.Mesh(GEO.cone,mat(0x8a4a2a));
+      roof.scale.set(0.42,isCap?0.5:0.4,0.42);
+      roof.position.y=isCap?1.5:1.06;
+      g2.add(roof);
+      if(isCap){
+        const crown=new THREE.Mesh(GEO.cone,mat(0xf59e0b,'basic'));
+        crown.scale.set(0.24,0.3,0.24);
+        crown.position.y=1.85;
+        g2.add(crown);
+        const flag=new THREE.Mesh(GEO.box,mat(0xf59e0b,'basic'));
+        flag.scale.set(0.1,0.5,0.02);
+        flag.position.set(0.8,1.3,0);
+        g2.add(flag);
+      }
+      const lv1=new THREE.Mesh(GEO.box,mat(0x3a3a3a));
+      lv1.scale.set(0.5,0.05,0.5);
+      lv1.position.y=0.01;
+      g2.add(lv1);
+    } else if(n.type==='event'){
+      const m=new THREE.Mesh(GEO.box,mat(0x7c5cff,'basic'));
+      m.scale.set(0.9,0.9,0.9);
+      m.position.y=0.45;
+      g2.add(m);
+      const q=new THREE.Mesh(GEO.sph,mat(0xffffff,'basic'));
+      q.scale.set(0.35,0.35,0.35);
+      q.position.y=0.45;
+      g2.add(q);
+    } else if(n.type==='shop'){
+      const m=new THREE.Mesh(GEO.box,mat(0x2a6a3a));
+      m.scale.set(1.1,0.5,1.1);
+      m.position.y=0.25;
+      g2.add(m);
+      const roof=new THREE.Mesh(GEO.cone,mat(0xd97706,'basic'));
+      roof.scale.set(0.8,0.35,0.8);
+      roof.position.y=0.62;
+      g2.add(roof);
+    } else if(n.type==='junction'){
+      const base=new THREE.Mesh(GEO.cyl,mat(0x4a4a52));
+      base.scale.set(0.7,0.14,0.7);
+      base.position.y=0.07;
+      g2.add(base);
+      const pole=new THREE.Mesh(GEO.cyl,mat(0x6a6a72));
+      pole.scale.set(0.12,1.1,0.12);
+      pole.position.y=0.62;
+      g2.add(pole);
+      const lantern=new THREE.Mesh(GEO.sph,mat(0xf59e0b,'basic'));
+      lantern.scale.set(0.22,0.22,0.22);
+      lantern.position.y=1.25;
+      g2.add(lantern);
     }
-    const lv1=new THREE.Mesh(GEO.box,mat(0x3a3a3a));
-    lv1.scale.set(0.5,0.05,0.5);
-    lv1.position.y=0.01;
-    g.add(lv1);
-  } else if(n.type==='event'){
-    const m=new THREE.Mesh(GEO.box,mat(0x7c5cff,'basic'));
-    m.scale.set(0.9,0.9,0.9);
-    m.position.y=0.45;
-    g.add(m);
-    const q=new THREE.Mesh(GEO.sph,mat(0xffffff,'basic'));
-    q.scale.set(0.35,0.35,0.35);
-    q.position.y=0.45;
-    g.add(q);
-  } else if(n.type==='shop'){
-    const m=new THREE.Mesh(GEO.box,mat(0x2a6a3a));
-    m.scale.set(1.1,0.5,1.1);
-    m.position.y=0.25;
-    g.add(m);
-    const roof=new THREE.Mesh(GEO.cone,mat(0xd97706,'basic'));
-    roof.scale.set(0.8,0.35,0.8);
-    roof.position.y=0.62;
-    g.add(roof);
-  } else if(n.type==='junction'){
-    const base=new THREE.Mesh(GEO.cyl,mat(0x4a4a52));
-    base.scale.set(0.7,0.14,0.7);
-    base.position.y=0.07;
-    g.add(base);
-    const pole=new THREE.Mesh(GEO.cyl,mat(0x6a6a72));
-    pole.scale.set(0.12,1.1,0.12);
-    pole.position.y=0.62;
-    g.add(pole);
-    const lantern=new THREE.Mesh(GEO.sph,mat(0xf59e0b,'basic'));
-    lantern.scale.set(0.22,0.22,0.22);
-    lantern.position.y=1.25;
-    g.add(lantern);
+    // 格名标签(跟随地块)
+    let lbl=null;
+    if(n.type==='capital') lbl=makeLabel(n.name,'#fbbf24','rgba(60,30,0,0.75)');
+    else if(n.type==='city') lbl=makeLabel(n.name,'#e4e4e7','rgba(10,12,16,0.72)');
+    else if(n.type==='junction') lbl=makeLabel(n.id===JN[0]?'起·王座':'★驿站','#fbbf24','rgba(40,35,10,0.75)');
+    else if(n.type==='event') lbl=makeLabel('? 事件','#c4b5fd','rgba(30,20,60,0.75)');
+    else if(n.type==='shop') lbl=makeLabel('商 店','#6ee7b7','rgba(10,40,25,0.75)');
+    if(lbl){ lbl.position.y=n.type==='capital'?2.4:(n.type==='city'?2.0:1.7); g2.add(lbl); }
+    g2.position.set(n.off?n.off.x:0,0,n.off?n.off.z:0);
+    g.add(g2);
   }
-  // 格名标签(大富翁棋盘必备)
-  let lbl=null;
-  if(n.type==='capital') lbl=makeLabel(n.name,'#fbbf24','rgba(60,30,0,0.75)');
-  else if(n.type==='city') lbl=makeLabel(n.name,'#e4e4e7','rgba(10,12,16,0.72)');
-  else if(n.type==='junction') lbl=makeLabel(n.id===JN[0]?'起·王座':'★驿站','#fbbf24','rgba(40,35,10,0.75)');
-  else if(n.type==='event') lbl=makeLabel('? 事件','#c4b5fd','rgba(30,20,60,0.75)');
-  else if(n.type==='shop') lbl=makeLabel('商 店','#6ee7b7','rgba(10,40,25,0.75)');
-  if(lbl){ lbl.position.y=n.type==='capital'?2.4:(n.type==='city'?2.0:1.7); g.add(lbl); }
   g.position.set(n.pos.x,0,n.pos.z);
   scene.add(g);
   CITY_GROUPS[n.id]=g;
   return g;
 }
-// 归属色/等级刷新
+// 归属色/等级刷新(递归遍历地块组)
 function refreshNodeVisual(n){
   const g=CITY_GROUPS[n.id];
   if(!g) return;
   if(n.type!=='city'&&n.type!=='capital') return;
   const ownerCol= n.owner>=0?PCOLOR_INT[n.owner%MAX_PLAYERS]:0x5a4a34;
-  // 遍历子网格:按 userData 角色上色
-  g.children.forEach(m=>{
-    if(m.userData.role==='wall') m.material=mat(ownerCol);
-    if(m.userData.role==='lv'){ m.material=mat(ownerCol); m.scale.set(0.5*(n.type==='capital'?1:Math.max(1,n.lv)),0.05,0.5*(n.type==='capital'?1:Math.max(1,n.lv))); m.visible=n.owner>=0; }
-  });
+  const walk=(obj)=>{
+    obj.children&&obj.children.forEach(m=>{
+      if(m.userData.role==='wall') m.material=mat(ownerCol);
+      if(m.userData.role==='lv'){ m.material=mat(ownerCol); m.scale.set(0.5*(n.type==='capital'?1:Math.max(1,n.lv)),0.05,0.5*(n.type==='capital'?1:Math.max(1,n.lv))); m.visible=n.owner>=0; }
+      walk(m);
+    });
+  };
+  walk(g);
 }
 function buildAllNodeModels(){
   buildBoardBase();
   for(const n of nodes){
     const g=buildNodeModel(n);
-    g.children.forEach(m=>{
-      // 标记角色
-      if(m.geometry===GEO.box&&m.scale.y<0.2&&m.scale.x>0.4&&m.position.y<0.1) m.userData.role='lv';
-      if(m.geometry===GEO.box&&m.scale.y<0.2&&m.scale.x>1.0) m.userData.role='wall';
-    });
+    const mark=(obj)=>{
+      obj.children&&obj.children.forEach(m=>{
+        // 标记角色
+        if(m.geometry===GEO.box&&m.scale.y<0.2&&m.scale.x>0.4&&m.position.y<0.1) m.userData.role='lv';
+        if(m.geometry===GEO.box&&m.scale.y<0.2&&m.scale.x>1.0) m.userData.role='wall';
+        mark(m);
+      });
+    };
+    mark(g);
     refreshNodeVisual(n);
   }
 }
@@ -1601,7 +1661,7 @@ window.addEventListener('resize',()=>{
 });
 
 /* ---------- 启动 ---------- */
-$('verTxt').textContent='0.6';
+$('verTxt').textContent='0.7';
 buildMenu();
 buildPath();
 buildAllNodeModels();
