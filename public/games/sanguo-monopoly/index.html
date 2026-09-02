@@ -31,6 +31,14 @@
   #dice{ width:64px; height:64px; background:rgba(20,20,24,.92); border:2px solid var(--gold); border-radius:12px;
     display:flex; align-items:center; justify-content:center; font-size:34px; color:#fff; font-weight:bold; box-shadow:0 0 16px rgba(245,158,11,.35); }
   #diceTag{ font-size:11px; color:var(--dim); margin-top:4px; letter-spacing:1px; }
+  #dice.rolling{ animation:diceShake .13s linear infinite; }
+  @keyframes diceShake{
+    0%{ transform:rotate(0deg) scale(1); }
+    25%{ transform:rotate(-9deg) scale(1.1); }
+    50%{ transform:rotate(7deg) scale(.94); }
+    75%{ transform:rotate(-6deg) scale(1.06); }
+    100%{ transform:rotate(0deg) scale(1); }
+  }
   /* ===== 背包/道具条 ===== */
   #items{ position:absolute; bottom:12px; left:12px; z-index:6; display:flex; gap:6px; flex-wrap:wrap; max-width:60%; }
   #items .it{ background:rgba(0,0,0,.7); border:1px solid #3f3f46; border-radius:8px; padding:5px 8px; font-size:11px;
@@ -95,7 +103,7 @@
 <div id="hud"></div>
 <div id="turnTag">第 <b id="turnNum">1</b> 回合</div>
 <div id="speedTag">2×</div>
-<div id="verStat">v<b id="verTxt">0.1</b></div>
+<div id="verStat">v<b id="verTxt">0.3</b></div>
 <div id="items"></div>
 <div id="diceBox"><div id="dice">-</div><div id="diceTag">空格掷骰</div></div>
 <div id="toast"></div>
@@ -226,22 +234,31 @@ function buildGraph(){
 }
 function buildGraphSafe(){ if(nodes.length===0) buildGraph(); }
 
-/* ---------- 布局:13 段环带,节点沿弧分布(内外半径交错) ---------- */
-const MAP_R=13;
+/* ---------- 布局:大富翁式方形棋盘 ----------
+ * 外圈方环(上14+右13+下13+左12=52 格) + 内圈回形环(28 格) + 中心起点(1 格) = 81
+ * 环带顺序 = 外圈顺时针走线,在左末端拐入内环,内环走完回到中心 J0(起点王座) */
+const MAP_R=13;   // 外圈半边长(间距2)
+const IN_R=7;     // 内环半边长(间距2)
+function boardCoords(){
+  const c=[];
+  for(let x=-MAP_R;x<=MAP_R;x+=2) c.push({x,z:-MAP_R});    // 外上 14
+  for(let z=-MAP_R+2;z<=MAP_R;z+=2) c.push({x:MAP_R,z});   // 外右 13
+  for(let x=MAP_R-2;x>=-MAP_R;x-=2) c.push({x,z:MAP_R});   // 外下 13
+  for(let z=MAP_R-2;z>=-MAP_R+2;z-=2) c.push({x:-MAP_R,z});// 外左 12
+  for(let x=-IN_R;x<=IN_R;x+=2) c.push({x,z:-IN_R});       // 内上 8
+  for(let z=-IN_R+2;z<=IN_R;z+=2) c.push({x:IN_R,z});      // 内右 7
+  for(let x=IN_R-2;x>=-IN_R;x-=2) c.push({x,z:IN_R});      // 内下 7
+  for(let z=IN_R-2;z>=-IN_R+2;z-=2) c.push({x:-IN_R,z});   // 内左 6
+  c.push({x:0,z:0});                                        // 中心起点 J0
+  return c;  // 52+28+1 = 81
+}
 function layoutMap(){
+  const coords=boardCoords();
   const N=STATES.length;
+  let k=0;
   for(let i=0;i<N;i++){
-    const a0=(i/N)*Math.PI*2 - Math.PI/2;
-    const a1=((i+1)/N)*Math.PI*2 - Math.PI/2;
-    nodeById[JN[i]].pos={x:Math.cos(a0)*MAP_R, z:Math.sin(a0)*MAP_R};
-    nodeById[JN[(i+1)%N]].pos={x:Math.cos(a1)*MAP_R, z:Math.sin(a1)*MAP_R};
-    const chain=STATE_CHAIN[i];
-    chain.forEach((nd,k)=>{
-      const t=(k+1)/(chain.length+1);
-      const a=a0+(a1-a0)*t;
-      const rr=MAP_R+(k%2?1.1:-1.1);
-      nd.pos={x:Math.cos(a)*rr, z:Math.sin(a)*rr};
-    });
+    for(const nd of STATE_CHAIN[i]) nd.pos=coords[k++];       // E,S,城...,首府...
+    nodeById[JN[(i+1)%N]].pos=coords[k++];                    // 段尾驿站(i=12 时回到 J0=中心)
   }
 }
 buildGraph();
@@ -549,25 +566,30 @@ function endTurn(){
 }
 
 /* ---------- 掷骰 ---------- */
+// 骰子动画(渲染层 rollAnimate 若存在则播放,headless 环境直接出点数)
+function rollAnim(d,cb){
+  G.rolling=true;
+  if(typeof rollAnimate==='function') rollAnimate(d,()=>{ G.rolling=false; cb(); });
+  else { G.rolling=false; showDice(d); cb(); }
+}
 function doRoll(){
   const p=cur();
+  if(G.rolling) return;
   if(p.status.immobilize){ p.status.immobilize=false; G.dice=0; G.phase='move'; startMove(); return; }
   let d;
   if(p.status.diceFixed){ p.status.diceFixed=false; d=G.dice; }   // 观星盘:固定点数
   else d=rndi(1,6);
   if(p.status.diceMod!==0){ d=clamp(d+p.status.diceMod,1,6); p.status.diceMod=0; }
   G.dice=d;
-  showDice(d);
-  G.phase='move';
-  startMove();
+  rollAnim(d,()=>{ G.phase='move'; startMove(); });
 }
 // 吕布:飞将 200金 强制6
 function tryFeijiang(){
   const p=cur();
   if(p.general!=='lbu'||p.uses.feijiang<=0||p.money<200) return false;
   p.money-=200; p.uses.feijiang--;
-  G.dice=6; showDice(6);
-  G.phase='move'; startMove();
+  G.dice=6;
+  rollAnim(6,()=>{ G.phase='move'; startMove(); });
   return true;
 }
 // 诸葛亮:八阵 重掷(结果±1)
@@ -577,8 +599,8 @@ function tryBazhen(){
   p.uses.bazhen--;
   let d=rndi(1,6);
   d=clamp(d+(Math.random()<0.5?-1:1),1,6);
-  G.dice=d; showDice(d);
-  G.phase='move'; startMove();
+  G.dice=d;
+  rollAnim(d,()=>{ G.phase='move'; startMove(); });
   return true;
 }
 function startMove(){ G.moveSteps=G.dice; G.moveCur=0; G.phase='move'; if(G.moveSteps<=0) onLandArrive(); }
@@ -892,7 +914,7 @@ renderer.setSize(window.innerWidth,window.innerHeight);
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x0c1017);
 const cam=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,300);
-cam.position.set(0,38,18);
+cam.position.set(0,48,25);
 cam.lookAt(0,0,0);
 const sun=new THREE.DirectionalLight(0xfff5e0,1.1);
 sun.position.set(20,40,10);
@@ -903,6 +925,26 @@ scene.add(new THREE.AmbientLight(0xaac4e0,0.55));
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshLambertMaterial({color:0x14241a}));
 ground.rotation.x=-Math.PI/2; ground.position.set(0,-0.05,0);
 scene.add(ground);
+
+// 大富翁道路底板:外圈方环 + 内环 + 中心王座台
+function roadStrip(x,z,along,len,w,color){
+  const m=new THREE.Mesh(GEO.box,mat(color));
+  const horiz=along==='x';
+  m.scale.set(horiz?len:w,0.03,horiz?w:len);
+  m.position.set(x,0.008,z);
+  scene.add(m);
+}
+function buildBoardBase(){
+  roadStrip(0,-MAP_R-0.8,'x',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);  // 外上
+  roadStrip(MAP_R+0.8,0,'z',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);   // 外右
+  roadStrip(0,MAP_R+0.8,'x',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);   // 外下
+  roadStrip(-MAP_R-0.8,0,'z',(MAP_R+0.8)*2+1,2.6,0x2a3a4a);  // 外左
+  roadStrip(0,-IN_R-0.8,'x',(IN_R+0.8)*2+1,2.2,0x1e2e28);    // 内上
+  roadStrip(IN_R+0.8,0,'z',(IN_R+0.8)*2+1,2.2,0x1e2e28);     // 内右
+  roadStrip(0,IN_R+0.8,'x',(IN_R+0.8)*2+1,2.2,0x1e2e28);     // 内下
+  roadStrip(-IN_R-0.8,0,'z',(IN_R+0.8)*2+1,2.2,0x1e2e28);    // 内左
+  roadStrip(0,0,'x',5.4,5.4,0x3a3326);                        // 中心台
+}
 
 // 共享几何
 const GEO={ box:new THREE.BoxGeometry(1,1,1), cyl:new THREE.CylinderGeometry(0.5,0.5,1,8),
@@ -948,11 +990,51 @@ function adjacentOnRing(a,b){
   return Math.abs(ja-jb)===1||Math.abs(ja-jb)===N-1;
 }
 
+// 名字标签(CanvasTexture Sprite,headless 无 canvas 时返回 null)
+function makeLabel(text,color,bg){
+  const c=document.createElement('canvas');
+  const ctx=c.getContext&&c.getContext('2d');
+  if(!ctx) return null;
+  c.width=256; c.height=72;
+  ctx.font='bold 40px "Courier New",monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle=bg||'rgba(10,12,16,0.72)';
+  ctx.fillRect(0,0,256,72);
+  ctx.fillStyle=color||'#e4e4e7';
+  ctx.fillText(text,128,36);
+  const tex=new THREE.CanvasTexture(c);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+  sp.scale.set(2.6,0.73,1);
+  return sp;
+}
+
 // 节点模型
 const CITY_GROUPS={}; // nodeId -> grp
 function buildNodeModel(n){
   const g=new THREE.Group();
-  if(n.type==='city'||n.type==='capital'){
+  if(n.id===JN[0]){
+    // 中心起点:王座+大旗
+    const base=new THREE.Mesh(GEO.cyl,mat(0x8a6d2a));
+    base.scale.set(1.5,0.35,1.5);
+    base.position.y=0.18;
+    g.add(base);
+    const seat=new THREE.Mesh(GEO.cyl,mat(0xf59e0b,'basic'));
+    seat.scale.set(0.9,0.5,0.9);
+    seat.position.y=0.5;
+    g.add(seat);
+    const pole=new THREE.Mesh(GEO.cyl,mat(0x6a5a44));
+    pole.scale.set(0.14,2.6,0.14);
+    pole.position.y=1.9;
+    g.add(pole);
+    const flag=new THREE.Mesh(GEO.box,mat(0xef4444,'basic'));
+    flag.scale.set(1.3,0.55,0.05);
+    flag.position.set(0.78,2.4,0);
+    g.add(flag);
+    const star=new THREE.Mesh(GEO.sph,mat(0xfff3c4,'basic'));
+    star.scale.set(0.24,0.24,0.24);
+    star.position.set(1.28,2.45,0);
+    g.add(star);
+  } else if(n.type==='city'||n.type==='capital'){
     const isCap=n.type==='capital';
     const base=new THREE.Mesh(GEO.box,mat(0x9a8a72));
     base.scale.set(isCap?1.5:1.1,isCap?0.55:0.42,isCap?1.5:1.1);
@@ -1016,6 +1098,14 @@ function buildNodeModel(n){
     lantern.position.y=1.25;
     g.add(lantern);
   }
+  // 格名标签(大富翁棋盘必备)
+  let lbl=null;
+  if(n.type==='capital') lbl=makeLabel(n.name,'#fbbf24','rgba(60,30,0,0.75)');
+  else if(n.type==='city') lbl=makeLabel(n.name,'#e4e4e7','rgba(10,12,16,0.72)');
+  else if(n.type==='junction') lbl=makeLabel(n.id===JN[0]?'起·王座':'★驿站','#fbbf24','rgba(40,35,10,0.75)');
+  else if(n.type==='event') lbl=makeLabel('? 事件','#c4b5fd','rgba(30,20,60,0.75)');
+  else if(n.type==='shop') lbl=makeLabel('商 店','#6ee7b7','rgba(10,40,25,0.75)');
+  if(lbl){ lbl.position.y=n.type==='capital'?2.4:(n.type==='city'?2.0:1.7); g.add(lbl); }
   g.position.set(n.pos.x,0,n.pos.z);
   scene.add(g);
   CITY_GROUPS[n.id]=g;
@@ -1034,6 +1124,7 @@ function refreshNodeVisual(n){
   });
 }
 function buildAllNodeModels(){
+  buildBoardBase();
   for(const n of nodes){
     const g=buildNodeModel(n);
     g.children.forEach(m=>{
@@ -1045,41 +1136,59 @@ function buildAllNodeModels(){
   }
 }
 
-/* ---------- 玩家棋子 ---------- */
+/* ---------- 玩家角色(实体武将小人:影/底座/身/头/头饰/前向旗/名牌) ---------- */
 function buildToken(p){
   const g=new THREE.Group();
+  const shadow=new THREE.Mesh(GEO.cyl,mat(0x000000));
+  shadow.scale.set(0.85,0.02,0.85); shadow.position.y=0.015;
+  g.add(shadow);
+  const base=new THREE.Mesh(GEO.cyl,mat(p.colorI,'basic'));
+  base.scale.set(0.6,0.1,0.6); base.position.y=0.08;
+  g.add(base);
   const body=new THREE.Mesh(GEO.cyl,mat(p.colorI,'basic'));
-  body.scale.set(0.5,0.5,0.5);
-  body.position.y=0.25;
+  body.scale.set(0.32,0.58,0.32); body.position.y=0.42;
   g.add(body);
-  const head=new THREE.Mesh(GEO.sph,mat(p.colorI,'basic'));
-  head.scale.set(0.3,0.3,0.3);
-  head.position.y=0.62;
+  const head=new THREE.Mesh(GEO.sph,mat(0xf0c8a0,'basic'));
+  head.scale.set(0.28,0.28,0.28); head.position.y=0.85;
   g.add(head);
+  const hat=new THREE.Mesh(GEO.cone,mat(p.colorI,'basic'));
+  hat.scale.set(0.24,0.2,0.24); hat.position.y=1.06;
+  g.add(hat);
+  const plume=new THREE.Mesh(GEO.box,mat(0xffffff,'basic'));
+  plume.scale.set(0.05,0.34,0.05); plume.position.set(0,1.32,0.06);
+  g.add(plume);
+  // 前向小旗(朝向可见,默认朝 +z)
+  const fpole=new THREE.Mesh(GEO.cyl,mat(0x9a9aa2,'basic'));
+  fpole.scale.set(0.05,0.5,0.05); fpole.position.set(0,0.5,0.34);
+  g.add(fpole);
+  const fcloth=new THREE.Mesh(GEO.box,mat(0xffffff,'basic'));
+  fcloth.scale.set(0.3,0.16,0.02); fcloth.position.set(0.17,0.6,0.34);
+  g.add(fcloth);
   const ring=new THREE.Mesh(GEO.cyl,mat(0xffffff,'basic'));
-  ring.scale.set(0.8,0.03,0.8);
-  ring.position.y=0.015;
+  ring.scale.set(0.92,0.03,0.92); ring.position.y=0.02;
   g.add(ring);
+  const lb=makeLabel(p.name,p.color,'rgba(0,0,0,0.6)');
+  if(lb){ lb.position.y=1.75; g.add(lb); }
   scene.add(g);
   p._tok=g;
 }
-function positionTokenAt(p,x,z){ if(p._tok) p._tok.position.set(x,0,z); }
+function positionTokenAt(p,x,y,z){ if(p._tok) p._tok.position.set(x,y||0,z); }
 function placeTokens(){
   for(const p of G.players){
     if(!p._tok) buildToken(p);
     const n=nodes[p.pos];
-    positionTokenAt(p,n.pos.x,n.pos.z);
+    positionTokenAt(p,n.pos.x,0,n.pos.z);
   }
 }
 function refreshTokenRing(){
   for(const p of G.players){
     if(!p._tok) continue;
-    const ring=p._tok.children[2];
+    const ring=p._tok.children[8];
     if(ring) ring.material=mat(G.cur===p.id?0xf59e0b:0xffffff,'basic');
   }
 }
 
-/* ---------- 移动动画 ---------- */
+/* ---------- 移动动画(逐格弹跳+平滑转向) ---------- */
 let moveAnim=null;
 function lerpV(a,b,t){ return {x:a.x+(b.x-a.x)*t, z:a.z+(b.z-a.z)*t}; }
 function updateMove(dt){
@@ -1087,11 +1196,14 @@ function updateMove(dt){
   const p=cur();
   if(!moveAnim){
     const r=logicStep();
+    const dx=r.to.x-r.from.x, dz=r.to.z-r.from.z;
+    if(p._tok&&(dx||dz)) p._tok.rotation.y=Math.atan2(dx,dz);
     moveAnim={from:r.from,to:r.to,t:0,last:(G.moveCur+1>=G.moveSteps)};
   }
   moveAnim.t+=dt/0.3;
-  const v=lerpV(moveAnim.from,moveAnim.to,clamp(moveAnim.t,0,1));
-  positionTokenAt(p,v.x,v.z);
+  const t=clamp(moveAnim.t,0,1);
+  const v=lerpV(moveAnim.from,moveAnim.to,t);
+  positionTokenAt(p,v.x,0.06+Math.sin(t*Math.PI)*0.55,v.z);
   if(moveAnim.t>=1){
     G.moveCur++;
     moveAnim=null;
@@ -1183,7 +1295,28 @@ function updateHUD(){
 function showDice(d){
   $('dice').textContent=d;
   $('diceBox').style.display='block';
-  $('diceBox').animate?null:null;
+}
+// 骰子滚动动画:数字跳动+抖动 ~0.9s,停在最终点数后回调
+let diceAnimTimer=null;
+function rollAnimate(finalD,cb){
+  const el=$('dice');
+  $('diceBox').style.display='block';
+  $('diceTag').textContent='掷骰中…';
+  el.classList.add('rolling');
+  const total=900, step=70;
+  let tick=0;
+  if(diceAnimTimer) clearInterval(diceAnimTimer);
+  diceAnimTimer=setInterval(()=>{
+    tick++;
+    el.textContent=rndi(1,6);
+    if(tick*step>=total){
+      clearInterval(diceAnimTimer); diceAnimTimer=null;
+      el.classList.remove('rolling');
+      el.textContent=finalD;
+      $('diceTag').textContent='移动中…';
+      setTimeout(cb,260);
+    }
+  },step);
 }
 function showDiceTag(t){ $('diceTag').textContent=t; }
 function renderItemsBar(){
@@ -1345,7 +1478,7 @@ window.addEventListener('resize',()=>{
 });
 
 /* ---------- 启动 ---------- */
-$('verTxt').textContent='0.2';
+$('verTxt').textContent='0.3';
 buildMenu();
 buildPath();
 buildAllNodeModels();
